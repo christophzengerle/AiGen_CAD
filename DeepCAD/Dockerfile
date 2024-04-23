@@ -5,7 +5,7 @@ WORKDIR /usr/app/src
 
 
 ENV BUILD_WITH_CUDA True
-ENV CUDA_HOME /usr/local/cuda-11.8/
+ENV CUDA_HOME /usr/local/cuda/
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -13,15 +13,13 @@ RUN apt-get update && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    python3.12.2-dev \
+    python3.10 \
     git \
     gcc g++ \
     libglib2.0-0 libsm6 libxext6 libxrender-dev \
     libgl1-mesa-glx \
     libsndfile1
 
-
-# This step is necessary to use GROUNDINGDINO!
 
 # Install dependencies for building custom C++ ops
 RUN apt-get update && \
@@ -32,12 +30,15 @@ RUN apt-get update && \
     ninja-build
 
 
-WORKDIR /usr/app/src
-
-COPY . ./DeepCAD
 
 WORKDIR /usr/app/src/DeepCAD
 
+COPY requirements.txt ./
+
 RUN pip install -r requirements.txt
 
-CMD ["python", "main.py"]
+RUN rm -rf requirements.txt
+
+RUN conda install -c conda-forge pythonocc-core=7.7.2 -y
+
+RUN pip install "git+https://github.com/erikwijmans/Pointnet2_PyTorch#egg=pointnet2_ops&subdirectory=pointnet2_ops_lib"

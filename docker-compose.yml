@@ -1,28 +1,18 @@
-version: '3.8'
 
 services:
-  stbescho_apis:
-    build: 
-      context: /home/stbescho/text_to_gcode/api/
-      dockerfile: Dockerfile
-    image: stbescho_apis:0.6
-    environment:
-      - CUDA_HOME=/usr/local/cuda-11.7/
-      - TRANSFORMERS_CACHE=/models
-      - NLTK_DATA=/models/nltk_data
-      - LOGS_DIR=/logs
-      - API_PORT=5000
-      - IMAGE_DIR=/images
+  deepcad:
+    build: ./DeepCAD
+    image: chriszengerle/aigen_deepcad:0.1
+    container_name: deepcad
     volumes:
-      - /home/stbescho/models:/models
-      - /home/stbescho/logs:/logs
-      - /home/stbescho/images:/images
-    ports:
-      - "5000:5000"
+      - ./DeepCAD:/usr/app/src/DeepCAD
+      - ../utils/models/DeepCAD:/usr/app/src/DeepCAD/proj_log
+      - ../utils/data:/usr/app/src/DeepCAD/data
+    command: tail -F anything #to keep Container running
     deploy:
       resources:
         reservations:
           devices:
           - driver: nvidia
-            device_ids: ['1'] # binds to GPU 1
+            device_ids: ['0'] # binds to GPU 0
             capabilities: [gpu]
