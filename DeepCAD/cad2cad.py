@@ -70,7 +70,10 @@ def encode(cfg):
     save_dir = "{}/results".format(cfg.exp_dir)
     ensure_dir(save_dir)
     save_path = os.path.join(save_dir, "all_zs_ckpt{}.h5".format(cfg.ckpt))
-    fp = h5py.File(save_path, "w")
+
+    # fp = h5py.File(save_path, "w")
+    fp = h5py.File("./data/all_zs.h5", "w")
+
     for phase in ["train", "validation", "test"]:
         train_loader = get_dataloader(phase, cfg, shuffle=False)
 
