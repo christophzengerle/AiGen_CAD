@@ -17,11 +17,7 @@ class ConfigPcEncoder(object):
             print("{0:20}".format(k), v)
             self.__setattr__(k, v)
 
-        self.data_root = os.path.join(
-            args.proj_dir,
-            args.exp_name,
-            "results/all_zs_ckpt{}.h5".format(args.ae_ckpt),
-        )
+        self.data_root = os.path.join("../data", "all_zs.h5")
         self.pc_root = args.pc_root
         self.split_path = args.split_path
         self.exp_dir = os.path.join(args.proj_dir, args.exp_name, "pc2cad")
