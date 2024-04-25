@@ -161,12 +161,9 @@ class ConfigAE(object):
         )
         parser.add_argument("--test", action="store_true", help="test mode")
 
-        args = parser.parse_args()
-
-        if args.test:
-            parser.add_argument("-m", "--mode", type=str, choices=["rec", "enc", "dec"])
-            parser.add_argument("-o", "--outputs", type=str, default=None)
-            parser.add_argument("--z_path", type=str, default=None)
+        parser.add_argument("-m", "--mode", type=str, choices=["rec", "enc", "dec"])
+        parser.add_argument("-o", "--outputs", type=str, default=None)
+        parser.add_argument("--z_path", type=str, default=None)
 
         args = parser.parse_args()
         return parser, args
