@@ -1,8 +1,11 @@
 import os
+import sys
 
 import h5py
 import numpy as np
 import torch
+from OCC.Core.BRepCheck import BRepCheck_Analyzer
+from OCC.Extend.DataExchange import write_step_file
 from tqdm import tqdm
 
 from cadlib.macro import EOS_IDX
@@ -11,29 +14,19 @@ from dataset.cad_dataset import get_dataloader
 from trainer import TrainerAE
 from utils import ensure_dir
 
+sys.path.append("..")
+from cadlib.visualize import vec2CADsolid
 
-def main():
-    # create experiment cfg containing all hyperparameters
-    cfg = ConfigAE("test")
+# create experiment cfg containing all hyperparameters
+cfg = ConfigAE()
+print("data path:", cfg.data_root)
 
-    if cfg.mode == "rec":
-        reconstruct(cfg)
-    elif cfg.mode == "enc":
-        encode(cfg)
-    elif cfg.mode == "dec":
-        decode(cfg)
-    else:
-        raise ValueError
+# create network and training agent
+tr_agent = TrainerAE(cfg)
 
 
+# define different modes
 def reconstruct(cfg):
-    # create network and training agent
-    tr_agent = TrainerAE(cfg)
-
-    # load from checkpoint if provided
-    tr_agent.load_ckpt(cfg.ckpt)
-    tr_agent.net.eval()
-
     # create dataloader
     test_loader = get_dataloader("test", cfg)
     print("Total number of test data:", len(test_loader))
@@ -73,13 +66,6 @@ def reconstruct(cfg):
 
 
 def encode(cfg):
-    # create network and training agent
-    tr_agent = TrainerAE(cfg)
-
-    # load from checkpoint if provided
-    tr_agent.load_ckpt(cfg.ckpt)
-    tr_agent.net.eval()
-
     # create dataloader
     save_dir = "{}/results".format(cfg.exp_dir)
     ensure_dir(save_dir)
@@ -102,25 +88,18 @@ def encode(cfg):
     fp.close()
 
 
-def decode(cfg):
-    # create network and training agent
-    tr_agent = TrainerAE(cfg)
-
-    # load from checkpoint if provided
-    tr_agent.load_ckpt(cfg.ckpt)
-    tr_agent.net.eval()
-
-    # load latent zs
-    with h5py.File(cfg.z_path, "r") as fp:
-        zs = fp["zs"][:]
-    save_dir = cfg.z_path.split(".")[0] + "_dec"
+def decode(z_path, zs=None, batch_size=128, exportSTEP=False, checkBRep=False):
+    if zs is None:
+        with h5py.File(z_path, "r") as fp:
+            zs = fp["zs"][:]
+    save_dir = z_path.split(".")[0] + "_dec"
     ensure_dir(save_dir)
 
     # decode
-    for i in range(0, len(zs), cfg.batch_size):
+    for i in range(0, len(zs), batch_size):
         with torch.no_grad():
             batch_z = torch.tensor(
-                zs[i : i + cfg.batch_size], dtype=torch.float32
+                zs[i : i + batch_size], dtype=torch.float32
             ).unsqueeze(1)
             batch_z = batch_z.cuda()
             outputs = tr_agent.decode(batch_z)
@@ -130,11 +109,55 @@ def decode(cfg):
             out_vec = batch_out_vec[j]
             out_command = out_vec[:, 0]
             seq_len = out_command.tolist().index(EOS_IDX)
+            out_vec = out_vec[:seq_len]
 
             save_path = os.path.join(save_dir, "{}.h5".format(i + j))
             with h5py.File(save_path, "w") as fp:
-                fp.create_dataset("out_vec", data=out_vec[:seq_len], dtype=np.int32)
+                fp.create_dataset("out_vec", data=out_vec, dtype=np.int32)
+
+            if exportSTEP:
+                try:
+                    out_shape = vec2CADsolid(out_vec)
+
+                except Exception:
+                    print("load and create failed.")
+                    continue
+
+            if checkBRep:
+                analyzer = BRepCheck_Analyzer(out_shape)
+                if not analyzer.IsValid():
+                    print("detect invalid.")
+                    continue
+
+            save_path = os.path.join(save_dir, "{}.step".format(i + j))
+            write_step_file(out_shape, save_path)
 
 
-if __name__ == "__main__":
-    main()
+# execute mode
+if not cfg.test:
+
+    # load from checkpoint if provided
+    if cfg.cont:
+        tr_agent.load_ckpt(cfg.ckpt)
+
+    # create dataloader
+    train_loader = get_dataloader("train", cfg)
+    val_loader = get_dataloader("validation", cfg)
+    val_loader = cycle(val_loader)
+
+    tr_agent.train(train_loader, val_loader)
+
+
+else:
+    # load from checkpoint if provided
+    tr_agent.load_ckpt(cfg.ckpt)
+    tr_agent.net.eval()
+
+    if cfg.mode == "rec":
+        reconstruct(cfg)
+    elif cfg.mode == "enc":
+        encode(cfg)
+    elif cfg.mode == "dec":
+        decode(cfg.z_path, cfg.batch_size)
+    else:
+        raise ValueError

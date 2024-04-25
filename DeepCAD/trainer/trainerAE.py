@@ -1,14 +1,22 @@
+from collections import OrderedDict
+
 import torch
 import torch.optim as optim
 from tqdm import tqdm
+
+from cadlib.macro import *
 from model import CADTransformer
+
 from .base import BaseTrainer
 from .loss import CADLoss
 from .scheduler import GradualWarmupScheduler
-from cadlib.macro import *
 
 
 class TrainerAE(BaseTrainer):
+    def __init__(self, cfg):
+        super(TrainerAE, self).__init__(cfg)
+        self.build_net(cfg)
+
     def build_net(self, cfg):
         self.net = CADTransformer(cfg).cuda()
 
@@ -21,8 +29,8 @@ class TrainerAE(BaseTrainer):
         self.loss_func = CADLoss(self.cfg).cuda()
 
     def forward(self, data):
-        commands = data['command'].cuda() # (N, S)
-        args = data['args'].cuda()  # (N, S, N_ARGS)
+        commands = data["command"].cuda()  # (N, S)
+        args = data["args"].cuda()  # (N, S, N_ARGS)
 
         outputs = self.net(commands, args)
         loss_dict = self.loss_func(outputs)
@@ -31,8 +39,8 @@ class TrainerAE(BaseTrainer):
 
     def encode(self, data, is_batch=False):
         """encode into latent vectors"""
-        commands = data['command'].cuda()
-        args = data['args'].cuda()
+        commands = data["command"].cuda()
+        args = data["args"].cuda()
         if not is_batch:
             commands = commands.unsqueeze(0)
             args = args.unsqueeze(0)
@@ -46,9 +54,13 @@ class TrainerAE(BaseTrainer):
 
     def logits2vec(self, outputs, refill_pad=True, to_numpy=True):
         """network outputs (logits) to final CAD vector"""
-        out_command = torch.argmax(torch.softmax(outputs['command_logits'], dim=-1), dim=-1)  # (N, S)
-        out_args = torch.argmax(torch.softmax(outputs['args_logits'], dim=-1), dim=-1) - 1  # (N, S, N_ARGS)
-        if refill_pad: # fill all unused element to -1
+        out_command = torch.argmax(
+            torch.softmax(outputs["command_logits"], dim=-1), dim=-1
+        )  # (N, S)
+        out_args = (
+            torch.argmax(torch.softmax(outputs["args_logits"], dim=-1), dim=-1) - 1
+        )  # (N, S, N_ARGS)
+        if refill_pad:  # fill all unused element to -1
             mask = ~torch.tensor(CMD_ARGS_MASK).bool().cuda()[out_command.long()]
             out_args[mask] = -1
 
@@ -56,6 +68,40 @@ class TrainerAE(BaseTrainer):
         if to_numpy:
             out_cad_vec = out_cad_vec.detach().cpu().numpy()
         return out_cad_vec
+
+    def train(self, train_loader, val_loader):
+        self.set_loss_function()
+        self.set_optimizer(self.cfg)
+        # start training
+        # start training
+        clock = self.clock
+
+        for e in range(clock.epoch, self.cfg.nr_epochs):
+            # begin iteration
+            pbar = tqdm(train_loader)
+            for b, data in enumerate(pbar):
+                # train step
+                outputs, losses = self.train_func(data)
+
+                pbar.set_description("EPOCH[{}][{}]".format(e, b))
+                pbar.set_postfix(OrderedDict({k: v.item() for k, v in losses.items()}))
+
+                # validation step
+                if clock.step % self.cfg.val_frequency == 0:
+                    data = next(val_loader)
+                    outputs, losses = self.val_func(data)
+
+                clock.tick()
+
+                self.update_learning_rate()
+
+            clock.tock()
+
+            if clock.epoch % self.cfg.save_frequency == 0:
+                self.save_ckpt()
+
+            # if clock.epoch % 10 == 0:
+            self.save_ckpt("latest")
 
     def evaluate(self, test_loader):
         """evaluatinon during training"""
@@ -70,14 +116,17 @@ class TrainerAE(BaseTrainer):
 
         for i, data in enumerate(pbar):
             with torch.no_grad():
-                commands = data['command'].cuda()
-                args = data['args'].cuda()
+                commands = data["command"].cuda()
+                args = data["args"].cuda()
                 outputs = self.net(commands, args)
-                out_args = torch.argmax(torch.softmax(outputs['args_logits'], dim=-1), dim=-1) - 1
+                out_args = (
+                    torch.argmax(torch.softmax(outputs["args_logits"], dim=-1), dim=-1)
+                    - 1
+                )
                 out_args = out_args.long().detach().cpu().numpy()  # (N, S, n_args)
 
-            gt_commands = commands.squeeze(1).long().detach().cpu().numpy() # (N, S)
-            gt_args = args.squeeze(1).long().detach().cpu().numpy() # (N, S, n_args)
+            gt_commands = commands.squeeze(1).long().detach().cpu().numpy()  # (N, S)
+            gt_args = args.squeeze(1).long().detach().cpu().numpy()  # (N, S, n_args)
 
             ext_pos = np.where(gt_commands == EXT_IDX)
             line_pos = np.where(gt_commands == LINE_IDX)
@@ -92,13 +141,23 @@ class TrainerAE(BaseTrainer):
 
         all_ext_args_comp = np.concatenate(all_ext_args_comp, axis=0)
         sket_plane_acc = np.mean(all_ext_args_comp[:, :N_ARGS_PLANE])
-        sket_trans_acc = np.mean(all_ext_args_comp[:, N_ARGS_PLANE:N_ARGS_PLANE+N_ARGS_TRANS])
+        sket_trans_acc = np.mean(
+            all_ext_args_comp[:, N_ARGS_PLANE : N_ARGS_PLANE + N_ARGS_TRANS]
+        )
         extent_one_acc = np.mean(all_ext_args_comp[:, -N_ARGS_EXT_PARAM])
         line_acc = np.mean(np.concatenate(all_line_args_comp, axis=0))
         arc_acc = np.mean(np.concatenate(all_arc_args_comp, axis=0))
         circle_acc = np.mean(np.concatenate(all_circle_args_comp, axis=0))
 
-        self.val_tb.add_scalars("args_acc",
-                                {"line": line_acc, "arc": arc_acc, "circle": circle_acc,
-                                 "plane": sket_plane_acc, "trans": sket_trans_acc, "extent": extent_one_acc},
-                                global_step=self.clock.epoch)
+        self.val_tb.add_scalars(
+            "args_acc",
+            {
+                "line": line_acc,
+                "arc": arc_acc,
+                "circle": circle_acc,
+                "plane": sket_plane_acc,
+                "trans": sket_trans_acc,
+                "extent": extent_one_acc,
+            },
+            global_step=self.clock.epoch,
+        )
