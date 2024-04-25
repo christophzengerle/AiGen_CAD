@@ -1,2 +1,2 @@
 from .configAE import ConfigAE
-from .configLGAN import ConfigLGAN
+from .configPcEncoder import ConfigPcEncoder
