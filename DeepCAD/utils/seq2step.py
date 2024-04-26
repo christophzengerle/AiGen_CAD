@@ -74,7 +74,7 @@ for file_path in seq_files:
     outfile = os.path.join(args.dest, file).replace(file.split(".")[-1], "step")
 
     if args.fdepth == 2:
-        folder = os.path.split(path)[1]
+        folder = os.path.split(path)[-1]
         if not os.path.exists(os.path.join(args.dest, folder)):
             os.mkdir(os.path.join(args.dest, folder))
         outfile = os.path.join(args.dest, folder, file).replace(
@@ -83,22 +83,25 @@ for file_path in seq_files:
 
     try:
         if args.type == "h5":
-            with h5py.File(path, "r") as fp:
+            with h5py.File(file_path, "r") as fp:
                 out_vec = fp["vec"][:].astype(np.float64)
                 out_shape = vec2CADsolid(out_vec)
         else:
-            with open(path, "r") as fp:
+            with open(file_path, "r") as fp:
                 data = json.load(fp)
             cad_seq = CADSequence.from_dict(data)
             cad_seq.normalize()
             out_shape = create_CAD(cad_seq)
+            
+            
+        write_step_file(out_shape, outfile)
 
     except Exception as e:
-        print(f"{file_path} load and create failed.")
+        print(f"{file_path} load and create failed.", e)
         failed_files.append(file_path)
         continue
-
-    write_step_file(out_shape, outfile)
+    
+    
 
 with open(os.path.join(args.dest, "failed_files.txt"), "w") as f:
     f.write("\n".join(failed_files))
