@@ -45,17 +45,17 @@ class ConfigPcEncoder(object):
                 json.dump(self.__dict__, f, indent=2)
 
     def set_configuration(self):
-        self.n_points = 4096
-        self.batch_size = 256
-        self.num_workers = 8
-        self.nr_epochs = 1000
+        self.n_points = 2048
+        self.batch_size = 128
+        self.num_workers = 4
+        self.nr_epochs = 200
         self.lr = 1e-4
         self.lr_step_size = 50
         # self.beta1 = 0.5
         self.grad_clip = None
         self.noise = 0.02
 
-        self.save_frequency = 100
+        self.save_frequency = 50
         self.val_frequency = 10
 
     def parse(self):

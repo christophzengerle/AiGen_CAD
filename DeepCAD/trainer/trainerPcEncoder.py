@@ -106,13 +106,13 @@ class TrainerPcEncoder(BaseTrainer):
         self.save_ckpt("latest")
 
     def evaluate(self, data):
-        with torch.no_grad:
+        with torch.no_grad():
             self.net.eval()
             points = data["points"].cuda()
             codes = data["codes"].cuda()
             pred = self.forward(points)
             loss = self.criterion(pred, codes)
-            return pred, loss
+        return pred, loss
 
     def encode_pointcloud(self, path):
         self.net.eval()
