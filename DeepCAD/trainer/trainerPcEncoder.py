@@ -25,7 +25,7 @@ class TrainerPcEncoder(BaseTrainer):
         super(TrainerPcEncoder, self).__init__(cfg)
         self.build_net(cfg)
         self.losses_dict = {"train_loss": {}, "eval_loss": {}}
-
+        
     def build_net(self, config):
         self.net = PointNet2().cuda()
         if len(config.gpu_ids) > 1:
@@ -54,6 +54,8 @@ class TrainerPcEncoder(BaseTrainer):
         # start training
         clock = self.clock
         nr_epochs = self.cfg.nr_epochs
+        
+        print('********* Start Training ***********')
 
         for e in range(clock.epoch, nr_epochs):
             losses_train = []
@@ -63,7 +65,7 @@ class TrainerPcEncoder(BaseTrainer):
                 self.net.train()
                 points = data["points"].cuda()
                 codes = data["codes"].cuda()
-
+                
                 # train step
                 pred = self.forward(points)
                 loss = self.criterion(pred, codes)
@@ -72,14 +74,12 @@ class TrainerPcEncoder(BaseTrainer):
                 self.optimizer.step()
 
                 losses_train.append(loss.item())
-
                 pbar.set_description(
                     "TRAIN - EPOCH[{}]-[{}] BATCH[{}]-[{}]".format(
                         e, nr_epochs, b, len(train_loader)
                     )
                 )
                 pbar.set_postfix(loss=loss.item())
-
                 # validation step
                 if clock.step % self.cfg.val_frequency == 0:
                     data = next(val_loader)
@@ -94,7 +94,6 @@ class TrainerPcEncoder(BaseTrainer):
 
                 clock.tick()
                 self.update_learning_rate()
-
             self.losses_dict["train_loss"][f"epoch {e}"] = sum(losses_train) / len(
                 losses_train
             )

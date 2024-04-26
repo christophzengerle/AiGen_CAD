@@ -22,7 +22,6 @@ class ShapeCodesDataset(Dataset):
 
         with h5py.File(self.data_root, "r") as fp:
             self.zs = fp["{}_zs".format(phase)][:]
-
         self.noise = config.noise
 
     def __getitem__(self, index):
@@ -30,7 +29,7 @@ class ShapeCodesDataset(Dataset):
         pc_path = os.path.join(self.pc_root, data_id + ".ply")
         if not os.path.exists(pc_path):
             return self.__getitem__(index + 1)
-        pc_n = read_ply(pc_path, with_normal=True)
+        pc_n = read_ply(pc_path, with_normal=False)
         pc = pc_n[:, :3]
         normal = pc_n[:, -3:]
         sample_idx = random.sample(list(range(pc.shape[0])), self.n_points)
@@ -40,7 +39,7 @@ class ShapeCodesDataset(Dataset):
         pc = pc + np.random.uniform(-self.noise, self.noise, (pc.shape[0], 1)) * normal
         pc = torch.tensor(pc, dtype=torch.float32)
         shape_code = torch.tensor(self.zs[index], dtype=torch.float32)
-        return {"points": pc, "code": shape_code, "id": data_id}
+        return {"points": pc, "codes": shape_code, "id": data_id}
 
     def __len__(self):
         return len(self.zs)

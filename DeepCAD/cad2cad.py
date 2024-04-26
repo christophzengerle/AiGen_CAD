@@ -140,32 +140,35 @@ def decode(z_path, zs=None, batch_size=128, exportSTEP=False, checkBRep=False):
             save_path = os.path.join(save_dir, "{}.step".format(i + j))
             write_step_file(out_shape, save_path)
 
+def main():
+    # execute mode
+    if not cfg.test:
 
-# execute mode
-if not cfg.test:
+        # load from checkpoint if provided
+        if cfg.cont:
+            tr_agent.load_ckpt(cfg.ckpt)
 
-    # load from checkpoint if provided
-    if cfg.cont:
-        tr_agent.load_ckpt(cfg.ckpt)
+        # create dataloader
+        train_loader = get_dataloader("train", cfg)
+        val_loader = get_dataloader("validation", cfg)
+        val_loader = cycle(val_loader)
 
-    # create dataloader
-    train_loader = get_dataloader("train", cfg)
-    val_loader = get_dataloader("validation", cfg)
-    val_loader = cycle(val_loader)
-
-    tr_agent.train(train_loader, val_loader)
+        tr_agent.train(train_loader, val_loader)
 
 
-else:
-    # load from checkpoint if provided
-    tr_agent.load_ckpt(cfg.ckpt)
-    tr_agent.net.eval()
-
-    if cfg.mode == "rec":
-        reconstruct(cfg)
-    elif cfg.mode == "enc":
-        encode(cfg)
-    elif cfg.mode == "dec":
-        decode(cfg.z_path, cfg.batch_size)
     else:
-        raise ValueError
+        # load from checkpoint if provided
+        tr_agent.load_ckpt(cfg.ckpt)
+        tr_agent.net.eval()
+
+        if cfg.mode == "rec":
+            reconstruct(cfg)
+        elif cfg.mode == "enc":
+            encode(cfg)
+        elif cfg.mode == "dec":
+            decode(cfg.z_path, cfg.batch_size)
+        else:
+            raise ValueError
+
+if __name__ == '__main__':
+    main()
