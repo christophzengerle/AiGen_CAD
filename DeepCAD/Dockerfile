@@ -9,7 +9,7 @@ ENV CUDA_HOME /usr/local/cuda/
 
 
 # Enable 32bit Packages
-RUN dpkg --add-architecture i386
+# RUN dpkg --add-architecture i386
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -20,10 +20,15 @@ RUN apt-get update && \
     python3.10 \
     git \
     gcc g++ \
-    libglib2.0-0 libsm6 libxext6 libxext6:i386 libxrender-dev \
-    libgl1-mesa-glx \
-    libsndfile1 \
-    libxft2 libxft2:i386 lib32ncurses6
+    libgl1-mesa-glx 
+
+
+
+#    libglib2.0-0 libsm6 libxext6 libxext6:i386 libxrender-dev \
+#    
+#    libsndfile1 \
+#    libxft2 libxft2:i386 lib32ncurses6
+
 
     
 # Install dependencies for building custom C++ ops
