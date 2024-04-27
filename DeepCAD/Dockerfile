@@ -7,6 +7,7 @@ WORKDIR /usr/app/src
 ENV BUILD_WITH_CUDA True
 ENV CUDA_HOME /usr/local/cuda/
 
+
 # Enable 32bit Packages
 RUN dpkg --add-architecture i386
 
@@ -24,6 +25,7 @@ RUN apt-get update && \
     libsndfile1 \
     libxft2 libxft2:i386 lib32ncurses6
 
+    
 # Install dependencies for building custom C++ ops
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -36,12 +38,12 @@ RUN apt-get update && \
 
 WORKDIR /usr/app/src/DeepCAD
 
+RUN conda install -c conda-forge pythonocc-core=7.7.2 -y
+
 COPY requirements.txt ./
 
 RUN pip install --no-cache-dir -r requirements.txt
 
 RUN rm -rf requirements.txt
-
-RUN conda install -c conda-forge pythonocc-core=7.7.2 -y
 
 RUN pip install "git+https://github.com/erikwijmans/Pointnet2_PyTorch#egg=pointnet2_ops&subdirectory=pointnet2_ops_lib"
