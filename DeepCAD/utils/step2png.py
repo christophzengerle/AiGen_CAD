@@ -3,8 +3,14 @@ import math
 import multiprocessing
 import os
 
+
 import trimesh
 from trimesh import transformations
+
+
+# when using with docker create virtual display
+# export DISPLAY=192.168.178.29:0.0 
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--src", type=str, help="source folder", required=True)
@@ -58,10 +64,13 @@ def transform(file_path, outfile, rotation, elevation, quality, idx):
     scene.apply_transform(elevation_matrix)
 
     png = scene.save_image(resolution=[res[quality], res[quality]], visible=False)
+    print(png)
     print(f"Progress: {idx / len(objfiles) * 100}")
     with open(outfile, "wb") as f:
         f.write(png)
         f.close()
+        
+    print(f'******** wrote to {outfile} *************')
 
 
 save_folder = setup_dir(args.src, args.dest)
@@ -94,6 +103,9 @@ for i, file_path in enumerate(objfiles):
             os.mkdir(os.path.join(args.dest, folder))
         outfile = os.path.join(args.dest, folder, file).replace(".step", ".png")
 
+    # transform(file_path, outfile, args.rot, args.ele, args.qual, i)
+
+
     p = multiprocessing.Process(
         target=transform, args=(file_path, outfile, args.rot, args.ele, args.qual, i)
     )
@@ -104,3 +116,4 @@ for i, file_path in enumerate(objfiles):
         print("still running")
         p.terminate()
         p.join()
+
