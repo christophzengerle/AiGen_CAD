@@ -9,7 +9,7 @@ ENV CUDA_HOME /usr/local/cuda/
 
 
 # Enable 32bit Packages
-# RUN dpkg --add-architecture i386
+RUN dpkg --add-architecture i386
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -17,17 +17,14 @@ RUN apt-get update && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    python3.10 \
+    python3.11 \
     git \
     gcc g++ \
-    libgl1-mesa-glx 
-
-
-
-#    libglib2.0-0 libsm6 libxext6 libxext6:i386 libxrender-dev \
-#    
-#    libsndfile1 \
-#    libxft2 libxft2:i386 lib32ncurses6
+    libglib2.0-0 libsm6 libxext6 libxrender-dev \
+    libgl1-mesa-glx \
+    libsndfile1 \
+    libxext6:i386 \
+    libxft2 libxft2:i386 lib32ncurses6
 
 
     
@@ -43,12 +40,15 @@ RUN apt-get update && \
 
 WORKDIR /usr/app/src/DeepCAD
 
-RUN conda install -c conda-forge pythonocc-core=7.7.2 -y
-
+# Install Python dependencies
 COPY requirements.txt ./
-
 RUN pip install --no-cache-dir -r requirements.txt
-
 RUN rm -rf requirements.txt
 
+# Install PythonOCC
+RUN conda install -n base conda-libmamba-solver -y
+# RUN conda config --set solver libmamba
+RUN conda install -c conda-forge pythonocc-core=7.7.2 --solver=libmamba -y
+
+# Install PointNet2 ops
 RUN pip install "git+https://github.com/erikwijmans/Pointnet2_PyTorch#egg=pointnet2_ops&subdirectory=pointnet2_ops_lib"

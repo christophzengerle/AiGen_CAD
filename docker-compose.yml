@@ -1,4 +1,3 @@
-
 services:
   deepcad:
     build: ./DeepCAD
@@ -13,6 +12,6 @@ services:
       resources:
         reservations:
           devices:
-          - driver: nvidia
-            device_ids: ['0', '1'] # binds to GPU 0 and 1
-            capabilities: [gpu]
+            - driver: nvidia
+              device_ids: ["0", "1"] # binds to GPU 0 and 1
+              capabilities: [gpu]
