@@ -3,6 +3,8 @@ import math
 import multiprocessing
 import os
 
+from pyvirtualdisplay import Display
+
 
 import trimesh
 from trimesh import transformations
@@ -35,6 +37,11 @@ def setup_dir(source_folder, destination_folder):
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
 
+
+def setup_virtual_display():
+    display = Display(visible=0, size=(1336, 768))
+    display.start()
+    
 
 def transform(file_path, outfile, rotation, elevation, quality, idx):
     print('start', file_path)
@@ -76,47 +83,52 @@ def transform(file_path, outfile, rotation, elevation, quality, idx):
     print(f'******** wrote to {outfile} *************')
 
 
-save_folder = setup_dir(args.src, args.dest)
 
-if args.fdepth == 1:
-    objfiles = [
-        os.path.join(args.src, file)
-        for file in os.listdir(args.src)
-        if file.endswith(".step")
-    ]
-elif args.fdepth == 2:
-    objfiles = [
-        os.path.join(args.src, folder, file)
-        for folder in list(os.walk(args.src))[0][1]
-        for file in os.listdir(os.path.join(args.src, folder))
-        if file.endswith(".step")
-    ]
-else:
-    raise Exception(f"fdepth of {args.fdepth} not implemented yet")
+def main():
+    setup_dir(args.src, args.dest)
+    setup_virtual_display()
 
-res = {"high": 1200, "medium": 600, "low": 300}
+    if args.fdepth == 1:
+        objfiles = [
+            os.path.join(args.src, file)
+            for file in os.listdir(args.src)
+            if file.endswith(".step")
+        ]
+    elif args.fdepth == 2:
+        objfiles = [
+            os.path.join(args.src, folder, file)
+            for folder in list(os.walk(args.src))[0][1]
+            for file in os.listdir(os.path.join(args.src, folder))
+            if file.endswith(".step")
+        ]
+    else:
+        raise Exception(f"fdepth of {args.fdepth} not implemented yet")
 
-for i, file_path in enumerate(objfiles):
-    path, file = os.path.split(file_path)
-    outfile = os.path.join(args.dest, file).replace(".step", ".png")
+    res = {"high": 1200, "medium": 600, "low": 300}
 
-    if args.fdepth == 2:
-        folder = os.path.split(path)[-1]
-        if not os.path.exists(os.path.join(args.dest, folder)):
-            os.mkdir(os.path.join(args.dest, folder))
-        outfile = os.path.join(args.dest, folder, file).replace(".step", ".png")
+    for i, file_path in enumerate(objfiles):
+        path, file = os.path.split(file_path)
+        outfile = os.path.join(args.dest, file).replace(".step", ".png")
 
-    # transform(file_path, outfile, args.rot, args.ele, args.qual, i)
+        if args.fdepth == 2:
+            folder = os.path.split(path)[-1]
+            if not os.path.exists(os.path.join(args.dest, folder)):
+                os.mkdir(os.path.join(args.dest, folder))
+            outfile = os.path.join(args.dest, folder, file).replace(".step", ".png")
+
+        # transform(file_path, outfile, args.rot, args.ele, args.qual, i)
 
 
-    p = multiprocessing.Process(
-        target=transform, args=(file_path, outfile, args.rot, args.ele, args.qual, i)
-    )
-    p.start()
-    p.join(60)
+        p = multiprocessing.Process(
+            target=transform, args=(file_path, outfile, args.rot, args.ele, args.qual, i)
+        )
+        p.start()
+        p.join(60)
 
-    if p.is_alive():
-        print("still running")
-        p.terminate()
-        p.join()
+        if p.is_alive():
+            print("still running")
+            p.terminate()
+            p.join()
 
+if __name__ == '__main__':
+    main()

@@ -27,8 +27,8 @@ RUN apt-get update && \
     libsndfile1 \
     libxext6:i386 \
     libxft2 libxft2:i386 lib32ncurses6 \
-    libglu1 libglu1-mesa:i386
-
+    libglu1 libglu1-mesa:i386 \
+    xcfb xserver-xephyr
 
     
 # Install dependencies for building custom C++ ops
