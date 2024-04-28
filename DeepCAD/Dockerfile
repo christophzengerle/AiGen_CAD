@@ -6,6 +6,7 @@ WORKDIR /usr/app/src
 
 ENV BUILD_WITH_CUDA True
 ENV CUDA_HOME /usr/local/cuda/
+ENV DISPLAY 192.168.178.29:0.0 
 
 
 # Enable 32bit Packages
@@ -17,14 +18,16 @@ RUN apt-get update && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    python3.11 \
+    python3.10 \
     git \
     gcc g++ \
+    openssh-client \
     libglib2.0-0 libsm6 libxext6 libxrender-dev \
     libgl1-mesa-glx \
     libsndfile1 \
     libxext6:i386 \
-    libxft2 libxft2:i386 lib32ncurses6
+    libxft2 libxft2:i386 lib32ncurses6 \
+    libglu1 libglu1-mesa:i386
 
 
     

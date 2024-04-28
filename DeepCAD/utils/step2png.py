@@ -37,6 +37,7 @@ def setup_dir(source_folder, destination_folder):
 
 
 def transform(file_path, outfile, rotation, elevation, quality, idx):
+    print('start', file_path)
     mesh = trimesh.Trimesh(
         **trimesh.interfaces.gmsh.load_gmsh(
             file_name=file_path,
@@ -56,20 +57,22 @@ def transform(file_path, outfile, rotation, elevation, quality, idx):
     rotation_matrix = transformations.rotation_matrix(
         -1 * rotation * math.pi / 180, [0, 0, 1], [0, 0, 0]
     )
+    
     scene.apply_transform(rotation_matrix)
 
     elevation_matrix = transformations.rotation_matrix(
         -1 * elevation * math.pi / 180, [1, 0, 0], [0, 0, 0]
     )
+    
     scene.apply_transform(elevation_matrix)
 
     png = scene.save_image(resolution=[res[quality], res[quality]], visible=False)
-    print(png)
+
     print(f"Progress: {idx / len(objfiles) * 100}")
     with open(outfile, "wb") as f:
         f.write(png)
         f.close()
-        
+    
     print(f'******** wrote to {outfile} *************')
 
 
