@@ -13,4 +13,4 @@ gmsh==4.12.2
 pyglet==1.5.28
 scikit-learn==1.4.1.post1
 opencv-python-headless==4.9.0.80
-pyvirtualdisplay
+pyvirtualdisplay==3.0

@@ -21,13 +21,10 @@ RUN apt-get update && \
     python3.10 \
     git \
     gcc g++ \
-    openssh-client \
     libglib2.0-0 libsm6 libxext6 libxrender-dev \
-    libgl1-mesa-glx \
-    libsndfile1 \
-    libxext6:i386 \
-    libxft2 libxft2:i386 lib32ncurses6 \
-    libglu1 libglu1-mesa:i386 \
+    libglu1 libglu1-mesa:i386 libxcursor-dev \
+    libxft2 libxft2:i386 libxinerama-dev \
+    openssh-client \
     xvfb xserver-xephyr
 
     
