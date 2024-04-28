@@ -14,6 +14,9 @@ from trimesh import transformations
 # export DISPLAY=192.168.178.29:0.0 
 
 
+# run command: python step2png.py --src ../data/cad_step/ --dest ../data/cad_png/ --fdepth 2 --qual medium
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--src", type=str, help="source folder", required=True)
 parser.add_argument("--fdepth", type=int, default=1, help="source folder depth")
