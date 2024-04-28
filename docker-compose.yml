@@ -13,5 +13,6 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ["0", "1"] # binds to GPU 0 and 1
+              # device_ids: ["0", "1"] # binds to GPU 0 and 1
+              count: all
               capabilities: [gpu]
