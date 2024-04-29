@@ -99,6 +99,8 @@ def decode(cfg, tr_agent):
                     with h5py.File(cfg.z_path, "r") as fp:
                         zs.append(fp["zs"][:])
                     save_paths.append(cfg.z_path.split(".")[0])
+                else:
+                    raise ValueError("Invalid file format")
 
             elif os.path.isdir(cfg.z_path):
                 for file in os.listdir(cfg.z_path):

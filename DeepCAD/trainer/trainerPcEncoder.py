@@ -116,8 +116,11 @@ class TrainerPcEncoder(BaseTrainer):
     def encode_pointcloud(self, path):
         self.net.eval()
         if os.path.isfile(path):
-            file_list = list(path if path.endswith(".ply") else None)
-            save_name = path.split("/")[-1].split(".")[0]
+            if path.endswith(".ply"):
+                file_list = [path]
+                save_name = path.split("/")[-1].split(".")[0]
+            else:
+                raise ValueError("Invalid file format")
         elif os.path.isdir(path):
             file_list = [
                 os.path.join(path, file)
