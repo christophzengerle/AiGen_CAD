@@ -6,7 +6,6 @@ import h5py
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset
-
 from utils.pc_utils import read_ply
 
 
@@ -14,13 +13,13 @@ class ShapeCodesDataset(Dataset):
     def __init__(self, phase, config):
         super(ShapeCodesDataset, self).__init__()
         self.n_points = config.n_points
-        self.data_root = config.data_root
+        self.z_path = config.z_path
         self.pc_root = config.pc_root
         self.path = config.split_path
         with open(self.path, "r") as fp:
             self.all_data = json.load(fp)[phase]
 
-        with h5py.File(self.data_root, "r") as fp:
+        with h5py.File(self.z_path, "r") as fp:
             self.zs = fp["{}_zs".format(phase)][:]
         self.noise = config.noise
 

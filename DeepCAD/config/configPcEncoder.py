@@ -12,15 +12,15 @@ class ConfigPcEncoder(object):
         _, args = self.parse()
 
         # set as attributes
-        print("----Experiment Configuration-----")
+        print("----Pc-Experiment Configuration-----")
         for k, v in args.__dict__.items():
             print("{0:20}".format(k), v)
             self.__setattr__(k, v)
 
-        self.data_root = args.data_root
+        self.z_path = args.z_path
         self.pc_root = args.pc_root
         self.split_path = args.split_path
-        self.exp_dir = os.path.join(args.proj_dir, args.exp_name, "pc2cad")
+        self.exp_dir = os.path.join(args.proj_dir, "pce", args.exp_name)
         self.log_dir = os.path.join(self.exp_dir, "log")
         self.model_dir = os.path.join(self.exp_dir, "model")
         self.gpu_ids = args.gpu_ids
@@ -28,35 +28,41 @@ class ConfigPcEncoder(object):
         if args.gpu_ids is not None:
             os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_ids)
 
-        self.test = args.test
+        self.exec = args.exec
+        self.mode = args.mode
         self.cont = args.cont
         self.ckpt = args.ckpt
-        self.n_samples = args.n_samples
+        self.ae_ckpt = args.ae_ckpt
 
-        if (not args.test) and args.cont is not True and os.path.exists(self.exp_dir):
+        self.num_workers = args.num_workers
+        self.n_points = args.n_points
+        self.batch_size = args.batch_size
+        self.nr_epochs = args.nr_epochs
+
+        if (
+            (args.exec == "train")
+            and args.cont is not True
+            and os.path.exists(self.exp_dir)
+        ):
             response = input("Experiment log/model already exists, overwrite? (y/n) ")
             if response != "y":
                 exit()
             shutil.rmtree(self.exp_dir)
         ensure_dirs([self.log_dir, self.model_dir])
-        if not args.test:
-            os.system("cp pc2cad.py {}".format(self.exp_dir))
+        if args.exec == "train":
             with open("{}/config.txt".format(self.exp_dir), "w") as f:
                 json.dump(self.__dict__, f, indent=2)
 
     def set_configuration(self):
-        self.n_points = 4096
-        self.batch_size = 128
-        self.num_workers = 1
-        self.nr_epochs = 100
+
         self.lr = 1e-4
         self.lr_step_size = 50
         # self.beta1 = 0.5
         self.grad_clip = None
         self.noise = 0.02
 
-        self.save_frequency = 10
-        self.val_frequency = 2
+        self.save_frequency = 2
+        self.val_frequency = 20
 
     def parse(self):
         parser = argparse.ArgumentParser()
@@ -69,8 +75,8 @@ class ConfigPcEncoder(object):
         parser.add_argument(
             "--pc_root",
             type=str,
-            default="data/pc_cad",
-            help="path to point clouds data folder",
+            default="data/cad_pc",
+            help="file- or folder-path to point cloud data",
         )
         parser.add_argument(
             "--split_path",
@@ -79,15 +85,39 @@ class ConfigPcEncoder(object):
             help="path to train-val-test split",
         )
         parser.add_argument(
-            "--data_root",
+            "--z_path",
             type=str,
-            default="data/all_zs.h5",
-            help="path to all_zs.h5 file containing shape codes",
+            default="data/cad_all_zs.h5",
+            help="path to zs.h5 file containing shape codes",
         )
         parser.add_argument(
-            "--exp_name", type=str, required=True, help="name of this experiment"
+            "--exp_name",
+            type=str,
+            required=True,
+            default="pcEncoder",
+            help="name of this experiment",
         )
-        parser.add_argument("--ae_ckpt", type=str, help="desired checkpoint to restore")
+        parser.add_argument(
+            "--ckpt",
+            type=str,
+            default="latest",
+            required=False,
+            help="desired Pc-Encoder checkpoint to restore",
+        )
+        parser.add_argument(
+            "--ae_exp_name",
+            type=str,
+            required=False,
+            default="pretrained",
+            help="name of Autoencoder experiment",
+        )
+        parser.add_argument(
+            "--ae_ckpt",
+            type=str,
+            default="latest",
+            required=False,
+            help="desired Autoencoder checkpoint to restore",
+        )
         parser.add_argument(
             "--continue",
             dest="cont",
@@ -95,19 +125,52 @@ class ConfigPcEncoder(object):
             help="continue training from checkpoint",
         )
         parser.add_argument(
-            "--ckpt",
+            "--exec",
+            "-e",
             type=str,
-            default="latest",
-            required=False,
-            help="desired checkpoint to restore",
+            choices=["train", "test"],
+            default="test",
+            help="different execution modes for Pc-Encoder: train - Trains Pc-Encoder, test - Test Pc-Encoder on own data",
         )
-        parser.add_argument("--test", action="store_true", help="test mode")
         parser.add_argument(
-            "--n_samples",
+            "--mode",
+            "-m",
+            type=str,
+            choices=["enc", "dec"],
+            default="test",
+            help="different execution modes: enc - encode point clouds, dec - decode point clouds to CAD models",
+        )
+        parser.add_argument(
+            "--n_points",
+            type=int,
+            default=4096,
+            help="number of points to sample from point cloud",
+        )
+        parser.add_argument(
+            "--step",
+            action="store_true",
+            default=False,
+            help="export step file for decoded CAD model",
+        )
+        parser.add_argument(
+            "--checkBRep",
+            action="store_true",
+            default=False,
+            help="validate generated CAD model",
+        )
+        parser.add_argument(
+            "--num_workers",
+            type=int,
+            default=8,
+            help="number of workers for data loading",
+        )
+        parser.add_argument(
+            "--nr_epochs",
             type=int,
             default=100,
-            help="number of samples to generate when testing",
+            help="total number of epochs to train",
         )
+        parser.add_argument("--batch_size", type=int, default=128, help="batch size")
         parser.add_argument(
             "-g",
             "--gpu_ids",

@@ -2,10 +2,9 @@ from collections import OrderedDict
 
 import torch
 import torch.optim as optim
-from tqdm import tqdm
-
 from cadlib.macro import *
 from model import CADTransformer
+from tqdm import tqdm
 
 from .base import BaseTrainer
 from .loss import CADLoss

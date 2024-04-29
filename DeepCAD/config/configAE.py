@@ -16,14 +16,18 @@ class ConfigAE(object):
         parser, args = self.parse()
 
         # set as attributes
-        print("----Experiment Configuration-----")
+        print("----AE-Experiment Configuration-----")
         for k, v in args.__dict__.items():
             print("{0:20}".format(k), v)
             self.__setattr__(k, v)
 
         # experiment paths
-        self.exp_dir = os.path.join(self.proj_dir, self.exp_name)
-        if not args.test and args.cont is not True and os.path.exists(self.exp_dir):
+        self.exp_dir = os.path.join(self.proj_dir, "ae", self.exp_name)
+        if (
+            args.exec == "train"
+            and args.cont is not True
+            and os.path.exists(self.exp_dir)
+        ):
             response = input("Experiment log/model already exists, overwrite? (y/n) ")
             if response != "y":
                 exit()
@@ -42,7 +46,7 @@ class ConfigAE(object):
         # os.symlink(self.exp_dir, 'train_log')
 
         # save this configuration
-        if not args.test:
+        if args.exec == "train":
             with open("{}/config.txt".format(self.exp_dir), "w") as f:
                 json.dump(args.__dict__, f, indent=2)
 
@@ -69,6 +73,14 @@ class ConfigAE(object):
 
         self.loss_weights = {"loss_cmd_weight": 1.0, "loss_args_weight": 2.0}
 
+    def set_pc_decoder_configuration(self, pc_config):
+        # encoded point clouds (z-values)
+        self.zs = pc_config.zs
+
+        # save options
+        self.step = pc_config.step
+        self.checkBRep = pc_config.checkBRep
+
     def parse(self):
         """initiaize argument parser. Define default hyperparameters and collect from command-line arguments."""
         parser = argparse.ArgumentParser()
@@ -87,6 +99,13 @@ class ConfigAE(object):
             type=str,
             default=os.getcwd().split("/")[-1],
             help="name of this experiment",
+        )
+        parser.add_argument(
+            "--ckpt",
+            type=str,
+            default="latest",
+            required=False,
+            help="desired checkpoint to restore",
         )
         parser.add_argument(
             "-g",
@@ -129,13 +148,6 @@ class ConfigAE(object):
             help="continue training from checkpoint",
         )
         parser.add_argument(
-            "--ckpt",
-            type=str,
-            default="latest",
-            required=False,
-            help="desired checkpoint to restore",
-        )
-        parser.add_argument(
             "--vis",
             action="store_true",
             default=False,
@@ -159,7 +171,14 @@ class ConfigAE(object):
         parser.add_argument(
             "--augment", action="store_true", help="use random data augmentation"
         )
-        parser.add_argument("--test", action="store_true", help="test mode")
+        parser.add_argument(
+            "--exec",
+            "-e",
+            type=str,
+            default="test",
+            choices=["train", "test"],
+            help="different execution modes for Pc-Encoder: train - Trains Pc-Encoder, test - Test Pc-Encoder on own data",
+        )
 
         parser.add_argument("-m", "--mode", type=str, choices=["rec", "enc", "dec"])
         parser.add_argument("-o", "--outputs", type=str, default=None)

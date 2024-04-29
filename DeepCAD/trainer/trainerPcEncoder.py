@@ -9,9 +9,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from tqdm import tqdm
-
 from model.pointcloudEncoder import PointNet2
+from tqdm import tqdm
 from utils import read_ply, write_ply
 from utils.file_utils import ensure_dir
 
@@ -25,7 +24,7 @@ class TrainerPcEncoder(BaseTrainer):
         super(TrainerPcEncoder, self).__init__(cfg)
         self.build_net(cfg)
         self.losses_dict = {"train_loss": {}, "eval_loss": {}}
-        
+
     def build_net(self, config):
         self.net = PointNet2().cuda()
         if len(config.gpu_ids) > 1:
@@ -54,8 +53,8 @@ class TrainerPcEncoder(BaseTrainer):
         # start training
         clock = self.clock
         nr_epochs = self.cfg.nr_epochs
-        
-        print('********* Start Training ***********')
+
+        print("********* Start Training ***********")
 
         for e in range(clock.epoch, nr_epochs):
             losses_train = []
@@ -65,7 +64,7 @@ class TrainerPcEncoder(BaseTrainer):
                 self.net.train()
                 points = data["points"].cuda()
                 codes = data["codes"].cuda()
-                
+
                 # train step
                 pred = self.forward(points)
                 loss = self.criterion(pred, codes)
@@ -118,53 +117,82 @@ class TrainerPcEncoder(BaseTrainer):
         self.net.eval()
         if os.path.isfile(path):
             file_list = list(path if path.endswith(".ply") else None)
+            save_name = path.split("/")[-1].split(".")[0]
         elif os.path.isdir(path):
-            file_list = [file for file in os.listdir(path) if file.endswith(".ply")]
+            file_list = [
+                os.path.join(path, file)
+                for file in os.listdir(path)
+                if file.endswith(".ply")
+            ]
+            save_name = path.split("/")[-1]
         else:
             raise ValueError("Invalid path")
 
         # save_dir = os.path.join(cfg.exp_dir, "results/fake_z_ckpt{}_num{}_pc".format(args.ckpt, args.n_samples))
         save_dir = os.path.join(
             self.cfg.exp_dir,
-            "results/pc2cad_{}".format(self.cfg.ckpt),
+            "results/pcEncodings_{}".format(self.cfg.ckpt),
+            save_name
+            + "_"
+            + str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")),
         )
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
-        all_zs = []
-        all_ids = []
+        all_zs = {"zs": [], "z_paths": [], "pc_paths": []}
+        self.net.eval()
 
-        pbar = tqdm(file_list)
-        for _, pc_path in enumerate(pbar):
-            with torch.no_grad():
-                # retrieve Data
-                pc = read_ply(pc_path)
-                sample_idx = random.sample(list(range(pc.shape[0])), self.cfg.n_points)
-                pc = pc[sample_idx]
-                pc = torch.tensor(pc, dtype=torch.float32).unsqueeze(0).cuda()
+        print(f"File-List: {file_list}")
+        if len(file_list) > 0:
+            pbar = tqdm(file_list)
+            for _, pc_path in enumerate(pbar):
+                with torch.no_grad():
+                    # retrieve Data
+                    pc = read_ply(pc_path)
+                    try:
+                        sample_idx = random.sample(
+                            list(range(pc.shape[0])), self.cfg.n_points
+                        )
+                    except ValueError:
+                        print(
+                            f"Point cloud {pc_path.split('/')[-1]} has less than {self.cfg.n_points} points."
+                        )
+                        continue
+                    pc = pc[sample_idx]
+                    pc = torch.tensor(pc, dtype=torch.float32).unsqueeze(0).cuda()
 
-                pred_z = self.forward(pc)
-                pred_z = pred_z.detach().cpu().numpy()
-                all_zs.append(pred_z)
-                # print(pred_z.shape)
-            all_ids.extend(pc_path)
+                    pred_z = self.forward(pc)
+                    pred_z = pred_z.detach().cpu().numpy()
 
-            print(f'{pc_path.split("/")[-1]} encoded.')
+                if len(pred_z) > 0:
+                    # save generated z
+                    file_name = pc_path.split("/")[-1].split(".")[0]
+                    save_path_zs = os.path.join(save_dir, f"{file_name}.h5")
 
-        all_zs = np.concatenate(all_zs, axis=0)
-        # save generated z
-        save_path_zs = os.path.join(save_dir, datetime.datetime.now(), "all_zs.h5")
-        ensure_dir(os.path.dirname(save_path_zs))
-        with h5py.File(save_path_zs, "w") as fp:
-            fp.create_dataset("zs", shape=all_zs.shape, data=all_zs)
+                    all_zs["zs"].append(pred_z)
+                    all_zs["z_paths"].append(save_path_zs)
+                    all_zs["pc_paths"].append(pc_path)
 
-        save_path_ids = os.path.join(
-            save_dir, datetime.datetime.now(), "all_pc_ids.json"
-        )
-        with open(save_path_ids, "w") as fp:
-            json.dump(all_ids, fp)
+                    with h5py.File(save_path_zs, "w") as fp:
+                        fp.create_dataset("zs", shape=pred_z.shape, data=pred_z)
 
-        return all_zs, save_path_zs
+                    print(
+                        f'{pc_path.split("/")[-1]} encoded and saved to: {save_path_zs}'
+                    )
+
+                else:
+                    raise print(f"{pc_path} could not be encoded.")
+
+            save_path_ids = os.path.join(save_dir, "all_pc_ids.json")
+            with open(save_path_ids, "w") as fp:
+                json.dump(all_zs["pc_paths"], fp)
+
+            print("********* PointCloud Encoding Completed ***********")
+
+            return all_zs
+
+        else:
+            raise ValueError("No .ply files found in the provided path.")
 
     def save_ckpt(self, name=None):
         """save checkpoint during training for future restore"""
