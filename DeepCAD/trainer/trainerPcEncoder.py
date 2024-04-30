@@ -13,6 +13,7 @@ from model.pointcloudEncoder import PointNet2
 from tqdm import tqdm
 from utils import read_ply, write_ply
 from utils.file_utils import ensure_dir
+from utils.step2png import transform
 
 sys.path.append("..")
 
@@ -148,7 +149,7 @@ class TrainerPcEncoder(BaseTrainer):
         print(f"File-List: {file_list}")
         if len(file_list) > 0:
             pbar = tqdm(file_list)
-            for _, pc_path in enumerate(pbar):
+            for i, pc_path in enumerate(pbar):
                 with torch.no_grad():
                     # retrieve Data
                     pc = read_ply(pc_path)
@@ -178,6 +179,9 @@ class TrainerPcEncoder(BaseTrainer):
 
                     with h5py.File(save_path_zs, "w") as fp:
                         fp.create_dataset("zs", shape=pred_z.shape, data=pred_z)
+                        
+                    res = {"high": 1200, "medium": 600, "low": 300}
+                    transform(pc_path, save_path_zs.split('.')[0] + ".png", 135, 45, "medium", i, res, False)
 
                     print(
                         f'{pc_path.split("/")[-1]} encoded and saved to: {save_path_zs}'
