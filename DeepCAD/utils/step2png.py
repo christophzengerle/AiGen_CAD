@@ -7,7 +7,7 @@ import imageio
 from PIL import Image
 from io import BytesIO
 
-# from pyvirtualdisplay import Display
+from pyvirtualdisplay import Display
 
 
 import trimesh
@@ -47,13 +47,13 @@ def setup_dir(source_folder, destination_folder):
         os.makedirs(destination_folder)
 
 
-# def setup_virtual_display():
-#     display = Display(visible=0, size=(1336, 768))
-#     display.start()
+def setup_virtual_display():
+    display = Display(visible=0, size=(1336, 768))
+    display.start()
     
 
 def transform(file_path, outfile, rotation, elevation, quality, idx, res, make_gif):
-    # setup_virtual_display()
+    setup_virtual_display()
     print('start', file_path)
     mesh = trimesh.Trimesh(
         **trimesh.interfaces.gmsh.load_gmsh(

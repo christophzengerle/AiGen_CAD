@@ -155,7 +155,7 @@ def decode(cfg, tr_agent):
                     
                     res = {"high": 1200, "medium": 600, "low": 300}
                     png_path = save_path.split('.')[0] + ".png"
-                    transform(save_path, png_path, 135, 45, "medium", j, res)
+                    transform(save_path, png_path, 135, 45, "medium", j, res, True)
                     print(f"PNG {png_path} created.")
                     
                 except Exception as e:
