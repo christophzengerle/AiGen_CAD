@@ -127,9 +127,7 @@ class TrainerPcEncoder(BaseTrainer):
                 for file in os.listdir(path)
                 if file.endswith(".ply")
             ]
-            save_name = path.split("/")[-1]
-            if save_name == "":
-                save_name = path.split("/")[-2]
+            save_name = os.path.basename(os.path.normpath(path))
         else:
             raise ValueError("Invalid path")
 
