@@ -15,6 +15,7 @@ from utils import ensure_dir
 
 sys.path.append("..")
 from cadlib.visualize import vec2CADsolid
+from utils.step2png import transform
 
 
 # define different modes
@@ -91,7 +92,7 @@ def decode(cfg, tr_agent):
     zs = []
     save_paths = []
     batch_size = cfg.batch_size
-
+    
     if cfg.zs["zs"] is None:
         if cfg.z_path:
             if os.path.isfile(cfg.z_path):
@@ -150,10 +151,18 @@ def decode(cfg, tr_agent):
                     save_path = save_paths[i + j].split(".")[0] + "_dec.step"
                     write_step_file(out_shape, save_path)
                     print("{} created.".format(save_path.split("/")[-1]))
-
+                    
+                    
+                    res = {"high": 1200, "medium": 600, "low": 300}
+                    png_path = save_path.split('.')[0] + ".png"
+                    transform(save_path, png_path, 135, 45, "medium", j, res)
+                    print(f"PNG {png_path} created.")
+                    
                 except Exception as e:
                     print(
                         f"Creation of .STEP-File for {save_paths[i + j].split('/')[-1]} failed.\n"
                         + str(e)
                     )
                     continue
+                
+                
