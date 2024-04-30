@@ -2,6 +2,8 @@ import argparse
 import math
 import multiprocessing
 import os
+import numpy as np
+import imageio
 
 from pyvirtualdisplay import Display
 
@@ -23,6 +25,7 @@ def parse():
     parser.add_argument("--dest", type=str, default="png_files", help="destination folder")
     parser.add_argument("--ele", type=int, default=45, help="camera elevation")
     parser.add_argument("--rot", type=int, default=135, help="camera rotation")
+    parser.add_argument("--gif", type=bool, default=False, help="make gif")
     parser.add_argument(
         "--qual",
         type=str,
@@ -47,7 +50,7 @@ def setup_virtual_display():
     display.start()
     
 
-def transform(file_path, outfile, rotation, elevation, quality, idx, res):
+def transform(file_path, outfile, rotation, elevation, quality, idx, res, make_gif):
     setup_virtual_display()
     print('start', file_path)
     mesh = trimesh.Trimesh(
@@ -87,6 +90,28 @@ def transform(file_path, outfile, rotation, elevation, quality, idx, res):
     
     print(f'******** wrote to {outfile} *************')
 
+    if make_gif:
+        images = []
+        rotations = np.linspace(0, 330, 12)
+        for rotation in rotations:
+            scene = mesh.scene()
+            rotation_matrix = transformations.rotation_matrix(-1 * rotation * math.pi / 180, [0, 0, 1], [0, 0, 0])
+            scene.apply_transform(rotation_matrix)
+
+            elevation_matrix = transformations.rotation_matrix(-1 * 45 * math.pi / 180, [1, 0, 0], [0, 0, 0])
+            scene.apply_transform(elevation_matrix)
+
+            png = scene.save_image(resolution=[640, 640], visible=False)
+            with open("image_temp.png", "wb") as f:
+                f.write(png)
+                f.close()
+
+            image = imageio.imread("image_temp.png")
+
+            images.append(image)
+
+        os.remove("image_temp.png")
+        imageio.mimsave(outfile.replace(".png", ".gif"), images)
 
 
 def main():
@@ -125,7 +150,7 @@ def main():
 
 
         p = multiprocessing.Process(
-            target=transform, args=(file_path, outfile, args.rot, args.ele, args.qual, i, res)
+            target=transform, args=(file_path, outfile, args.rot, args.ele, args.qual, i, res, args.gif)
         )
         p.start()
         p.join(60)
