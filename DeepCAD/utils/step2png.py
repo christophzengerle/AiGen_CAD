@@ -55,20 +55,23 @@ def setup_virtual_display():
 def transform(file_path, outfile, rotation, elevation, quality, idx, res, make_gif):
     setup_virtual_display()
     print('start', file_path)
-    mesh = trimesh.Trimesh(
-        **trimesh.interfaces.gmsh.load_gmsh(
-            file_name=file_path,
-            gmsh_args=[
-                ("Mesh.Algorithm", 1),  # Different algorithm types, check them out
-                (
-                    "Mesh.CharacteristicLengthFromCurvature",
-                    50,
-                ),  # Tuning the smoothness, + smoothness = + time
-                ("General.NumThreads", 10),  # Multithreading capability
-                ("Mesh.MinimumCirclePoints", 32),
-            ],
+    if file_path.endswidth(".ply"):
+        mesh = trimesh.load_mesh(file_path)
+    else:
+        mesh = trimesh.Trimesh(
+            **trimesh.interfaces.gmsh.load_gmsh(
+                file_name=file_path,
+                gmsh_args=[
+                    ("Mesh.Algorithm", 1),  # Different algorithm types, check them out
+                    (
+                        "Mesh.CharacteristicLengthFromCurvature",
+                        50,
+                    ),  # Tuning the smoothness, + smoothness = + time
+                    ("General.NumThreads", 10),  # Multithreading capability
+                    ("Mesh.MinimumCirclePoints", 32),
+                ],
+            )
         )
-    )
     scene = mesh.scene()
 
     rotation_matrix = transformations.rotation_matrix(
