@@ -27,8 +27,9 @@ def main():
         # load from checkpoint if provided
         if cfg.cont:
             agent.load_ckpt(cfg.ckpt)
+            
         # create dataloader
-        train_loader = get_dataloader("train", cfg)
+        train_loader = get_dataloader("train", cfg, noise=True)
         val_loader = get_dataloader("validation", cfg)
         # val_loader = cycle(val_loader)
 

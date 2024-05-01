@@ -14,6 +14,8 @@ import trimesh
 from trimesh import transformations
 
 
+res = {"high": 1200, "medium": 600, "low": 300}
+
 # when using with docker create virtual display
 # export DISPLAY=192.168.178.29:0.0 
 
@@ -45,19 +47,21 @@ def setup_dir(source_folder, destination_folder):
 
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
-
-
+        
+        
 def setup_virtual_display():
-    display = Display(visible=0, size=(1336, 768))
+    display = Display(visible=0)
     display.start()
+
+
     
 
-def transform(file_path, outfile, rotation, elevation, quality, idx, res, make_gif):
-    setup_virtual_display()
+def transform(file_path, outfile, rotation, elevation, quality, exp_png=True, make_gif=False):    
     print('start', file_path)
+    setup_virtual_display()
     if file_path.endswith(".ply"):
         mesh = trimesh.load_mesh(file_path)
-    else:
+    elif file_path.endswith(".step"):
         mesh = trimesh.Trimesh(
             **trimesh.interfaces.gmsh.load_gmsh(
                 file_name=file_path,
@@ -72,28 +76,32 @@ def transform(file_path, outfile, rotation, elevation, quality, idx, res, make_g
                 ],
             )
         )
-    scene = mesh.scene()
-
-    rotation_matrix = transformations.rotation_matrix(
-        -1 * rotation * math.pi / 180, [0, 0, 1], [0, 0, 0]
-    )
     
-    scene.apply_transform(rotation_matrix)
+    else:
+        raise ValueError("Invalid File-Type {}.".format(file_path.split(".")[-1]))  
+        
+    if exp_png:
+        scene = mesh.scene()
 
-    elevation_matrix = transformations.rotation_matrix(
-        -1 * elevation * math.pi / 180, [1, 0, 0], [0, 0, 0]
-    )
-    
-    scene.apply_transform(elevation_matrix)
+        rotation_matrix = transformations.rotation_matrix(
+            -1 * rotation * math.pi / 180, [0, 0, 1], [0, 0, 0]
+        )
+        
+        scene.apply_transform(rotation_matrix)
 
-    png = scene.save_image(resolution=[res[quality], res[quality]], visible=False)
+        elevation_matrix = transformations.rotation_matrix(
+            -1 * elevation * math.pi / 180, [1, 0, 0], [0, 0, 0]
+        )
+        
+        scene.apply_transform(elevation_matrix)
 
-    #print(f"Progress: {idx / len(objfiles) * 100}")
-    with open(outfile, "wb") as f:
-        f.write(png)
-        f.close()
-    
-    print(f'******** wrote to {outfile} *************')
+        png = scene.save_image(resolution=[res[quality], res[quality]], visible=False)
+
+        output_path = outfile + ".png"
+
+        with open(output_path, "wb") as f:
+            f.write(png)
+            f.close()
 
     if make_gif:
         images = []
@@ -111,7 +119,10 @@ def transform(file_path, outfile, rotation, elevation, quality, idx, res, make_g
 
             images.append(image)
 
-        imageio.mimsave(outfile.replace(".png", ".gif"), images)
+        output_path = outfile + ".gif"
+        imageio.mimsave(output_path, images)
+    
+    print(f'******** wrote to {outfile} *************')        
 
 
 def main():
@@ -132,25 +143,23 @@ def main():
             if file.endswith(".step")
         ]
     else:
-        raise Exception(f"fdepth of {args.fdepth} not implemented yet")
-
-    res = {"high": 1200, "medium": 600, "low": 300}
+        raise NotImplementedError(f"fdepth of {args.fdepth} not implemented yet")
 
     for i, file_path in enumerate(objfiles):
         path, file = os.path.split(file_path)
-        outfile = os.path.join(args.dest, file).replace(".step", ".png")
+        outfile = os.path.join(args.dest, file).split('.')[0]
 
         if args.fdepth == 2:
             folder = os.path.split(path)[-1]
             if not os.path.exists(os.path.join(args.dest, folder)):
                 os.mkdir(os.path.join(args.dest, folder))
-            outfile = os.path.join(args.dest, folder, file).replace(".step", ".png")
+            outfile = os.path.join(args.dest, folder, file).split('.')[0]
 
         # transform(file_path, outfile, args.rot, args.ele, args.qual, i)
 
 
         p = multiprocessing.Process(
-            target=transform, args=(file_path, outfile, args.rot, args.ele, args.qual, i, res, args.gif)
+            target=transform, args=(file_path, outfile, args.rot, args.ele, args.qual, True, args.gif)
         )
         p.start()
         p.join(60)
@@ -159,7 +168,8 @@ def main():
             print("still running")
             p.terminate()
             p.join()
-
+            
+        print(f"Progress: {i / len(objfiles) * 100}")
 
 if __name__ == '__main__':
     main()

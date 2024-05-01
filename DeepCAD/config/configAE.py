@@ -78,8 +78,10 @@ class ConfigAE(object):
         self.zs = pc_config.zs
 
         # save options
-        self.step = pc_config.step
         self.checkBRep = pc_config.checkBRep
+        self.expSTEP = pc_config.expSTEP
+        self.expPNG = pc_config.expPNG
+        self.expGIF = pc_config.expGIF
 
     def parse(self):
         """initiaize argument parser. Define default hyperparameters and collect from command-line arguments."""

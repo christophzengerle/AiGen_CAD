@@ -2,21 +2,13 @@ import numpy as np
 from plyfile import PlyData, PlyElement
 
 
-def read_ply(path, with_normal=False):
+def read_ply(path):
     with open(path, "rb") as f:
         plydata = PlyData.read(f)
         x = np.array(plydata["vertex"]["x"])
         y = np.array(plydata["vertex"]["y"])
         z = np.array(plydata["vertex"]["z"])
         vertex = np.stack([x, y, z], axis=1)
-        if with_normal:
-            nx = np.array(plydata["vertex"]["nx"])
-            ny = np.array(plydata["vertex"]["ny"])
-            nz = np.array(plydata["vertex"]["nz"])
-            normals = np.stack([nx, ny, nz], axis=1)
-    if with_normal:
-        return np.concatenate([vertex, normals], axis=1)
-    else:
         return vertex
 
 

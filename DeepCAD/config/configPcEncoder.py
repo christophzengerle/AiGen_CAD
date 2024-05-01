@@ -55,14 +55,16 @@ class ConfigPcEncoder(object):
 
     def set_configuration(self):
 
-        self.lr = 1e-4
-        self.lr_step_size = 50
+        self.lr = 5e-4 # initial LR
+        self.lr_step_size = 5 # Nr Epochs after wich LR will be decresed
         # self.beta1 = 0.5
         self.grad_clip = None
         self.noise = 0.02
 
         self.save_frequency = 10
         self.val_frequency = 5
+        
+        self.expSourcePNG = True
 
     def parse(self):
         parser = argparse.ArgumentParser()
@@ -120,6 +122,7 @@ class ConfigPcEncoder(object):
         )
         parser.add_argument(
             "--continue",
+            "-cont",
             dest="cont",
             action="store_true",
             help="continue training from checkpoint",
@@ -147,10 +150,22 @@ class ConfigPcEncoder(object):
             help="number of points to sample from point cloud",
         )
         parser.add_argument(
-            "--step",
+            "--expSTEP",
             action="store_true",
             default=False,
             help="export step file for decoded CAD model",
+        )
+        parser.add_argument(
+            "--expPNG",
+            action="store_true",
+            default=False,
+            help="export png file for decoded CAD model",
+        )
+        parser.add_argument(
+            "--expGIF",
+            action="store_true",
+            default=False,
+            help="export gif file for decoded CAD model",
         )
         parser.add_argument(
             "--checkBRep",

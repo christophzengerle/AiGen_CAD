@@ -138,25 +138,22 @@ def decode(cfg, tr_agent):
             save_path = save_paths[i + j].split(".")[0] + "_dec.h5"
             with h5py.File(save_path, "w") as fp:
                 fp.create_dataset("out_vec", data=out_vec, dtype=np.int32)
+                
+            out_shape = vec2CADsolid(out_vec)
+            step_save_path = save_paths[i + j].split(".")[0] + "_dec.step"
 
             if cfg.checkBRep:
                 analyzer = BRepCheck_Analyzer(out_shape)
                 if not analyzer.IsValid():
-                    print("detect invalid.")
+                    print("invalid BRep-Model detected.")
                     continue
 
-            if cfg.step:
+            if cfg.expSTEP:
                 try:
-                    out_shape = vec2CADsolid(out_vec)
-                    save_path = save_paths[i + j].split(".")[0] + "_dec.step"
-                    write_step_file(out_shape, save_path)
-                    print("{} created.".format(save_path.split("/")[-1]))
-                    
-                    
-                    res = {"high": 1200, "medium": 600, "low": 300}
-                    png_path = save_path.split('.')[0] + ".png"
-                    transform(save_path, png_path, 135, 45, "medium", j, res, True)
-                    print(f"PNG {png_path} created.")
+                    if step_file_exists(step_save_path):
+                        print('.STEP-File already exists.')
+                    else:
+                        create_step_file(out_shape, step_save_path)
                     
                 except Exception as e:
                     print(
@@ -165,4 +162,36 @@ def decode(cfg, tr_agent):
                     )
                     continue
                 
+                
+            if cfg.expPNG or cfg.expGIF:
+                try:
+                    if not step_file_exists(step_save_path):
+                        create_step_file(out_shape, step_save_path)
+                    
+                except Exception as e:
+                    print(
+                        f"Creation of .STEP-File for {save_paths[i + j].split('/')[-1]} failed.\n"
+                        + str(e)
+                    )
+                    continue
+                
+                try:
+                    png_path = step_save_path.split('.')[0]
+                    transform(step_save_path, png_path, 135, 45, "medium", exp_png=cfg.expPNG, make_gif=cfg.expGIF)
+                    print(f"Image-Output for {png_path} created.")
+                    
+                except Exception as e:
+                    print(
+                        f"Creation of Image-Output for {save_paths[i + j].split('/')[-1]} failed.\n"
+                        + str(e)
+                    )
+                    continue
+                
+                
+def step_file_exists(path):
+    return os.path.isfile(path)
+                
+def create_step_file(out_shape, path):
+    write_step_file(out_shape, path)
+    print("{} created.".format(path.split("/")[-1]))
                 
