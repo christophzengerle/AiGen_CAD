@@ -61,8 +61,8 @@ class ConfigPcEncoder(object):
         self.grad_clip = None
         self.noise = 0.02
 
-        self.save_frequency = 2
-        self.val_frequency = 20
+        self.save_frequency = 10
+        self.val_frequency = 5
 
     def parse(self):
         parser = argparse.ArgumentParser()

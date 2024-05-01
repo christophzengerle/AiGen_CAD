@@ -80,27 +80,34 @@ class TrainerPcEncoder(BaseTrainer):
                     )
                 )
                 pbar.set_postfix(loss=loss.item())
-                # validation step
-                if clock.step % self.cfg.val_frequency == 0:
-                    data = next(val_loader)
+                
+                clock.tick()
+                # self.update_learning_rate()
+                
+            self.losses_dict["train_loss"][f"epoch {e}"] = np.sum(losses_train) / len(
+                losses_train
+            )                
+            
+             # validation step
+            if clock.epoch % self.cfg.val_frequency == 0:
+                losses_eval = []
+                pbar = tqdm(val_loader)
+                for i, data in enumerate(pbar):
                     _, loss = self.evaluate(data)
-                    self.losses_dict["eval_loss"][f"epoch {e}"] = loss.item()
+                    losses_eval.append(loss.item())
                     pbar.set_description(
                         "EVAL - EPOCH[{}]-[{}] BATCH[{}]-[{}]".format(
-                            e, nr_epochs, b, len(train_loader)
+                            e, nr_epochs, i, len(val_loader)
                         )
                     )
-                    pbar.set_postfix(loss=loss.item())
-
-                clock.tick()
-                self.update_learning_rate()
-            self.losses_dict["train_loss"][f"epoch {e}"] = sum(losses_train) / len(
-                losses_train
-            )
-            clock.tock()
+                    pbar.set_postfix(loss=loss.item())    
+            
+                self.losses_dict["eval_loss"][f"epoch {e}"] = np.sum(losses_eval) / len(losses_eval)
 
             if clock.epoch % self.cfg.save_frequency == 0:
                 self.save_ckpt()
+
+            clock.tock()
 
         # if clock.epoch % 10 == 0:
         self.save_ckpt("latest")

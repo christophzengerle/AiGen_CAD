@@ -30,7 +30,7 @@ def main():
         # create dataloader
         train_loader = get_dataloader("train", cfg)
         val_loader = get_dataloader("validation", cfg)
-        val_loader = cycle(val_loader)
+        # val_loader = cycle(val_loader)
 
         # train
         agent.train(train_loader, val_loader)
