@@ -44,6 +44,14 @@ def remkdir(path):
     if os.path.exists(path):
         shutil.rmtree(path)
     os.makedirs(path)
+    
+
+def walk_dir(dir):
+    file_list = []
+    for subdir, dirs, files in os.walk(dir):
+        for file in files:
+            file_list.append(os.path.normpath(os.path.join(subdir, file)))
+    return file_list
 
 
 def cycle(iterable):

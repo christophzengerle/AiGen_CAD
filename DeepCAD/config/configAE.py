@@ -186,5 +186,30 @@ class ConfigAE(object):
         parser.add_argument("-o", "--outputs", type=str, default=None)
         parser.add_argument("--z_path", type=str, default=None)
 
+        parser.add_argument(
+            "--expSTEP",
+            action="store_true",
+            default=False,
+            help="export step file for decoded CAD model",
+        )
+        parser.add_argument(
+            "--expPNG",
+            action="store_true",
+            default=False,
+            help="export png file for decoded CAD model",
+        )
+        parser.add_argument(
+            "--expGIF",
+            action="store_true",
+            default=False,
+            help="export gif file for decoded CAD model",
+        )
+        parser.add_argument(
+            "--checkBRep",
+            action="store_true",
+            default=False,
+            help="validate generated CAD model",
+        )
+
         args = parser.parse_args()
         return parser, args

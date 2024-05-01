@@ -109,7 +109,6 @@ def create_edge_3d(curve: CurveBase, sketch_plane: CoordSystem):
         gp_circle = gp_Circ(gp_Ax2(center, axis), abs(float(curve.radius)))
         topo_edge = BRepBuilderAPI_MakeEdge(gp_circle)
     elif isinstance(curve, Arc):
-        # print(curve.start_point, curve.mid_point, curve.end_point)
         start_point = point_local2global(curve.start_point, sketch_plane)
         mid_point = point_local2global(curve.mid_point, sketch_plane)
         end_point = point_local2global(curve.end_point, sketch_plane)
@@ -117,6 +116,7 @@ def create_edge_3d(curve: CurveBase, sketch_plane: CoordSystem):
         topo_edge = BRepBuilderAPI_MakeEdge(arc)
     else:
         raise NotImplementedError(type(curve))
+    
     return topo_edge.Edge()
 
 

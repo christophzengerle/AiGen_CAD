@@ -16,6 +16,7 @@ from utils import ensure_dir
 sys.path.append("..")
 from cadlib.visualize import vec2CADsolid
 from utils.step2png import transform
+from utils.file_utils import walk_dir
 
 
 # define different modes
@@ -93,27 +94,27 @@ def decode(cfg, tr_agent):
     save_paths = []
     batch_size = cfg.batch_size
     
-    if cfg.zs["zs"] is None:
+    if not hasattr(cfg, 'zs'):
         if cfg.z_path:
             if os.path.isfile(cfg.z_path):
-                if cfg.z_path.endswith(".h5"):
+                if cfg.z_path.endswith(".h5") and not cfg.z_path.endswith("_dec.h5"):
                     with h5py.File(cfg.z_path, "r") as fp:
                         zs.append(fp["zs"][:])
-                    save_paths.append(cfg.z_path.split(".")[0])
+                    save_paths.append(cfg.z_path)
                 else:
                     raise ValueError("Invalid file format")
 
             elif os.path.isdir(cfg.z_path):
-                for file in os.listdir(cfg.z_path):
-                    if file.endswith(".h5"):
-                        with h5py.File(os.path.join(cfg.z_path, file), "r") as fp:
+                for file in walk_dir(cfg.z_path):
+                    if file.endswith(".h5") and not file.endswith("_dec.h5"):
+                        with h5py.File(file, "r") as fp:
                             zs.append(fp["zs"][:])
-                        save_paths.append(os.path.join(cfg.z_path, file))
+                        save_paths.append(file)
 
             else:
                 raise ValueError("Invalid path")
         else:
-            raise ValueError("No z provided.")
+            raise ValueError("No zs provided.")
 
     else:
         zs = cfg.zs["zs"]
@@ -130,6 +131,7 @@ def decode(cfg, tr_agent):
             batch_out_vec = tr_agent.logits2vec(outputs)
 
         for j in range(len(batch_z)):
+            print("File: " + save_paths[i + j].split("/")[-1])
             out_vec = batch_out_vec[j]
             out_command = out_vec[:, 0]
             seq_len = out_command.tolist().index(EOS_IDX)

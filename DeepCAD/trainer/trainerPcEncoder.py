@@ -12,7 +12,7 @@ import torch.optim as optim
 from model.pointcloudEncoder import PointNet2
 from tqdm import tqdm
 from utils import read_ply, write_ply
-from utils.file_utils import ensure_dir
+from utils.file_utils import walk_dir
 from utils.step2png import transform
 
 sys.path.append("..")
@@ -140,8 +140,8 @@ class TrainerPcEncoder(BaseTrainer):
                 raise ValueError("Invalid file format")
         elif os.path.isdir(path):
             file_list = [
-                os.path.join(path, file)
-                for file in os.listdir(path)
+                file
+                for file in walk_dir(path)
                 if file.endswith(".ply")
             ]
             save_name = os.path.basename(os.path.normpath(path))
@@ -204,7 +204,7 @@ class TrainerPcEncoder(BaseTrainer):
                     )
 
                 else:
-                    raise print(f"{pc_path} could not be encoded.")
+                    raise print(f"No Data to Encode for file {pc_path}.")
 
             save_path_ids = os.path.join(save_dir, "all_pc_ids.json")
             with open(save_path_ids, "w") as fp:

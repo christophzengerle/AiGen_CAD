@@ -6,12 +6,17 @@ import numpy as np
 import imageio
 from PIL import Image
 from io import BytesIO
+import sys
 
 from pyvirtualdisplay import Display
 
 
 import trimesh
 from trimesh import transformations
+
+sys.path.append("..")
+from utils.file_utils import walk_dir
+
 
 
 res = {"high": 1200, "medium": 600, "low": 300}
@@ -25,7 +30,6 @@ res = {"high": 1200, "medium": 600, "low": 300}
 def parse():
     parser = argparse.ArgumentParser()
     parser.add_argument("--src", type=str, help="source folder", required=True)
-    parser.add_argument("--fdepth", type=int, default=1, help="source folder depth")
     parser.add_argument("--dest", type=str, default="png_files", help="destination folder")
     parser.add_argument("--ele", type=int, default=45, help="camera elevation")
     parser.add_argument("--rot", type=int, default=135, help="camera rotation")
@@ -128,32 +132,27 @@ def transform(file_path, outfile, rotation, elevation, quality, exp_png=True, ma
 def main():
     args = parse()
     setup_dir(args.src, args.dest)
-
-    if args.fdepth == 1:
+    
+    
+    
+    if os.path.isfile(args.src):
+        if args.src.endswith(".step"):
+            objfiles = [args.src]
+        
+    elif os.path.isdir(args.src):
         objfiles = [
-            os.path.join(args.src, file)
-            for file in os.listdir(args.src)
+            file 
+            for file in walk_dir(args.src)
             if file.endswith(".step")
         ]
-    elif args.fdepth == 2:
-        objfiles = [
-            os.path.join(args.src, folder, file)
-            for folder in list(os.walk(args.src))[0][1]
-            for file in os.listdir(os.path.join(args.src, folder))
-            if file.endswith(".step")
-        ]
+        
     else:
-        raise NotImplementedError(f"fdepth of {args.fdepth} not implemented yet")
+        raise ValueError("No valid source file type.")
+    
 
     for i, file_path in enumerate(objfiles):
         path, file = os.path.split(file_path)
         outfile = os.path.join(args.dest, file).split('.')[0]
-
-        if args.fdepth == 2:
-            folder = os.path.split(path)[-1]
-            if not os.path.exists(os.path.join(args.dest, folder)):
-                os.mkdir(os.path.join(args.dest, folder))
-            outfile = os.path.join(args.dest, folder, file).split('.')[0]
 
         # transform(file_path, outfile, args.rot, args.ele, args.qual, i)
 
