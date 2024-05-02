@@ -7,14 +7,10 @@ import torch
 from cadlib.macro import EOS_IDX
 from config import ConfigAE
 from dataset.cad_dataset import get_dataloader
-from OCC.Core.BRepCheck import BRepCheck_Analyzer
-from OCC.Extend.DataExchange import write_step_file
 from tqdm import tqdm
 from trainer import TrainerAE
-from utils import ensure_dir
 
 sys.path.append("..")
-from cadlib.visualize import vec2CADsolid
 from utils import cycle
 from utils.cad2cad_utils import decode, encode, reconstruct
 

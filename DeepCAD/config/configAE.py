@@ -78,7 +78,6 @@ class ConfigAE(object):
         self.zs = pc_config.zs
 
         # save options
-        self.checkBRep = pc_config.checkBRep
         self.expSTEP = pc_config.expSTEP
         self.expPNG = pc_config.expPNG
         self.expGIF = pc_config.expGIF
@@ -174,6 +173,12 @@ class ConfigAE(object):
             help="visualize output every x iterations",
         )
         parser.add_argument(
+            "--n_checkBrep_retries",
+            type=int,
+            default=5,
+            help="num retries to create valid CAD model",
+        )
+        parser.add_argument(
             "--expSTEP",
             action="store_true",
             default=False,
@@ -190,12 +195,6 @@ class ConfigAE(object):
             action="store_true",
             default=False,
             help="export gif file for decoded CAD model",
-        )
-        parser.add_argument(
-            "--checkBRep",
-            action="store_true",
-            default=False,
-            help="validate generated CAD model",
         )
         parser.add_argument(
             "-g",

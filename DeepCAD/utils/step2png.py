@@ -61,7 +61,7 @@ def setup_virtual_display():
     
 
 def transform(file_path, outfile, rotation, elevation, quality, exp_png=True, make_gif=False):    
-    print('start', file_path)
+    # print('filepath', file_path)
     setup_virtual_display()
     if file_path.endswith(".ply"):
         mesh = trimesh.load_mesh(file_path)

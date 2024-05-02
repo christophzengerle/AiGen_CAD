@@ -131,61 +131,89 @@ def decode(cfg, tr_agent):
             batch_out_vec = tr_agent.logits2vec(outputs)
 
         for j in range(len(batch_z)):
-            print("File: " + save_paths[i + j].split("/")[-1])
+            print("\n*** File: " + save_paths[i + j].split("/")[-1] + " ***\n")
             out_vec = batch_out_vec[j]
             out_command = out_vec[:, 0]
             seq_len = out_command.tolist().index(EOS_IDX)
             out_vec = out_vec[:seq_len]
+            
+            
+            save_path = save_paths[i + j].split(".")[0]
+            
+            
+            out_shape = None
+            is_valid_BRep = False
+            try:
+                out_shape = vec2CADsolid(out_vec)
+                is_valid_BRep = True
+            except Exception as e:
+                print(f"Creation of CAD-Solid for file {save_path} failed.\n" + str(e.with_traceback))
 
-            save_path = save_paths[i + j].split(".")[0] + "_dec.h5"
-            with h5py.File(save_path, "w") as fp:
+                # check generated CAD-Shape 
+                # if invalid -> generate again
+                for cnt_retries in range(1, cfg.n_checkBrep_retries + 1):
+                    print(f"Trying to create a new CAD-Solid. Attempt {cnt_retries}/{cfg.n_checkBrep_retries}")
+                    # print(batch_z.shape, batch_z[j].shape)
+                    new_batch_output = tr_agent.decode(batch_z[j].unsqueeze(0))
+                    out_batch_vec = tr_agent.logits2vec(new_batch_output)
+                    out_vec = out_batch_vec.squeeze(0)
+                    
+                    out_command = out_vec[:, 0]
+                    seq_len = out_command.tolist().index(EOS_IDX)
+                    out_vec = out_vec[:seq_len]
+                    
+                    try:
+                        out_shape = vec2CADsolid(out_vec)
+                        analyzer = BRepCheck_Analyzer(out_shape)
+                        if analyzer.IsValid():
+                            print("Valid BRep-Model detected.")
+                            is_valid_BRep = True
+                            break
+                        else:
+                            print("invalid BRep-Model detected.")
+                            continue
+                            
+                    except Exception as e:
+                        print(f"Creation of CAD-Solid for file {save_path} failed.\n" + str(e.with_traceback))
+                        continue
+                       
+                                        
+            if not is_valid_BRep:
+                print('Could not create valid BRep-Model!')
+                continue
+            
+            
+            
+            save_path_vec = save_path + "_dec.h5"
+            with h5py.File(save_path_vec, "w") as fp:
                 fp.create_dataset("out_vec", data=out_vec, dtype=np.int32)
                 
-            out_shape = vec2CADsolid(out_vec)
-            step_save_path = save_paths[i + j].split(".")[0] + "_dec.step"
-
-            if cfg.checkBRep:
-                analyzer = BRepCheck_Analyzer(out_shape)
-                if not analyzer.IsValid():
-                    print("invalid BRep-Model detected.")
-                    continue
-
+                
+            step_save_path = save_path + "_dec.step"
             if cfg.expSTEP:
                 try:
-                    if step_file_exists(step_save_path):
-                        print('.STEP-File already exists.')
-                    else:
-                        create_step_file(out_shape, step_save_path)
-                    
+                    create_step_file(out_shape, step_save_path)                     
                 except Exception as e:
-                    print(
-                        f"Creation of .STEP-File for {save_paths[i + j].split('/')[-1]} failed.\n"
-                        + str(e)
-                    )
+                    print(str(e.with_traceback))
                     continue
                 
                 
             if cfg.expPNG or cfg.expGIF:
                 try:
-                    if not step_file_exists(step_save_path):
-                        create_step_file(out_shape, step_save_path)
-                    
-                except Exception as e:
-                    print(
-                        f"Creation of .STEP-File for {save_paths[i + j].split('/')[-1]} failed.\n"
-                        + str(e)
-                    )
-                    continue
-                
-                try:
                     png_path = step_save_path.split('.')[0]
-                    transform(step_save_path, png_path, 135, 45, "medium", exp_png=cfg.expPNG, make_gif=cfg.expGIF)
-                    print(f"Image-Output for {png_path} created.")
-                    
+                    if step_file_exists(step_save_path):
+                        transform(step_save_path, png_path, 135, 45, "medium", exp_png=cfg.expPNG, make_gif=cfg.expGIF)
+                        print(f"Image-Output for {png_path} created.")
+                    else:
+                        print(f'no .STEP-File for {step_save_path.split("/")[-1]} found.\nTrying to create .STEP-File') 
+                        try:
+                            create_step_file(out_shape, step_save_path)                     
+                        except Exception as e:
+                            raise Exception(str(e.with_traceback))    
                 except Exception as e:
                     print(
                         f"Creation of Image-Output for {save_paths[i + j].split('/')[-1]} failed.\n"
-                        + str(e)
+                        + str(e.with_traceback)
                     )
                     continue
                 
@@ -194,6 +222,18 @@ def step_file_exists(path):
     return os.path.isfile(path)
                 
 def create_step_file(out_shape, path):
-    write_step_file(out_shape, path)
-    print("{} created.".format(path.split("/")[-1]))
+    try:
+        if not step_file_exists(path):
+            write_step_file(out_shape, path)
+            print("{} created.".format(path.split("/")[-1]))
+            
+        else:
+            print(f".STEP-File {path.split('/')[-1]} already exists.")
+        
+    except Exception as e:
+        raise Exception(f"Creation of .STEP-File for {path.split('/')[-1]} failed.\n"
+                + str(e.with_traceback))
+    
+    
+
                 

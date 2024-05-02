@@ -181,12 +181,6 @@ class ConfigPcEncoder(object):
             help="export gif file for decoded CAD model",
         )
         parser.add_argument(
-            "--checkBRep",
-            action="store_true",
-            default=False,
-            help="validate generated CAD model",
-        )
-        parser.add_argument(
             "-g",
             "--gpu_ids",
             type=str,
