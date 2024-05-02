@@ -86,7 +86,15 @@ class ConfigAE(object):
     def parse(self):
         """initiaize argument parser. Define default hyperparameters and collect from command-line arguments."""
         parser = argparse.ArgumentParser()
-
+        parser.add_argument(
+            "--exec",
+            "-e",
+            type=str,
+            default="test",
+            choices=["train", "test"],
+            help="different execution modes for Pc-Encoder: train - Trains Pc-Encoder, test - Test Pc-Encoder on own data",
+        )
+        parser.add_argument("-m", "--mode", type=str, choices=["rec", "enc", "dec"], help="choose different execution modes: enc - encode sequence, dec - decode latent vecs to CAD models, rec - reconstruct cad sequence")
         parser.add_argument(
             "--proj_dir",
             type=str,
@@ -96,6 +104,7 @@ class ConfigAE(object):
         parser.add_argument(
             "--data_root", type=str, default="data", help="path to source data folder"
         )
+        parser.add_argument("--z_path", type=str, default=None, help="path to latent vectors")
         parser.add_argument(
             "--exp_name",
             type=str,
@@ -110,13 +119,11 @@ class ConfigAE(object):
             help="desired checkpoint to restore",
         )
         parser.add_argument(
-            "-g",
-            "--gpu_ids",
-            type=str,
-            default="0",
-            help="gpu to use, e.g. 0  0,1,2. CPU not supported.",
+            "--continue",
+            dest="cont",
+            action="store_true",
+            help="continue training from checkpoint",
         )
-
         parser.add_argument("--batch_size", type=int, default=512, help="batch size")
         parser.add_argument(
             "--num_workers",
@@ -124,7 +131,6 @@ class ConfigAE(object):
             default=8,
             help="number of workers for data loading",
         )
-
         parser.add_argument(
             "--nr_epochs",
             type=int,
@@ -144,10 +150,7 @@ class ConfigAE(object):
             help="step size for learning rate warm up",
         )
         parser.add_argument(
-            "--continue",
-            dest="cont",
-            action="store_true",
-            help="continue training from checkpoint",
+            "--augment", action="store_true", help="use random data augmentation"
         )
         parser.add_argument(
             "--vis",
@@ -170,22 +173,6 @@ class ConfigAE(object):
             default=2000,
             help="visualize output every x iterations",
         )
-        parser.add_argument(
-            "--augment", action="store_true", help="use random data augmentation"
-        )
-        parser.add_argument(
-            "--exec",
-            "-e",
-            type=str,
-            default="test",
-            choices=["train", "test"],
-            help="different execution modes for Pc-Encoder: train - Trains Pc-Encoder, test - Test Pc-Encoder on own data",
-        )
-
-        parser.add_argument("-m", "--mode", type=str, choices=["rec", "enc", "dec"])
-        parser.add_argument("-o", "--outputs", type=str, default=None)
-        parser.add_argument("--z_path", type=str, default=None)
-
         parser.add_argument(
             "--expSTEP",
             action="store_true",
@@ -210,6 +197,12 @@ class ConfigAE(object):
             default=False,
             help="validate generated CAD model",
         )
-
+        parser.add_argument(
+            "-g",
+            "--gpu_ids",
+            type=str,
+            default="0",
+            help="gpu to use, e.g. 0  0,1,2. CPU not supported.",
+        )
         args = parser.parse_args()
         return parser, args

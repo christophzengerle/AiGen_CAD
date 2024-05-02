@@ -69,6 +69,22 @@ class ConfigPcEncoder(object):
     def parse(self):
         parser = argparse.ArgumentParser()
         parser.add_argument(
+            "--exec",
+            "-e",
+            type=str,
+            choices=["train", "test"],
+            default="test",
+            help="different execution modes for Pc-Encoder: train - Trains Pc-Encoder, test - Test Pc-Encoder on own data",
+        )
+        parser.add_argument(
+            "--mode",
+            "-m",
+            type=str,
+            choices=["enc", "dec"],
+            default="enc",
+            help="choose different execution modes: enc - encode point clouds, dec - decode point clouds to CAD models",
+        )
+        parser.add_argument(
             "--proj_dir",
             type=str,
             default="proj_log",
@@ -90,7 +106,7 @@ class ConfigPcEncoder(object):
             "--z_path",
             type=str,
             default="data/cad_all_zs.h5",
-            help="path to zs.h5 file containing shape codes",
+            help="path to zs.h5 file containing ground truth shape codes",
         )
         parser.add_argument(
             "--exp_name",
@@ -128,27 +144,24 @@ class ConfigPcEncoder(object):
             help="continue training from checkpoint",
         )
         parser.add_argument(
-            "--exec",
-            "-e",
-            type=str,
-            choices=["train", "test"],
-            default="test",
-            help="different execution modes for Pc-Encoder: train - Trains Pc-Encoder, test - Test Pc-Encoder on own data",
-        )
-        parser.add_argument(
-            "--mode",
-            "-m",
-            type=str,
-            choices=["enc", "dec"],
-            default="test",
-            help="different execution modes: enc - encode point clouds, dec - decode point clouds to CAD models",
-        )
-        parser.add_argument(
             "--n_points",
             type=int,
             default=4096,
             help="number of points to sample from point cloud",
         )
+        parser.add_argument(
+            "--num_workers",
+            type=int,
+            default=8,
+            help="number of workers for data loading",
+        )
+        parser.add_argument(
+            "--nr_epochs",
+            type=int,
+            default=100,
+            help="total number of epochs to train",
+        )
+        parser.add_argument("--batch_size", type=int, default=128, help="batch size")
         parser.add_argument(
             "--expSTEP",
             action="store_true",
@@ -173,19 +186,6 @@ class ConfigPcEncoder(object):
             default=False,
             help="validate generated CAD model",
         )
-        parser.add_argument(
-            "--num_workers",
-            type=int,
-            default=8,
-            help="number of workers for data loading",
-        )
-        parser.add_argument(
-            "--nr_epochs",
-            type=int,
-            default=100,
-            help="total number of epochs to train",
-        )
-        parser.add_argument("--batch_size", type=int, default=128, help="batch size")
         parser.add_argument(
             "-g",
             "--gpu_ids",

@@ -226,10 +226,10 @@ class TrainerPcEncoder(BaseTrainer):
                 self.model_dir,
                 "ckpt_epoch{}_num{}.pth".format(self.clock.epoch, self.cfg.n_points),
             )
-            print("Saving checkpoint epoch {}...".format(self.clock.epoch))
         else:
             save_path = os.path.join(self.model_dir, "{}.pth".format(name))
 
+        print("Saving checkpoint epoch {}...".format(self.clock.epoch))
         if isinstance(self.net, nn.DataParallel):
             model_state_dict = self.net.module.cpu().state_dict()
         else:
