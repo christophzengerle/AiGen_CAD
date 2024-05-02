@@ -34,7 +34,7 @@ class ShapeCodesDataset(Dataset):
         pc = read_ply(pc_path)
         sample_idx = random.sample(list(range(pc.shape[0])), self.n_points)
         pc = pc[sample_idx]
-        if self.noise:
+        if hasattr(self, 'noise'):
             pc = pc + np.random.uniform(-self.noise, self.noise, (pc.shape[0], 1))
         pc = torch.tensor(pc, dtype=torch.float32)
         shape_code = torch.tensor(self.zs[index], dtype=torch.float32)

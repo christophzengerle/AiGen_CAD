@@ -11,6 +11,8 @@ from OCC.Core.BRepBuilderAPI import (
     BRepBuilderAPI_MakeFace,
     BRepBuilderAPI_MakeWire,
 )
+from OCC.Core.ShapeExtend import ShapeExtend_WireData
+from OCC.Core.ShapeFix import ShapeFix_Wire
 from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakePrism
 from OCC.Core.GC import GC_MakeArcOfCircle
 from OCC.Core.gp import gp_Ax2, gp_Ax3, gp_Circ, gp_Dir, gp_Lin, gp_Pln, gp_Pnt, gp_Vec
@@ -30,6 +32,7 @@ def vec2CADsolid(vec, is_numerical=True, n=256):
 
 def create_CAD(cad_seq: CADSequence):
     """create a 3D CAD model from CADSequence. Only support extrude with boolean operation."""
+    # print(cad_seq)
     body = create_by_extrude(cad_seq.seq[0])
     for extrude_op in cad_seq.seq[1:]:
         new_body = create_by_extrude(extrude_op)
@@ -80,19 +83,42 @@ def create_profile_face(profile: Profile, sketch_plane: CoordSystem):
     all_loops = [create_loop_3d(loop, sketch_plane) for loop in profile.children]
     topo_face = BRepBuilderAPI_MakeFace(gp_face, all_loops[0])
     for loop in all_loops[1:]:
-        topo_face.Add(loop.Reversed())
+        if not loop is None:
+            topo_face.Add(loop.Reversed())
     return topo_face.Face()
 
 
+# def create_loop_3d(loop: Loop, sketch_plane: CoordSystem):
+#     """create a 3D sketch loop"""
+#     topo_wire = BRepBuilderAPI_MakeWire()
+#     for curve in loop.children:
+#         topo_edge = create_edge_3d(curve, sketch_plane)
+#         if topo_edge == -1:  # omitted
+#             continue
+#         topo_wire.Add(topo_edge)
+#     return topo_wire.Wire()
+
 def create_loop_3d(loop: Loop, sketch_plane: CoordSystem):
     """create a 3D sketch loop"""
-    topo_wire = BRepBuilderAPI_MakeWire()
+    topo_wire = ShapeExtend_WireData()
     for curve in loop.children:
         topo_edge = create_edge_3d(curve, sketch_plane)
         if topo_edge == -1:  # omitted
             continue
         topo_wire.Add(topo_edge)
-    return topo_wire.Wire()
+    
+    fix_wire = ShapeFix_Wire()
+    fix_wire.Load(topo_wire);   
+    
+    fix_wire.Perform();
+    fix_wire.FixReorder();
+    fix_wire.FixConnected();
+    # print(fix_wire.NbEdges()) 
+    
+    if fix_wire.NbEdges() > 0:
+        return fix_wire.WireAPIMake()
+
+
 
 
 def create_edge_3d(curve: CurveBase, sketch_plane: CoordSystem):
