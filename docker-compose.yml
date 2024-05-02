@@ -13,6 +13,13 @@ services:
       # local Windows bindings (Christoph)
       # - C:/ArtificialIntelligence/DeepCAD/data:/usr/app/src/DeepCAD/data
       # - C:/ArtificialIntelligence/DeepCAD/proj_log:/usr/app/src/DeepCAD/proj_log
+
+    # network_mode: "host"
+    ports:
+      - "8082:22" # SSH
+      - "8083:6006" # Tensorboard
+      - "8084:8888" # Jupyter
+
     command: tail -F anything #to keep Container running
     deploy:
       resources:

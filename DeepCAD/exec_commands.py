@@ -2,9 +2,9 @@ import os
 
 # cmd = "python pc2cad.py --exec train --exp_name pcEncoder --batch_size 150 --num_workers 1 -g 0"
 
-cmd = "python pc2cad.py --exec test --mode dec --pc_root evaluation/eval_pc_cad_images/point_e/00000007.ply \
+cmd = "python pc2cad.py --exec test --mode dec --pc_root evaluation/eval_pc_cad_images/source \
     --exp_name pcEncoder --ckpt latest --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000 \
-    --n_points 1024 --expSTEP --expPNG --expGIF -g 0"
+    --n_points 4096 --expSTEP --expPNG --expGIF -g 0"
     
     
 # cmd = "python cad2cad.py --exec test --mode dec --exp_name pretrained --ckpt ckpt_epoch1000 --num_workers 1 \

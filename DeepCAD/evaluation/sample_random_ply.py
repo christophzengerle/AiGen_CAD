@@ -17,3 +17,4 @@ for file in sample:
     shutil.copyfile(
         pc_path, os.path.join("./eval_pc_cad_images/source", pc_path.split("/")[-1])
     )
+    

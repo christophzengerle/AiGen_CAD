@@ -6,6 +6,7 @@ numpy==1.26.3
 Pillow==10.2.0
 plyfile==1.0.3
 scipy==1.12.0
+tensorboard==2.16.2
 tensorboardX==2.6.2.2
 tqdm==4.66.2
 trimesh==4.3.1
