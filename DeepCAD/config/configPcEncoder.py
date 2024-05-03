@@ -55,11 +55,11 @@ class ConfigPcEncoder(object):
 
     def set_configuration(self):
 
-        self.lr = 1e-3 # initial LR
-        self.lr_step_size = 5 # Nr Epochs after wich LR will be decresed
+        self.lr = 5e-4 # initial LR
+        self.lr_step_size = 20 # Nr Epochs after wich LR will be decresed
         # self.beta1 = 0.5
         self.grad_clip = None
-        self.noise = 0.02
+        self.noiseAmount = 0.02
 
         self.save_frequency = 10
         self.val_frequency = 5
@@ -162,6 +162,12 @@ class ConfigPcEncoder(object):
             help="total number of epochs to train",
         )
         parser.add_argument("--batch_size", type=int, default=128, help="batch size")
+        parser.add_argument(
+            "--noise",
+            action="store_true",
+            default=False,
+            help="train model with noisy data",
+        )
         parser.add_argument(
             "--expSTEP",
             action="store_true",

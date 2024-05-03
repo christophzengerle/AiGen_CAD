@@ -29,7 +29,7 @@ def main():
             agent.load_ckpt(cfg.ckpt)
             
         # create dataloader
-        train_loader = get_dataloader("train", cfg, noise=True)
+        train_loader = get_dataloader("train", cfg, noise=cfg.noise)
         val_loader = get_dataloader("validation", cfg)
         # val_loader = cycle(val_loader)
 
