@@ -55,11 +55,11 @@ class ConfigPcEncoder(object):
 
     def set_configuration(self):
 
-        self.lr = 5e-4 # initial LR
-        self.lr_step_size = 20 # Nr Epochs after wich LR will be decresed
+        self.lr = 1e-3 # initial LR
+        self.lr_step_size = 25 # Nr Epochs after wich LR will be decresed
         # self.beta1 = 0.5
         self.grad_clip = None
-        self.noiseAmount = 0.02
+        self.noiseAmount = 0.025
 
         self.save_frequency = 10
         self.val_frequency = 5
