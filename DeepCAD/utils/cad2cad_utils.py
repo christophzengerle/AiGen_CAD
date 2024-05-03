@@ -15,6 +15,7 @@ from utils import ensure_dir
 
 sys.path.append("..")
 from cadlib.visualize import vec2CADsolid
+import utils.step2png
 from utils.step2png import transform
 from utils.file_utils import walk_dir
 
@@ -89,7 +90,41 @@ def encode(cfg, tr_agent):
     fp.close()
 
 
-def decode(cfg, tr_agent):
+
+def decode(cfg):
+    # create network and training agent
+    tr_agent = TrainerAE(cfg)
+
+    # load from checkpoint if provided
+    tr_agent.load_ckpt(cfg.ckpt)
+    tr_agent.net.eval()
+
+    # load latent zs
+    with h5py.File(cfg.z_path, 'r') as fp:
+        zs = fp['zs'][:]
+    save_dir = cfg.z_path.split('.')[0] + '_dec'
+    ensure_dir(save_dir)
+
+    # decode
+    for i in range(0, len(zs), cfg.batch_size):
+        with torch.no_grad():
+            batch_z = torch.tensor(zs[i:i+cfg.batch_size], dtype=torch.float32).unsqueeze(1)
+            batch_z = batch_z.cuda()
+            outputs = tr_agent.decode(batch_z)
+            batch_out_vec = tr_agent.logits2vec(outputs)
+
+        for j in range(len(batch_z)):
+            out_vec = batch_out_vec[j]
+            out_command = out_vec[:, 0]
+            seq_len = out_command.tolist().index(EOS_IDX)
+
+            save_path = os.path.join(save_dir, '{}.h5'.format(i + j))
+            with h5py.File(save_path, 'w') as fp:
+                fp.create_dataset('out_vec', data=out_vec[:seq_len], dtype=np.int)
+
+
+
+def inf_decode(cfg, tr_agent):
     zs = []
     save_paths = []
     batch_size = cfg.batch_size

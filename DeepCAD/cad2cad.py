@@ -12,7 +12,7 @@ from trainer import TrainerAE
 
 sys.path.append("..")
 from utils import cycle
-from utils.cad2cad_utils import decode, encode, reconstruct
+from utils.cad2cad_utils import decode, encode, reconstruct, inf_decode
 
 
 def decode_pc_zs(pc_config):
@@ -36,7 +36,7 @@ def decode_pc_zs(pc_config):
     tr_agent = TrainerAE(cfg)
     tr_agent.load_ckpt(cfg.ckpt)
     decode(cfg, tr_agent)
-
+    
 
 def main():
     # create experiment cfg containing all hyperparameters
@@ -73,10 +73,24 @@ def main():
             decode(cfg, tr_agent)
         else:
             raise ValueError("Invalid mode.")
+        
+    elif cfg.exec == "inf":
+        # load from checkpoint if provided
+        tr_agent.load_ckpt(cfg.ckpt)
+        tr_agent.net.eval()
+
+        if cfg.mode == "rec":
+            reconstruct(cfg, tr_agent)
+        elif cfg.mode == "enc":
+            encode(cfg, tr_agent)
+        elif cfg.mode == "dec":
+            inf_decode(cfg, tr_agent)
+        else:
+            raise ValueError("Invalid mode.")
 
     else:
         raise ValueError(
-            "Invalid execution type. Please specify --exec 'train' or 'test' mode"
+            "Invalid execution type. Please specify --exec 'train', 'test' or 'inf' mode"
         )
 
 

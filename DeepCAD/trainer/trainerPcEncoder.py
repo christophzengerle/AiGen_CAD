@@ -9,15 +9,17 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from model.pointcloudEncoder import PointNet2
 from tqdm import tqdm
-from utils import read_ply, write_ply
-from utils.file_utils import walk_dir
-from utils.step2png import transform
 
 sys.path.append("..")
-
+from model.pointcloudEncoder import PointNet2
 from .base import BaseTrainer
+from utils import read_ply
+from utils.file_utils import walk_dir
+import utils.step2png
+from utils.step2png import transform
+
+
 
 
 class TrainerPcEncoder(BaseTrainer):

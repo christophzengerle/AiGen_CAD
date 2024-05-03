@@ -70,6 +70,8 @@ class ConfigAE(object):
 
         self.max_num_groups = 30
         self.max_total_len = MAX_TOTAL_LEN
+        
+        self.n_checkBrep_retries = 5 # num retries to create valid CAD model
 
         self.loss_weights = {"loss_cmd_weight": 1.0, "loss_args_weight": 2.0}
 
@@ -89,9 +91,9 @@ class ConfigAE(object):
             "--exec",
             "-e",
             type=str,
-            default="test",
-            choices=["train", "test"],
-            help="different execution modes for Pc-Encoder: train - Trains Pc-Encoder, test - Test Pc-Encoder on own data",
+            default="inf",
+            choices=["train", "test", "inf"],
+            help="different execution modes for AutoEncoder: train - Trains on Train and Eval dataset, test - Test on Test dataset, Inf - Inference on own data",
         )
         parser.add_argument("-m", "--mode", type=str, choices=["rec", "enc", "dec"], help="choose different execution modes: enc - encode sequence, dec - decode latent vecs to CAD models, rec - reconstruct cad sequence")
         parser.add_argument(
@@ -171,12 +173,6 @@ class ConfigAE(object):
             type=int,
             default=2000,
             help="visualize output every x iterations",
-        )
-        parser.add_argument(
-            "--n_checkBrep_retries",
-            type=int,
-            default=5,
-            help="num retries to create valid CAD model",
         )
         parser.add_argument(
             "--expSTEP",

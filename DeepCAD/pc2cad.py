@@ -37,13 +37,22 @@ def main():
         agent.train(train_loader, val_loader)
 
     elif cfg.exec == "test":
+        cfg.zs = encode(agent, cfg)
         if cfg.mode == "enc":
-            cfg.zs = encode(agent, cfg)
-
+            pass
         elif cfg.mode == "dec":
-            cfg.zs = encode(agent, cfg)
             decode_pc_zs(cfg)
-
+        else:
+            raise ValueError(
+                "Invalid execution mode. Please specify --mode 'enc' or 'dec' mode"
+            )
+            
+    elif cfg.exec == "inf":
+        cfg.zs = encode(agent, cfg)
+        if cfg.mode == "enc":
+            pass
+        elif cfg.mode == "dec":
+            decode_pc_zs(cfg)
         else:
             raise ValueError(
                 "Invalid execution mode. Please specify --mode 'enc' or 'dec' mode"
@@ -51,7 +60,7 @@ def main():
 
     else:
         raise ValueError(
-            "Invalid execution type. Please specify --exec 'train' or 'test' mode"
+            "Invalid execution type. Please specify --exec 'train', 'test' or 'inf' mode"
         )
 
 

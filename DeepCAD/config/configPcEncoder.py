@@ -72,9 +72,9 @@ class ConfigPcEncoder(object):
             "--exec",
             "-e",
             type=str,
-            choices=["train", "test"],
+            choices=["train", "test", "inf"],
             default="test",
-            help="different execution modes for Pc-Encoder: train - Trains Pc-Encoder, test - Test Pc-Encoder on own data",
+            help="different execution modes for Pc-Encoder: train - Trains on Train and Eval dataset, test - Test on Test dataset, Inf - Inference on own data",
         )
         parser.add_argument(
             "--mode",

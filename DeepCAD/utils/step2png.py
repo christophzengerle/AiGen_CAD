@@ -17,15 +17,12 @@ from trimesh import transformations
 sys.path.append("..")
 from utils.file_utils import walk_dir
 
-
-
 res = {"high": 1200, "medium": 600, "low": 300}
 
-# when using with docker create virtual display
-# export DISPLAY=192.168.178.29:0.0 
+# init virtual display
+display = Display(visible=0)
+display.start()
 
-
-# run command: python step2png.py --src ../data/cad_step/ --dest ../data/cad_png/ --fdepth 2 --qual medium
 
 def parse():
     parser = argparse.ArgumentParser()
@@ -51,18 +48,17 @@ def setup_dir(source_folder, destination_folder):
 
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
-        
-        
-def setup_virtual_display():
-    display = Display(visible=0)
-    display.start()
 
 
     
 
 def transform(file_path, outfile, rotation, elevation, quality, exp_png=True, make_gif=False):    
     # print('filepath', file_path)
-    setup_virtual_display()
+    if not display.is_alive():
+        # init virtual display
+        display = Display(visible=0)
+        display.start()
+    
     if file_path.endswith(".ply"):
         mesh = trimesh.load_mesh(file_path)
     elif file_path.endswith(".step"):
@@ -132,9 +128,7 @@ def transform(file_path, outfile, rotation, elevation, quality, exp_png=True, ma
 def main():
     args = parse()
     setup_dir(args.src, args.dest)
-    
-    
-    
+
     if os.path.isfile(args.src):
         if args.src.endswith(".step"):
             objfiles = [args.src]
