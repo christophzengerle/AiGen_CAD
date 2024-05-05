@@ -1,18 +1,11 @@
-import os
 import sys
 
-import h5py
-import numpy as np
-import torch
-from cadlib.macro import EOS_IDX
 from config import ConfigAE
 from dataset.cad_dataset import get_dataloader
-from tqdm import tqdm
 from trainer import TrainerAE
 
 sys.path.append("..")
 from utils import cycle
-from utils.cad2cad_utils import decode, encode, reconstruct, inf_decode
 
 
 def decode_pc_zs(pc_config):
@@ -35,7 +28,7 @@ def decode_pc_zs(pc_config):
     cfg.set_pc_decoder_configuration(pc_config)
     tr_agent = TrainerAE(cfg)
     tr_agent.load_ckpt(cfg.ckpt)
-    decode(cfg, tr_agent)
+    tr_agent.decode_zs(cfg)
     
 
 def main():
@@ -48,7 +41,6 @@ def main():
 
     # execute mode
     if cfg.exec == "train":
-
         # load from checkpoint if provided
         if cfg.cont:
             tr_agent.load_ckpt(cfg.ckpt)
@@ -64,15 +56,12 @@ def main():
         # load from checkpoint if provided
         tr_agent.load_ckpt(cfg.ckpt)
         tr_agent.net.eval()
+        
+        # create dataloader
+        test_loader = get_dataloader("test", cfg)
+        
+        tr_agent.test(test_loader)
 
-        if cfg.mode == "rec":
-            reconstruct(cfg, tr_agent)
-        elif cfg.mode == "enc":
-            encode(cfg, tr_agent)
-        elif cfg.mode == "dec":
-            decode(cfg, tr_agent)
-        else:
-            raise ValueError("Invalid mode.")
         
     elif cfg.exec == "inf":
         # load from checkpoint if provided
@@ -80,11 +69,11 @@ def main():
         tr_agent.net.eval()
 
         if cfg.mode == "rec":
-            reconstruct(cfg, tr_agent)
+            tr_agent.reconstruct_vecs(cfg)
         elif cfg.mode == "enc":
-            encode(cfg, tr_agent)
+            tr_agent.encode_vecs(cfg)
         elif cfg.mode == "dec":
-            inf_decode(cfg, tr_agent)
+            tr_agent.decode_zs(cfg)
         else:
             raise ValueError("Invalid mode.")
 

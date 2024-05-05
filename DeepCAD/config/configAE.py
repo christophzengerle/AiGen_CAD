@@ -95,7 +95,14 @@ class ConfigAE(object):
             choices=["train", "test", "inf"],
             help="different execution modes for AutoEncoder: train - Trains on Train and Eval dataset, test - Test on Test dataset, Inf - Inference on own data",
         )
-        parser.add_argument("-m", "--mode", type=str, choices=["rec", "enc", "dec"], help="choose different execution modes: enc - encode sequence, dec - decode latent vecs to CAD models, rec - reconstruct cad sequence")
+        parser.add_argument(
+            "-m", 
+            "--mode", 
+            type=str, 
+            default="dec",
+            choices=["rec", "enc", "dec"], 
+            help="choose different execution modes: enc - encode sequence, dec - decode latent vecs to CAD models, rec - reconstruct cad sequence",
+        )
         parser.add_argument(
             "--proj_dir",
             type=str,

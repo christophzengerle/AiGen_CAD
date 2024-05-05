@@ -8,20 +8,14 @@ from PIL import Image
 from io import BytesIO
 import sys
 
-from pyvirtualdisplay import Display
-
-
 import trimesh
 from trimesh import transformations
+from pyvirtualdisplay import Display
 
 sys.path.append("..")
 from utils.file_utils import walk_dir
 
 res = {"high": 1200, "medium": 600, "low": 300}
-
-# init virtual display
-display = Display(visible=0)
-display.start()
 
 
 def parse():
@@ -50,14 +44,12 @@ def setup_dir(source_folder, destination_folder):
         os.makedirs(destination_folder)
 
 
-    
-
 def transform(file_path, outfile, rotation, elevation, quality, exp_png=True, make_gif=False):    
     # print('filepath', file_path)
-    if not display.is_alive():
-        # init virtual display
-        display = Display(visible=0)
-        display.start()
+
+    # init virtual display
+    display = Display(visible=0)
+    display.start()
     
     if file_path.endswith(".ply"):
         mesh = trimesh.load_mesh(file_path)

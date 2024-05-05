@@ -80,9 +80,9 @@ class ConfigPcEncoder(object):
             "--mode",
             "-m",
             type=str,
-            choices=["enc", "dec"],
-            default="enc",
-            help="choose different execution modes: enc - encode point clouds, dec - decode point clouds to CAD models",
+            choices=["enc", "rec"],
+            default="rec",
+            help="choose different execution modes: enc - encode point clouds to latent vecs, rec - reconstruct CAD models out of point clouds",
         )
         parser.add_argument(
             "--proj_dir",

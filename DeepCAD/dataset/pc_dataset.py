@@ -37,28 +37,23 @@ class ShapeCodesDataset(Dataset):
         
         # Noise
         if self.noise:
-            random_n_points = True
             random_noise = True
-            
-            if random_n_points:
-                n_points = random.choice([1024, 2048, 4096, 8192])
-                sample_idx = random.sample(list(range(pc.shape[0])), n_points)
-                pc = pc[sample_idx]
-                
-            else:
-                sample_idx = random.sample(list(range(pc.shape[0])), self.n_points)
-                pc = pc[sample_idx]
-                
-    
             if random_noise:
                 if random.choice([True, False]):
                     pc = pc + np.random.uniform(-self.noiseAmount, self.noiseAmount, (pc.shape[0], 1))
             else:
                 pc = pc + np.random.uniform(-self.noiseAmount, self.noiseAmount, (pc.shape[0], 1))
         
-        else:
-            sample_idx = random.sample(list(range(pc.shape[0])), self.n_points)
-            pc = pc[sample_idx]
+            # random_n_points = True
+            
+            # if random_n_points:
+            #     n_points = random.choice([512, 1024, 2048, 4096])
+            #     sample_idx = random.sample(list(range(pc.shape[0])), n_points)
+            #     pc = pc[sample_idx]
+                
+            # else:
+            #     sample_idx = random.sample(list(range(pc.shape[0])), self.n_points)
+            #     pc = pc[sample_idx]            
         
         
         pc = torch.tensor(pc, dtype=torch.float32)

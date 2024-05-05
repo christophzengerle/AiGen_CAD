@@ -37,25 +37,23 @@ def main():
         agent.train(train_loader, val_loader)
 
     elif cfg.exec == "test":
-        cfg.zs = encode(agent, cfg)
-        if cfg.mode == "enc":
-            pass
-        elif cfg.mode == "dec":
-            decode_pc_zs(cfg)
-        else:
-            raise ValueError(
-                "Invalid execution mode. Please specify --mode 'enc' or 'dec' mode"
-            )
+        agent.load_ckpt(cfg.ckpt)
+        agent.net.eval()
+        
+        # create dataloader
+        test_loader = get_dataloader("test", cfg)
+        
+        agent.test(test_loader)
             
     elif cfg.exec == "inf":
         cfg.zs = encode(agent, cfg)
         if cfg.mode == "enc":
             pass
-        elif cfg.mode == "dec":
+        elif cfg.mode == "rec":
             decode_pc_zs(cfg)
         else:
             raise ValueError(
-                "Invalid execution mode. Please specify --mode 'enc' or 'dec' mode"
+                "Invalid execution mode. Please specify --mode 'enc' or 'rec' mode"
             )
 
     else:

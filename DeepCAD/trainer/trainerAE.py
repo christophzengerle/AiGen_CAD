@@ -1,3 +1,5 @@
+import os
+import sys
 from collections import OrderedDict
 
 import torch
@@ -5,10 +7,26 @@ import torch.optim as optim
 from cadlib.macro import *
 from model import CADTransformer
 from tqdm import tqdm
+import datetime
 
 from .base import BaseTrainer
 from .loss import CADLoss
 from .scheduler import GradualWarmupScheduler
+
+import h5py
+import numpy as np
+
+from OCC.Core.BRepCheck import BRepCheck_Analyzer
+
+
+sys.path.append("..")
+from dataset.cad_dataset import get_dataloader
+from cadlib.visualize import vec2CADsolid
+from utils.step_utils import step_file_exists, create_step_file
+from utils.step2png import transform
+from utils.file_utils import walk_dir
+from utils import ensure_dir
+
 
 
 class TrainerAE(BaseTrainer):
@@ -102,7 +120,8 @@ class TrainerAE(BaseTrainer):
             # if clock.epoch % 10 == 0:
             self.save_ckpt("latest")
 
-    def evaluate(self, test_loader):
+
+    def test(self, test_loader):
         """evaluatinon during training"""
         self.net.eval()
         pbar = tqdm(test_loader)
@@ -160,3 +179,214 @@ class TrainerAE(BaseTrainer):
             },
             global_step=self.clock.epoch,
         )
+
+
+    # define different inference modes
+    def reconstruct_vecs(self, cfg):
+       cfg.zs = self.encode_vecs(cfg)
+       self.decode_zs(cfg)
+                        
+
+
+    def encode_vecs(self, cfg):
+        vecs = []
+        save_paths = []
+        batch_size = cfg.batch_size
+        
+        all_zs = {"zs": [], "z_paths": [], "vec_paths": []}
+        
+        self.net.eval()
+        if cfg.data_root:
+            if os.path.isfile(cfg.data_root):
+                if cfg.data_root.endswith(".h5") and not cfg.data_root.endswith("_dec.h5"):
+                    with h5py.File(cfg.data_root, "r") as fp:
+                        vecs.append(fp["vec"][:])
+                    save_paths.append(cfg.data_root)
+                    save_name = cfg.data_root.split("/")[-1].split(".")[0]
+                else:
+                    raise ValueError("Invalid file format")
+
+            elif os.path.isdir(cfg.data_root):
+                for file in walk_dir(cfg.data_root):
+                    if file.endswith(".h5") and not file.endswith("_dec.h5"):
+                        with h5py.File(file, "r") as fp:
+                            vecs.append(fp["vec"][:])
+                        save_paths.append(file)
+                        save_name = os.path.basename(os.path.normpath(cfg.data_root))
+
+            else:
+                raise ValueError("Invalid path")
+            
+        else:
+            raise ValueError("No vecs provided.")
+
+
+        save_dir = os.path.join(
+            self.cfg.exp_dir,
+            "results/vecEncodings/",
+            self.cfg.ckpt,
+            save_name
+            + "_"
+            + str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")),
+        )
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        # encode
+        for i in tqdm(range(0, len(vecs), batch_size)):
+            with torch.no_grad():
+                batch_vec = torch.tensor(
+                        np.concatenate(vecs[i : i + batch_size]), dtype=torch.float32
+                    ).unsqueeze(1)
+                batch_vec = batch_vec.cuda()
+                batch_z = self.encode(batch_vec, is_batch=True)
+                batch_z = batch_z.detach().cpu().numpy()[:, 0, :]
+        
+            for j in range(len(batch_vec)):
+                zs = batch_z[j]
+                file_name = os.path.split(save_paths[i+j])[1]
+                save_name = file_name.split(".")[0] + "_zs.h5"
+                save_path_zs = os.path.join(save_dir, f"{save_name}")
+                try:
+                    with h5py.File(save_path_zs, "w") as fp:
+                        fp.create_dataset("zs", data=zs, dtype=np.int32)
+                    print(f"File: {file_name} encoded.")
+                except Exception as e:
+                    print(f"File: {file_name} could not be encoded." + str(e.with_traceback))
+                    
+                all_zs["zs"].append(zs)
+                all_zs["z_paths"].append(save_path_zs)
+                all_zs["vec_paths"].append(save_paths[i+j])
+            
+        return all_zs
+
+
+    def decode_zs(self, cfg):
+        zs = []
+        save_paths = []
+        batch_size = cfg.batch_size
+        self.net.eval()
+        
+        if not hasattr(cfg, 'zs'):
+            if cfg.z_path:
+                if os.path.isfile(cfg.z_path):
+                    if cfg.z_path.endswith(".h5") and not cfg.z_path.endswith("_dec.h5"):
+                        with h5py.File(cfg.z_path, "r") as fp:
+                            zs.append(fp["zs"][:])
+                        save_paths.append(cfg.z_path)
+                    else:
+                        raise ValueError("Invalid file format")
+
+                elif os.path.isdir(cfg.z_path):
+                    for file in walk_dir(cfg.z_path):
+                        if file.endswith(".h5") and not file.endswith("_dec.h5"):
+                            with h5py.File(file, "r") as fp:
+                                zs.append(fp["zs"][:])
+                            save_paths.append(file)
+
+                else:
+                    raise ValueError("Invalid path")
+            else:
+                raise ValueError("No zs provided.")
+
+        else:
+            zs = cfg.zs["zs"]
+            save_paths = cfg.zs["z_paths"]
+
+        # decode
+        for i in tqdm(range(0, len(zs), batch_size)):
+            with torch.no_grad():
+                batch_z = torch.tensor(
+                    np.concatenate(zs[i : i + batch_size]), dtype=torch.float32
+                ).unsqueeze(1)
+                batch_z = batch_z.cuda()
+                outputs = self.decode(batch_z)
+                batch_out_vec = self.logits2vec(outputs)
+
+            for j in range(len(batch_z)):
+                print("\n*** File: " + save_paths[i + j].split("/")[-1] + " ***\n")
+                out_vec = batch_out_vec[j]
+                out_command = out_vec[:, 0]
+                seq_len = out_command.tolist().index(EOS_IDX)
+                out_vec = out_vec[:seq_len]
+                
+                save_path = save_paths[i + j].split(".")[0]
+                out_shape = None
+                is_valid_BRep = False
+                try:
+                    out_shape = vec2CADsolid(out_vec)
+                    is_valid_BRep = True
+                except Exception as e:
+                    print(f"Creation of CAD-Solid for file {save_path} failed.\n" + str(e.with_traceback))
+
+                    # check generated CAD-Shape 
+                    # if invalid -> generate again
+                    for cnt_retries in range(1, cfg.n_checkBrep_retries + 1):
+                        print(f"Trying to create a new CAD-Solid. Attempt {cnt_retries}/{cfg.n_checkBrep_retries}")
+                        # print(batch_z.shape, batch_z[j].shape)
+                        new_batch_output = self.decode(batch_z[j].unsqueeze(0))
+                        out_batch_vec = self.logits2vec(new_batch_output)
+                        out_vec = out_batch_vec.squeeze(0)
+                        
+                        out_command = out_vec[:, 0]
+                        seq_len = out_command.tolist().index(EOS_IDX)
+                        out_vec = out_vec[:seq_len]
+                        
+                        try:
+                            out_shape = vec2CADsolid(out_vec)
+                            analyzer = BRepCheck_Analyzer(out_shape)
+                            if analyzer.IsValid():
+                                print("Valid BRep-Model detected.")
+                                is_valid_BRep = True
+                                break
+                            else:
+                                print("invalid BRep-Model detected.")
+                                continue
+                                
+                        except Exception as e:
+                            print(f"Creation of CAD-Solid for file {save_path} failed.\n" + str(e.with_traceback))
+                            continue
+                        
+                                            
+                if not is_valid_BRep:
+                    print('Could not create valid BRep-Model!')
+                    continue
+                
+                
+                save_path_vec = save_path + "_dec.h5"
+                with h5py.File(save_path_vec, "w") as fp:
+                    fp.create_dataset("out_vec", data=out_vec, dtype=np.int32)
+                    
+                    
+                step_save_path = save_path + "_dec.step"
+                if cfg.expSTEP:
+                    try:
+                        create_step_file(out_shape, step_save_path)                     
+                    except Exception as e:
+                        print(str(e.with_traceback))
+                        continue
+                    
+                    
+                if cfg.expPNG or cfg.expGIF:
+                    try:
+                        png_path = step_save_path.split('.')[0]
+                        if step_file_exists(step_save_path):
+                            transform(step_save_path, png_path, 135, 45, "medium", exp_png=cfg.expPNG, make_gif=cfg.expGIF)
+                            print(f"Image-Output for {png_path} created.")
+                        else:
+                            print(f'no .STEP-File for {step_save_path.split("/")[-1]} found.\nTrying to create .STEP-File') 
+                            try:
+                                create_step_file(out_shape, step_save_path)                     
+                            except Exception as e:
+                                raise Exception(str(e.with_traceback))    
+                    except Exception as e:
+                        print(
+                            f"Creation of Image-Output for {save_paths[i + j].split('/')[-1]} failed.\n"
+                            + str(e.with_traceback)
+                        )
+                        continue
+                    
+        
+        
+
+                    
