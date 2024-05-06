@@ -20,12 +20,10 @@ from OCC.Core.BRepCheck import BRepCheck_Analyzer
 
 
 sys.path.append("..")
-from dataset.cad_dataset import get_dataloader
 from cadlib.visualize import vec2CADsolid
 from utils.step_utils import step_file_exists, create_step_file
 from utils.step2png import transform
 from utils.file_utils import walk_dir
-from utils import ensure_dir
 
 
 
@@ -167,7 +165,7 @@ class TrainerAE(BaseTrainer):
         arc_acc = np.mean(np.concatenate(all_arc_args_comp, axis=0))
         circle_acc = np.mean(np.concatenate(all_circle_args_comp, axis=0))
 
-        self.val_tb.add_scalars(
+        self.test_tb.add_scalars(
             "args_acc",
             {
                 "line": line_acc,

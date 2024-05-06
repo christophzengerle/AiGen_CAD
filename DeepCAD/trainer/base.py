@@ -32,6 +32,7 @@ class BaseTrainer(object):
         # set tensorboard writer
         self.train_tb = SummaryWriter(os.path.join(self.log_dir, "train.events"))
         self.val_tb = SummaryWriter(os.path.join(self.log_dir, "val.events"))
+        self.test_tb = SummaryWriter(os.path.join(self.log_dir, "test.events"))
 
     @abstractmethod
     def build_net(self, cfg):

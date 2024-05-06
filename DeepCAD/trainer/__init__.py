@@ -1,2 +1,2 @@
 from .trainerAE import TrainerAE
-from .trainerPcEncoder import TrainerPcEncoder
+from .trainerPCEncoder import TrainerPcEncoder
