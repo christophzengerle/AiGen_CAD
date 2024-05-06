@@ -13,12 +13,11 @@ from tqdm import tqdm
 
 sys.path.append("..")
 from model.pointcloudEncoder import PointNet2
-from .base import BaseTrainer
 from utils import read_ply
 from utils.file_utils import walk_dir
 from utils.step2png import transform
 
-
+from .base import BaseTrainer
 
 
 class TrainerPcEncoder(BaseTrainer):
@@ -48,12 +47,10 @@ class TrainerPcEncoder(BaseTrainer):
         pred = self.net(data)
         return pred
 
-
-
     def train(self, train_loader, val_loader):
         self.set_loss_function()
         self.set_optimizer(self.cfg)
-        
+
         # start training
         clock = self.clock
         nr_epochs = self.cfg.nr_epochs
@@ -77,48 +74,45 @@ class TrainerPcEncoder(BaseTrainer):
                 self.optimizer.step()
 
                 train_losses.append(loss.item())
-                
+
                 pbar.set_description(
                     "TRAIN - EPOCH[{}]-[{}] BATCH[{}]-[{}]".format(
                         e, nr_epochs, b, len(train_loader)
                     )
                 )
                 pbar.set_postfix(loss=loss.item())
-                
+
                 clock.tick()
-               
+
             self.record_losses(train_losses, mode="train")
-            
-             # validation step
+
+            # validation step
             if clock.epoch % self.cfg.val_frequency == 0:
                 eval_losses = []
                 pbar = tqdm(val_loader)
                 for i, data in enumerate(pbar):
                     _, loss = self.evaluate(data)
-                    
+
                     eval_losses.append(loss.item())
-                    
+
                     pbar.set_description(
                         "EVAL - EPOCH[{}]-[{}] BATCH[{}]-[{}]".format(
                             e, nr_epochs, i, len(val_loader)
                         )
                     )
-                    pbar.set_postfix(loss=loss.item())    
-            
-                self.record_losses(eval_losses, mode="eval")
+                    pbar.set_postfix(loss=loss.item())
 
+                self.record_losses(eval_losses, mode="eval")
 
             if clock.epoch % self.cfg.save_frequency == 0:
                 self.save_ckpt()
-                
+
             self.record_and_update_learning_rate()
 
             clock.tock()
 
         # if clock.epoch % 10 == 0:
         self.save_ckpt("latest")
-
-
 
     def evaluate(self, data):
         with torch.no_grad():
@@ -128,67 +122,10 @@ class TrainerPcEncoder(BaseTrainer):
             pred = self.forward(points)
             loss = self.criterion(pred, codes)
         return pred, loss
-    
-    
+
     def test(self, test_loader):
-        """evaluatinon during training"""
-        self.net.eval()
-        pbar = tqdm(test_loader)
-        pbar.set_description("EVALUATE[{}]".format(self.clock.epoch))
-
-        all_ext_args_comp = []
-        all_line_args_comp = []
-        all_arc_args_comp = []
-        all_circle_args_comp = []
-
-        for i, data in enumerate(pbar):
-            with torch.no_grad():
-                commands = data["command"].cuda()
-                args = data["args"].cuda()
-                outputs = self.net(commands, args)
-                out_args = (
-                    torch.argmax(torch.softmax(outputs["args_logits"], dim=-1), dim=-1)
-                    - 1
-                )
-                out_args = out_args.long().detach().cpu().numpy()  # (N, S, n_args)
-
-            gt_commands = commands.squeeze(1).long().detach().cpu().numpy()  # (N, S)
-            gt_args = args.squeeze(1).long().detach().cpu().numpy()  # (N, S, n_args)
-
-            ext_pos = np.where(gt_commands == EXT_IDX)
-            line_pos = np.where(gt_commands == LINE_IDX)
-            arc_pos = np.where(gt_commands == ARC_IDX)
-            circle_pos = np.where(gt_commands == CIRCLE_IDX)
-
-            args_comp = (gt_args == out_args).astype(np.int)
-            all_ext_args_comp.append(args_comp[ext_pos][:, -N_ARGS_EXT:])
-            all_line_args_comp.append(args_comp[line_pos][:, :2])
-            all_arc_args_comp.append(args_comp[arc_pos][:, :4])
-            all_circle_args_comp.append(args_comp[circle_pos][:, [0, 1, 4]])
-
-        all_ext_args_comp = np.concatenate(all_ext_args_comp, axis=0)
-        sket_plane_acc = np.mean(all_ext_args_comp[:, :N_ARGS_PLANE])
-        sket_trans_acc = np.mean(
-            all_ext_args_comp[:, N_ARGS_PLANE : N_ARGS_PLANE + N_ARGS_TRANS]
-        )
-        extent_one_acc = np.mean(all_ext_args_comp[:, -N_ARGS_EXT_PARAM])
-        line_acc = np.mean(np.concatenate(all_line_args_comp, axis=0))
-        arc_acc = np.mean(np.concatenate(all_arc_args_comp, axis=0))
-        circle_acc = np.mean(np.concatenate(all_circle_args_comp, axis=0))
-
-        self.val_tb.add_scalars(
-            "args_acc",
-            {
-                "line": line_acc,
-                "arc": arc_acc,
-                "circle": circle_acc,
-                "plane": sket_plane_acc,
-                "trans": sket_trans_acc,
-                "extent": extent_one_acc,
-            },
-            global_step=self.clock.epoch,
-        )
-        
+        raise NotImplementedError
+        # """evaluatinon during training"""
 
     def encode_pointcloud(self, path):
         self.net.eval()
@@ -199,11 +136,7 @@ class TrainerPcEncoder(BaseTrainer):
             else:
                 raise ValueError("Invalid file format")
         elif os.path.isdir(path):
-            file_list = [
-                file
-                for file in walk_dir(path)
-                if file.endswith(".ply")
-            ]
+            file_list = [file for file in walk_dir(path) if file.endswith(".ply")]
             save_name = os.path.basename(os.path.normpath(path))
         else:
             raise ValueError("Invalid path")
@@ -255,9 +188,17 @@ class TrainerPcEncoder(BaseTrainer):
 
                     with h5py.File(save_path_zs, "w") as fp:
                         fp.create_dataset("zs", shape=pred_z.shape, data=pred_z)
-                        
+
                     if self.cfg.expSourcePNG:
-                        transform(pc_path, save_path_zs.split('.')[0], 135, 45, "medium", exp_png=self.cfg.expSourcePNG, make_gif=False)
+                        transform(
+                            pc_path,
+                            save_path_zs.split(".")[0],
+                            135,
+                            45,
+                            "medium",
+                            exp_png=self.cfg.expSourcePNG,
+                            make_gif=False,
+                        )
 
                     print(
                         f'{pc_path.split("/")[-1]} encoded and saved to: {save_path_zs}'
@@ -268,7 +209,7 @@ class TrainerPcEncoder(BaseTrainer):
 
             save_path_ids = os.path.join(save_dir, "all_pc_ids.json")
             with open(save_path_ids, "w") as fp:
-                json.dump({"Point-Cloud paths:" : all_zs["pc_paths"]}, fp)
+                json.dump({"Point-Cloud paths:": all_zs["pc_paths"]}, fp)
 
             print("********* PointCloud Encoding Completed ***********")
 
@@ -276,8 +217,6 @@ class TrainerPcEncoder(BaseTrainer):
 
         else:
             raise ValueError("No .ply files found in the provided path.")
-
-
 
     def save_ckpt(self, name=None):
         """save checkpoint during training for future restore"""
@@ -300,14 +239,12 @@ class TrainerPcEncoder(BaseTrainer):
                 "clock": self.clock.make_checkpoint(),
                 "model_state_dict": model_state_dict,
                 "optimizer_state_dict": self.optimizer.state_dict(),
-                "scheduler_state_dict": self.scheduler.state_dict()
+                "scheduler_state_dict": self.scheduler.state_dict(),
             },
             save_path,
         )
 
         self.net.cuda()
-
-
 
     def load_ckpt(self, name=None):
         """load checkpoint from saved checkpoint"""
@@ -326,7 +263,6 @@ class TrainerPcEncoder(BaseTrainer):
             self.scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
             self.clock.restore_checkpoint(checkpoint["clock"])
 
-
     def record_and_update_learning_rate(self):
         """record and update learning rate"""
         self.train_tb.add_scalar(
@@ -334,9 +270,7 @@ class TrainerPcEncoder(BaseTrainer):
         )
         self.scheduler.step()
 
-
     def record_losses(self, losses, mode="train"):
         """record loss to tensorboard"""
         tb = self.train_tb if mode == "train" else self.val_tb
         tb.add_scalar("Loss", np.sum(losses) / len(losses), self.clock.epoch)
-        

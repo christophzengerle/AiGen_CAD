@@ -3,10 +3,11 @@ import json
 import os
 import shutil
 
+from cadlib.macro import *
 from utils import ensure_dirs
 
 
-class ConfigPcEncoder(object):
+class ConfigPC2CAD(object):
     def __init__(self):
         self.set_configuration()
         _, args = self.parse()
@@ -17,10 +18,9 @@ class ConfigPcEncoder(object):
             print("{0:20}".format(k), v)
             self.__setattr__(k, v)
 
-        self.z_path = args.z_path
         self.pc_root = args.pc_root
         self.split_path = args.split_path
-        self.exp_dir = os.path.join(args.proj_dir, "pce", args.exp_name)
+        self.exp_dir = os.path.join(args.proj_dir, "pc2cad", args.exp_name)
         self.log_dir = os.path.join(self.exp_dir, "log")
         self.model_dir = os.path.join(self.exp_dir, "model")
         self.gpu_ids = args.gpu_ids
@@ -29,9 +29,9 @@ class ConfigPcEncoder(object):
             os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_ids)
 
         self.exec = args.exec
-        self.mode = args.mode
         self.cont = args.cont
         self.ckpt = args.ckpt
+        self.pce_ckpt = args.pce_ckpt
         self.ae_ckpt = args.ae_ckpt
 
         self.num_workers = args.num_workers
@@ -55,15 +55,42 @@ class ConfigPcEncoder(object):
 
     def set_configuration(self):
 
-        self.lr = 1e-3 # initial LR
-        self.lr_step_size = 25 # Nr Epochs after wich LR will be decresed
+        # Pc-Encoder
+        self.lr = 1e-3  # initial LR
+        self.lr_step_size = 25  # Nr Epochs after wich LR will be decresed
         # self.beta1 = 0.5
         self.grad_clip = None
         self.noiseAmount = 0.025
 
+        # Autoencoder
+        self.args_dim = ARGS_DIM  # 256
+        self.n_args = N_ARGS
+        self.n_commands = len(ALL_COMMANDS)  # line, arc, circle, EOS, SOS
+
+        self.n_layers = 4  # Number of Encoder blocks
+        self.n_layers_decode = 4  # Number of Decoder blocks
+        self.n_heads = 8  # Transformer config: number of heads
+        self.dim_feedforward = 512  # Transformer config: FF dimensionality
+        self.d_model = 256  # Transformer config: model dimensionality
+        self.dropout = 0.1  # Dropout rate used in basic layers and Transformers
+        self.dim_z = 256  # Latent vector dimensionality
+        self.use_group_emb = True
+
+        self.max_n_ext = MAX_N_EXT
+        self.max_n_loops = MAX_N_LOOPS
+        self.max_n_curves = MAX_N_CURVES
+
+        self.max_num_groups = 30
+        self.max_total_len = MAX_TOTAL_LEN
+
+        self.n_checkBrep_retries = 5  # num retries to create valid CAD model
+
+        self.loss_weights = {"loss_cmd_weight": 1.0, "loss_args_weight": 2.0}
+
+        # General Settings
         self.save_frequency = 10
         self.val_frequency = 5
-        
+
         self.expSourcePNG = True
 
     def parse(self):
@@ -75,14 +102,6 @@ class ConfigPcEncoder(object):
             choices=["train", "test", "inf"],
             default="test",
             help="different execution modes for Pc-Encoder: train - Trains on Train and Eval dataset, test - Test on Test dataset, Inf - Inference on own data",
-        )
-        parser.add_argument(
-            "--mode",
-            "-m",
-            type=str,
-            choices=["enc", "rec"],
-            default="rec",
-            help="choose different execution modes: enc - encode point clouds to latent vecs, rec - reconstruct CAD models out of point clouds",
         )
         parser.add_argument(
             "--proj_dir",
@@ -97,16 +116,13 @@ class ConfigPcEncoder(object):
             help="file- or folder-path to point cloud data",
         )
         parser.add_argument(
+            "--data_root", type=str, default="data", help="path to source data folder"
+        )
+        parser.add_argument(
             "--split_path",
             type=str,
             default="data/train_val_test_split.json",
             help="path to train-val-test split",
-        )
-        parser.add_argument(
-            "--z_path",
-            type=str,
-            default="data/cad_all_zs.h5",
-            help="path to zs.h5 file containing ground truth shape codes",
         )
         parser.add_argument(
             "--exp_name",
@@ -121,6 +137,20 @@ class ConfigPcEncoder(object):
             default="latest",
             required=False,
             help="desired Pc-Encoder checkpoint to restore",
+        )
+        parser.add_argument(
+            "--pce_exp_name",
+            type=str,
+            required=False,
+            default="pretrained",
+            help="name of PointCloud experiment",
+        )
+        parser.add_argument(
+            "--pce_ckpt",
+            type=str,
+            default="latest",
+            required=False,
+            help="desired Pointcloud checkpoint to restore",
         )
         parser.add_argument(
             "--ae_exp_name",
@@ -162,6 +192,18 @@ class ConfigPcEncoder(object):
             help="total number of epochs to train",
         )
         parser.add_argument("--batch_size", type=int, default=128, help="batch size")
+        parser.add_argument(
+            "--lr", type=float, default=1e-3, help="initial learning rate"
+        )
+        parser.add_argument(
+            "--grad_clip", type=float, default=1.0, help="initial learning rate"
+        )
+        parser.add_argument(
+            "--warmup_step",
+            type=int,
+            default=2000,
+            help="step size for learning rate warm up",
+        )
         parser.add_argument(
             "--noise",
             action="store_true",
