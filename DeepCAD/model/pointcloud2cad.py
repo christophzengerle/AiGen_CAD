@@ -22,10 +22,10 @@ class PointCloud2CAD(nn.Module):
 
     def forward(self, points):
         z = self.pc_enc(points)
+        z = z.unsqueeze(1)
         # z = self.bottleneck(z)
 
         z = _make_seq_first(z)
-        z = _make_batch_first(z)
 
         out_logits = self.decoder(z)
         out_logits = _make_batch_first(*out_logits)

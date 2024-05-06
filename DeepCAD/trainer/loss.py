@@ -17,14 +17,14 @@ class CADLoss(nn.Module):
 
     def forward(self, pred, tgt):
         # Target & predictions
-        tgt_commands, tgt_args = tgt["command"], tgt["args"]
+        tgt_commands, tgt_args = tgt["command"].cuda(), tgt["args"].cuda()
 
         visibility_mask = _get_visibility_mask(tgt_commands, seq_dim=-1)
         padding_mask = _get_padding_mask(
             tgt_commands, seq_dim=-1, extended=True
         ) * visibility_mask.unsqueeze(-1)
 
-        command_logits, args_logits = pred["command_logits"], pred["args_logits"]
+        command_logits, args_logits = pred["command_logits"].cuda(), pred["args_logits"].cuda()
 
         mask = self.cmd_args_mask[tgt_commands.long()]
 

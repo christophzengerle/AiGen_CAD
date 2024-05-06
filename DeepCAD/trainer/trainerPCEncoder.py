@@ -20,15 +20,15 @@ from utils.step2png import transform
 from .base import BaseTrainer
 
 
-class TrainerPcEncoder(BaseTrainer):
+class TrainerPCEncoder(BaseTrainer):
     def __init__(self, cfg):
-        super(TrainerPcEncoder, self).__init__(cfg)
+        super(TrainerPCEncoder, self).__init__(cfg)
         self.build_net(cfg)
 
     def build_net(self, config):
         self.net = PointNet2().cuda()
-        if len(config.gpu_ids) > 1:
-            self.net = nn.DataParallel(self.net)
+        # if len(config.gpu_ids) > 1:
+        #     self.net = nn.DataParallel(self.net)
 
     def set_loss_function(self):
         self.criterion = nn.MSELoss().cuda()

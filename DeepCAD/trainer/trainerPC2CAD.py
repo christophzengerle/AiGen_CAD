@@ -1,9 +1,11 @@
+from collections import OrderedDict
 import datetime
 import json
 import os
 import random
 import sys
 
+from .loss import CADLoss
 import h5py
 import numpy as np
 import torch
@@ -12,19 +14,19 @@ import torch.optim as optim
 from OCC.Core.BRepCheck import BRepCheck_Analyzer
 from tqdm import tqdm
 
-from DeepCAD.utils.step_utils import create_step_file, step_file_exists
+from utils.step_utils import create_step_file, step_file_exists
 
 sys.path.append("..")
 from cadlib.macro import *
 from model.pointcloud2cad import PointCloud2CAD
-from trainerAE import TrainerAE
-from trainerPcEncoder import TrainerPcEncoder
+from .trainerAE import TrainerAE
+from .trainerPCEncoder import TrainerPCEncoder
 from utils import read_ply
 from utils.file_utils import walk_dir
 from utils.step2png import transform
 
-from DeepCAD.cadlib.visualize import vec2CADsolid
-from DeepCAD.trainer.scheduler import GradualWarmupScheduler
+from cadlib.visualize import vec2CADsolid
+from trainer.scheduler import GradualWarmupScheduler
 
 from .base import BaseTrainer
 
@@ -32,27 +34,29 @@ from .base import BaseTrainer
 class TrainerPC2CAD(BaseTrainer):
     def __init__(self, cfg):
         super(TrainerPC2CAD, self).__init__(cfg)
+        
+        self.build_net(cfg)
 
-        self.trainer_pc_enc = TrainerPcEncoder(cfg)
+    def build_net(self, cfg):
+        self.trainer_pc_enc = TrainerPCEncoder(cfg)
         self.trainer_ae = TrainerAE(cfg)
-        self.build_net()
-
-    def build_net(self):
         self.net = PointCloud2CAD(self.trainer_pc_enc, self.trainer_ae)
+        # if len(cfg.gpu_ids) > 1:
+        #     self.net = nn.DataParallel(self.net)
 
     def set_loss_function(self):
-        self.criterion = self.trainer_ae.set_loss_function()
+        self.criterion = CADLoss(self.cfg).cuda()
 
-    def set_optimizer(self):
+    def set_optimizer(self, cfg):
         """set optimizer and lr scheduler used in training"""
         self.optimizer = torch.optim.Adam(
-            self.net.parameters(), self.config.lr
+            self.net.parameters(), cfg.lr
         )  # , betas=(config.beta1, 0.9))
         # self.scheduler = torch.optim.lr_scheduler.StepLR(
         #     self.optimizer, config.lr_step_size
         # )
         self.scheduler = GradualWarmupScheduler(
-            self.optimizer, 1.0, self.config.warmup_step
+            self.optimizer, 1.0, cfg.warmup_step
         )
 
     def forward(self, data):
@@ -62,7 +66,7 @@ class TrainerPC2CAD(BaseTrainer):
 
     def train(self, train_loader, val_loader, test_loader):
         self.set_loss_function()
-        self.set_optimizer()
+        self.set_optimizer(self.cfg)
 
         # start training
         clock = self.clock
@@ -76,8 +80,8 @@ class TrainerPC2CAD(BaseTrainer):
             # begin iteration
             pbar = tqdm(train_loader)
             for b, data in enumerate(pbar):
-                points = data["points"].cuda()
-                codes = data["codes"].cuda()
+                points = data["points"]
+                codes = data["codes"]
 
                 # train step
                 pred = self.forward(points)
@@ -92,7 +96,7 @@ class TrainerPC2CAD(BaseTrainer):
                         e, nr_epochs, b, len(train_loader)
                     )
                 )
-                pbar.set_postfix(loss=loss["loss_args"].item())
+                pbar.set_postfix(OrderedDict({k: v.item() for k, v in loss.items()}))
 
                 clock.tick()
 
@@ -113,7 +117,7 @@ class TrainerPC2CAD(BaseTrainer):
                             e, nr_epochs, i, len(val_loader)
                         )
                     )
-                    pbar.set_postfix(loss=loss["loss_args"].item())
+                    pbar.set_postfix(OrderedDict({k: v.item() for k, v in loss.items()}))
 
                 self.record_losses(eval_losses, mode="eval")
 
@@ -131,8 +135,8 @@ class TrainerPC2CAD(BaseTrainer):
     def evaluate(self, data):
         with torch.no_grad():
             self.net.eval()
-            points = data["points"].cuda()
-            codes = data["codes"].cuda()
+            points = data["points"]
+            codes = data["codes"]
             pred = self.forward(points)
             loss = self.criterion(pred, codes)
         return pred, loss
@@ -153,7 +157,7 @@ class TrainerPC2CAD(BaseTrainer):
             with torch.no_grad():
                 points = data["points"].cuda()
 
-                codes = data["codes"].cuda()
+                codes = data["codes"]
                 commands = codes["command"].cuda()
                 args = codes["args"].cuda()
 

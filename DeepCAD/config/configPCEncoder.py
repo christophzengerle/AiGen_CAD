@@ -6,7 +6,7 @@ import shutil
 from utils import ensure_dirs
 
 
-class ConfigPcEncoder(object):
+class ConfigPCEncoder(object):
     def __init__(self):
         self.set_configuration()
         _, args = self.parse()

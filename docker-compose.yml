@@ -21,6 +21,7 @@ services:
       - "8084:8888" # Jupyter
 
     command: tail -F anything #to keep Container running
+    ipc: host
     deploy:
       resources:
         reservations:

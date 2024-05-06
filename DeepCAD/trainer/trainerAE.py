@@ -31,8 +31,8 @@ class TrainerAE(BaseTrainer):
 
     def build_net(self, cfg):
         self.net = CADTransformer(cfg).cuda()
-        if len(cfg.gpu_ids) > 1:
-            self.net = nn.DataParallel(self.net)
+        # if len(cfg.gpu_ids) > 1:
+        #     self.net = nn.DataParallel(self.net)
 
     def set_optimizer(self, cfg):
         """set optimizer and lr scheduler used in training"""

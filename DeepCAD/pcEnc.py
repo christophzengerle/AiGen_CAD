@@ -1,8 +1,8 @@
 import sys
 
-from config.configPcEncoder import ConfigPcEncoder
-from AiGen_CAD.DeepCAD.dataset.pcEnc_dataset import get_dataloader
-from AiGen_CAD.DeepCAD.trainer.trainerPCEncoder import TrainerPcEncoder
+from config.configPCEncoder import ConfigPCEncoder
+from dataset.pcEnc_dataset import get_dataloader
+from trainer.trainerPCEncoder import TrainerPCEncoder
 
 sys.path.append("..")
 from cad2cad import decode_pc_zs
@@ -19,9 +19,9 @@ def encode(trainer, cfg):
 
 
 def main():
-    cfg = ConfigPcEncoder()
+    cfg = ConfigPCEncoder()
     print("data path:", cfg.pc_root)
-    agent = TrainerPcEncoder(cfg)
+    agent = TrainerPCEncoder(cfg)
 
     if cfg.exec == "train":
         # load from checkpoint if provided
