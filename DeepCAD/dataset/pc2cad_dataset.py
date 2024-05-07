@@ -73,9 +73,9 @@ class ShapeCodesDataset(Dataset):
         command = torch.tensor(command, dtype=torch.long)
         args = torch.tensor(args, dtype=torch.long)
 
-        vecs = {"command": command, "args": args, "id": data_id}
+        vecs = {"command": command, "args": args, "ids": data_id}
 
-        return {"points": pc, "codes": vecs, "id": data_id}
+        return {"points": pc, "codes": vecs, "ids": data_id}
 
     def __len__(self):
         return len(self.all_data)

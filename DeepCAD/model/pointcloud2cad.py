@@ -10,7 +10,7 @@ from .model_utils import (
 )
 
 
-class PoitCloud2CAD(nn.Module):
+class PointCloud2CAD(nn.Module):
     """Embedding: positional embed + command embed + parameter embed + group embed (optional)"""
 
     def __init__(self, trainer_pc_enc, trainer_ae):

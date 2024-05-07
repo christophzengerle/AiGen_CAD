@@ -104,6 +104,14 @@ class ConfigPC2CAD(object):
             help="different execution modes for Pc-Encoder: train - Trains on Train and Eval dataset, test - Test on Test dataset, Inf - Inference on own data",
         )
         parser.add_argument(
+            "--mode",
+            "-m",
+            type=str,
+            choices=["test", "acc"],
+            default="acc",
+            help="choose different execution modes: enc - encode point clouds to latent vecs, rec - reconstruct CAD models out of point clouds",
+        )
+        parser.add_argument(
             "--proj_dir",
             type=str,
             default="proj_log",

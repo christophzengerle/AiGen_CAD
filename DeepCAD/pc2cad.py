@@ -32,7 +32,17 @@ def main():
         # create dataloader
         test_loader = get_dataloader("test", cfg)
 
-        agent.test(test_loader)
+        if cfg.mode == "test":
+            agent.test(test_loader)
+            
+        elif cfg.mode == "acc":
+            agent.test_acc(test_loader)
+            
+        else:
+            raise ValueError(
+                "Invalid execution mode. Please specify --mode 'enc' or 'rec' mode"
+            )
+        
 
     elif cfg.exec == "inf":
         agent.load_ckpt(cfg.ckpt)

@@ -11,9 +11,13 @@ import os
 #     --exp_name pcEncRandNoise100New --ckpt latest --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000 \
 #     --n_points 4096 --expSTEP --expPNG --expGIF -g 0"
 
-cmd = "python pc2cad.py --exec inf --pc_root evaluation/eval_pc_cad_images/source \
-    --exp_name pc2cad_Exp --ckpt latest --n_points 4096 --expSTEP --expPNG --expGIF -g 0"
+# cmd = "python pc2cad.py --exec inf --pc_root evaluation/eval_pc_cad_images/source \
+#     --exp_name pc2cad_Exp --ckpt latest --n_points 4096 --expSTEP --expPNG --expGIF -g 0"
     
+
+cmd = "python pc2cad.py --exec test --mode acc  \
+        --exp_name pc2cad_Exp --ckpt latest --n_points 4096 -g 0"    
+
     
 # cmd = "python cad2cad.py --exec test --mode dec --exp_name pretrained --ckpt ckpt_epoch1000 --num_workers 1 \
 #         --expSTEP --expPNG --expGIF -g 0 \

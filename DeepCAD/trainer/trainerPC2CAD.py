@@ -155,10 +155,7 @@ class TrainerPC2CAD(BaseTrainer):
         for i, data in enumerate(pbar):
             with torch.no_grad():
                 points = data["points"]
-
                 codes = data["codes"]
-                commands = codes["command"].cuda()
-                args = codes["args"].cuda()
 
                 pred = self.forward(points)
                 out_args = (
@@ -177,6 +174,8 @@ class TrainerPC2CAD(BaseTrainer):
                     )
             pbar.set_postfix(OrderedDict({k: v.item() for k, v in loss.items()}))
 
+
+            commands, args = codes["command"].cuda(), codes["args"].cuda()
 
             gt_commands = commands.squeeze(1).long().detach().cpu().numpy()  # (N, S)
             gt_args = args.squeeze(1).long().detach().cpu().numpy()  # (N, S, n_args)
@@ -216,6 +215,123 @@ class TrainerPC2CAD(BaseTrainer):
             },
             global_step=self.clock.epoch,
         )
+        
+    def test_acc(self, test_loader):
+        save_dir = os.path.join(
+            self.cfg.exp_dir,
+            "evaluation/accuracy/",
+            self.cfg.ckpt,
+            str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")),
+        )
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        
+        TOLERANCE = 3
+
+        # overall accuracy
+        avg_cmd_acc = [] # ACC_cmd
+        avg_param_acc = [] # ACC_param
+
+        # accuracy w.r.t. each command type
+        each_cmd_cnt = np.zeros((len(ALL_COMMANDS),))
+        each_cmd_acc = np.zeros((len(ALL_COMMANDS),))
+
+        # accuracy w.r.t each parameter
+        args_mask = CMD_ARGS_MASK.astype(np.float32)
+        N_ARGS = args_mask.shape[1]
+        each_param_cnt = np.zeros([*args_mask.shape])
+        each_param_acc = np.zeros([*args_mask.shape])        
+
+        pbar = tqdm(test_loader)
+
+        for batch_nr, data in enumerate(pbar):
+            with torch.no_grad():
+                batch_cmd_acc = [] # ACC_cmd
+                batch_param_acc = [] # ACC_param
+                
+                points = data["points"]
+                codes = data["codes"]
+                
+                gt_cmd = codes["command"].detach().cpu().numpy()
+                gt_param = codes["args"].detach().cpu().numpy()
+
+                pred = self.forward(points)
+                batch_out_vec = self.trainer_ae.logits2vec(pred)
+                
+                out_cmd = batch_out_vec[:, :, 0]
+                out_param = batch_out_vec[:, :, 1:]
+                
+                cmd_acc = (out_cmd == gt_cmd).astype(np.int32)
+                
+            for i in range(len(data)):
+                param_acc = []
+                for j in range(len(gt_cmd[i])):
+                    cmd = gt_cmd[i][j]
+                    each_cmd_cnt[cmd] += 1
+                    each_cmd_acc[cmd] += cmd_acc[i][j]
+                    if cmd in [SOL_IDX, EOS_IDX]:
+                        continue
+
+                    if out_cmd[i][j] == gt_cmd[i][j]: # NOTE: only account param acc for correct cmd
+                        tole_acc = (np.abs(out_param[i][j] - gt_param[i][j]) < TOLERANCE).astype(np.int32)
+                        # filter param that do not need tolerance (i.e. requires strictly equal)
+                        if cmd == EXT_IDX:
+                            tole_acc[-2:] = (out_param[i][j] == gt_param[i][j]).astype(np.int32)[-2:]
+                        elif cmd == ARC_IDX:
+                            tole_acc[3] = (out_param[i][j] == gt_param[i][j]).astype(np.int32)[3]
+
+                        valid_param_acc = tole_acc[args_mask[cmd].astype(np.bool_)].tolist()
+                        param_acc.extend(valid_param_acc)
+
+                        each_param_cnt[cmd, np.arange(N_ARGS)] += 1
+                        each_param_acc[cmd, np.arange(N_ARGS)] += tole_acc
+
+
+                mean_param_acc = np.mean(param_acc) if len(param_acc) > 0 else 0
+                avg_param_acc.append(mean_param_acc)
+                batch_param_acc.append(mean_param_acc)
+                
+                mean_cmd_acc = np.mean(cmd_acc[i])
+                avg_cmd_acc.append(mean_cmd_acc)
+                batch_cmd_acc.append(mean_cmd_acc)          
+                
+                
+            pbar.set_description(
+                    "TEST ACCURACY - BATCH[{}]-[{}]".format(
+                        batch_nr, len(test_loader)
+                    )
+                )
+            pbar.set_postfix(OrderedDict({"CMD-Acc": np.mean(batch_cmd_acc), "Args-Acc" : np.mean(batch_param_acc)}))
+
+        save_path = os.path.join(save_dir, "test_acc_stats.txt")
+        fp = open(save_path, "w")
+        # overall accuracy (averaged over all data)
+        avg_cmd_acc = np.mean(avg_cmd_acc)
+        print("avg command acc (ACC_cmd):", avg_cmd_acc, file=fp)
+        
+        print(avg_param_acc)
+        print(np.mean(avg_param_acc))
+        avg_param_acc = np.mean(avg_param_acc)
+        print("avg param acc (ACC_param):", avg_param_acc, file=fp)
+
+        # acc of each command type
+        each_cmd_acc = each_cmd_acc / (each_cmd_cnt + 1e-6)
+        print("each command count:", each_cmd_cnt, file=fp)
+        print("each command acc:", each_cmd_acc, file=fp)
+
+        # acc of each parameter type
+        each_param_acc = each_param_acc * args_mask
+        each_param_cnt = each_param_cnt * args_mask
+        each_param_acc = each_param_acc / (each_param_cnt + 1e-6)
+        for i in range(each_param_acc.shape[0]):
+            print(ALL_COMMANDS[i] + " param acc:", each_param_acc[i][args_mask[i].astype(np.bool_)], file=fp)
+        fp.close()
+
+        with open(save_path, "r") as fp:
+            res = fp.readlines()
+            for l in res:
+                print(l, end='')
+        
 
     def pc2cad(self):
         self.net.eval()
