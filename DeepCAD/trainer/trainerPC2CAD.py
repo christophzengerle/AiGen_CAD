@@ -145,7 +145,6 @@ class TrainerPC2CAD(BaseTrainer):
         """evaluatinon during training"""
         self.net.eval()
         pbar = tqdm(test_loader)
-        pbar.set_description("EVALUATE[{}]".format(self.clock.epoch))
 
         test_losses = {"losses_cmd": [], "losses_args": []}
         all_ext_args_comp = []
@@ -155,7 +154,7 @@ class TrainerPC2CAD(BaseTrainer):
 
         for i, data in enumerate(pbar):
             with torch.no_grad():
-                points = data["points"].cuda()
+                points = data["points"]
 
                 codes = data["codes"]
                 commands = codes["command"].cuda()
@@ -170,6 +169,14 @@ class TrainerPC2CAD(BaseTrainer):
             loss = self.criterion(pred, codes)
             test_losses["losses_cmd"].append(loss["loss_cmd"].item())
             test_losses["losses_args"].append(loss["loss_args"].item())
+            
+            pbar.set_description(
+                        "TEST - EPOCH[{}]-[{}] BATCH[{}]-[{}]".format(
+                            self.clock.epoch, self.nr_epochs, i, len(test_loader)
+                        )
+                    )
+            pbar.set_postfix(OrderedDict({k: v.item() for k, v in loss.items()}))
+
 
             gt_commands = commands.squeeze(1).long().detach().cpu().numpy()  # (N, S)
             gt_args = args.squeeze(1).long().detach().cpu().numpy()  # (N, S, n_args)
@@ -179,7 +186,7 @@ class TrainerPC2CAD(BaseTrainer):
             arc_pos = np.where(gt_commands == ARC_IDX)
             circle_pos = np.where(gt_commands == CIRCLE_IDX)
 
-            args_comp = (gt_args == out_args).astype(np.int)
+            args_comp = (gt_args == out_args).astype(np.int32)
             all_ext_args_comp.append(args_comp[ext_pos][:, -N_ARGS_EXT:])
             all_line_args_comp.append(args_comp[line_pos][:, :2])
             all_arc_args_comp.append(args_comp[arc_pos][:, :4])
@@ -210,7 +217,7 @@ class TrainerPC2CAD(BaseTrainer):
             global_step=self.clock.epoch,
         )
 
-    def pc2cad_inference(self):
+    def pc2cad(self):
         self.net.eval()
         path = self.cfg.pc_root
         if os.path.isfile(path):

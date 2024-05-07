@@ -19,6 +19,7 @@ class BaseTrainer(object):
         self.model_dir = cfg.model_dir
         self.clock = TrainClock()
         self.batch_size = cfg.batch_size
+        self.nr_epochs = cfg.nr_epochs
 
         # build network
         self.build_net(cfg)

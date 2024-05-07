@@ -38,7 +38,7 @@ def main():
         agent.load_ckpt(cfg.ckpt)
         agent.net.eval()
 
-        agent.pc2cad_inference()
+        agent.pc2cad()
 
     else:
         raise ValueError(
