@@ -15,7 +15,7 @@ import os
 #     --exp_name pc2cad_Exp --ckpt latest --n_points 4096 --expSTEP --expPNG --expGIF -g 0"
     
 
-cmd = "python pc2cad.py --exec test --mode acc  \
+cmd = "python pc2cad.py --exec test --mode cd --num_worker 1  \
         --exp_name pc2cad_Exp --ckpt latest --n_points 4096 -g 0"    
 
     

@@ -38,3 +38,10 @@ MAX_N_LOOPS = 6 # maximum number of loops per sketch
 MAX_N_CURVES = 15 # maximum number of curves per loop
 MAX_TOTAL_LEN = 60 # maximum cad sequence length
 ARGS_DIM = 256
+
+
+def trim_vec_EOS(out_vec):
+    out_command = out_vec[:, 0]
+    seq_len = out_command.tolist().index(EOS_IDX)
+    out_vec = out_vec[:seq_len]
+    return out_vec

@@ -267,8 +267,7 @@ def collect_src_pcs(args):
     print("time: {:.2f}s".format(time.time() - start))
     return gen_pcs
 
-
-def main():
+def parse():
     parser = argparse.ArgumentParser()
     parser.add_argument("--src", type=str)
     parser.add_argument('-g', '--gpu_ids', type=str, default=0, help="gpu to use, e.g. 0  0,1,2. CPU not supported.")
@@ -278,7 +277,10 @@ def main():
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("-o", "--output", type=str)
     args = parser.parse_args()
+    return parser, args
 
+def main():
+    parser, args = parse()
     print("n_test: {}, multiplier: {}, repeat times: {}".format(args.n_test, args.multi, args.times))
 
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_ids)

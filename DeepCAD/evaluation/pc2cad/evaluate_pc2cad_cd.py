@@ -136,16 +136,23 @@ def run(args):
               file=fp)
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--src', type=str, default=None, required=True)
-parser.add_argument('--n_points', type=int, default=2000)
-parser.add_argument('--num', type=int, default=-1)
-parser.add_argument('--parallel', action='store_true', help="use parallelization")
-args = parser.parse_args()
+def parse():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--src', type=str, default=None, required=True)
+    parser.add_argument('--n_points', type=int, default=2000)
+    parser.add_argument('--num', type=int, default=-1)
+    parser.add_argument('--parallel', action='store_true', help="use parallelization")
+    args = parser.parse_args()
+    return parser, args
 
-print(args.src)
-print("SKIP DATA:", SKIP_DATA)
-since = time.time()
-run(args)
-end = time.time()
-print("running time: {}s".format(end - since))
+def main():
+    parser, args = parse()
+    print(args.src)
+    print("SKIP DATA:", SKIP_DATA)
+    since = time.time()
+    run(args)
+    end = time.time()
+    print("running time: {}s".format(end - since))
+    
+if __name__ == '__main__':
+    main()

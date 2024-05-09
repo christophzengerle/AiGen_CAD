@@ -8,8 +8,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from cadlib.macro import *
-from model import CADTransformer
 from OCC.Core.BRepCheck import BRepCheck_Analyzer
 from tqdm import tqdm
 
@@ -18,6 +16,9 @@ from .loss import CADLoss
 from .scheduler import GradualWarmupScheduler
 
 sys.path.append("..")
+from cadlib.macro import trim_vec_EOS
+from cadlib.macro import *
+from model import CADTransformer
 from cadlib.visualize import vec2CADsolid
 from utils.file_utils import walk_dir
 from utils.step2png import transform
@@ -304,9 +305,7 @@ class TrainerAE(BaseTrainer):
             for j in range(len(batch_z)):
                 print("\n*** File: " + save_paths[i + j].split("/")[-1] + " ***\n")
                 out_vec = batch_out_vec[j]
-                out_command = out_vec[:, 0]
-                seq_len = out_command.tolist().index(EOS_IDX)
-                out_vec = out_vec[:seq_len]
+                out_vec = trim_vec_EOS(out_vec)
 
                 save_path = save_paths[i + j].split(".")[0]
                 out_shape = None
@@ -331,9 +330,7 @@ class TrainerAE(BaseTrainer):
                         out_batch_vec = self.logits2vec(new_batch_output)
                         out_vec = out_batch_vec.squeeze(0)
 
-                        out_command = out_vec[:, 0]
-                        seq_len = out_command.tolist().index(EOS_IDX)
-                        out_vec = out_vec[:seq_len]
+                        out_vec = trim_vec_EOS(out_vec)
 
                         try:
                             out_shape = vec2CADsolid(out_vec)

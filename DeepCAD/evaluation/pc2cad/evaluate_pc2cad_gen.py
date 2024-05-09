@@ -16,8 +16,6 @@ from utils import read_ply
 
 N_POINTS = 2000
 
-random.seed(1234)
-
 PC_ROOT = "../data/pc_cad"
 RECORD_FILE = "../data/train_val_test_split.json"
 
@@ -268,7 +266,7 @@ def collect_src_pcs(args):
     return gen_pcs
 
 
-def main():
+def parse():
     parser = argparse.ArgumentParser()
     parser.add_argument("--src", type=str)
     parser.add_argument('-g', '--gpu_ids', type=str, default=0, help="gpu to use, e.g. 0  0,1,2. CPU not supported.")
@@ -278,7 +276,11 @@ def main():
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("-o", "--output", type=str)
     args = parser.parse_args()
+    return parser, args
 
+def main():
+    parser, args = parse()
+    random.seed(1234)
     print("n_test: {}, multiplier: {}, repeat times: {}".format(args.n_test, args.multi, args.times))
 
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_ids)

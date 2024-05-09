@@ -7,7 +7,7 @@ import sys
 
 import h5py
 import numpy as np
-from evaluation.ae.evaluate_ae_cd import normalize_pc
+from evaluation.pc2cad.evaluate_pc2cad_cd import normalize_pc
 from joblib import Parallel, delayed
 from trimesh.sample import sample_surface
 
@@ -16,6 +16,8 @@ from cadlib.extrude import CADSequence
 from cadlib.visualize import CADsolid2pc, create_CAD, vec2CADsolid
 from utils.pc_utils import read_ply, write_ply
 
+
+
 DATA_ROOT = "../data"
 RAW_DATA = os.path.join(DATA_ROOT, "cad_vec")
 RECORD_FILE = os.path.join(DATA_ROOT, "train_val_test_split.json")
@@ -23,24 +25,16 @@ RECORD_FILE = os.path.join(DATA_ROOT, "train_val_test_split.json")
 N_POINTS = 8096  # 4096
 WRITE_NORMAL = False
 SAVE_DIR = os.path.join(DATA_ROOT, "cad_pc")
-if not os.path.exists(SAVE_DIR):
-    os.makedirs(SAVE_DIR)
 
 INVALID_IDS = []
 
 
-def vec2pc(vec, data_id, n_points):
-    try:
-        shape = vec2CADsolid(vec)
-    except Exception as e:
-        print("create_CAD failed", data_id)
-        return None
+def convert_vec2pc(vec, data_id, n_points):
+    shape = vec2CADsolid(vec)
 
-    try:
-        out_pc = CADsolid2pc(shape, n_points, data_id)
-    except Exception as e:
-        print("convert pc failed:", data_id)
-        return None
+
+    out_pc = CADsolid2pc(shape, n_points, data_id)
+
 
     if np.max(np.abs(out_pc)) > 2:  # normalize out-of-bound data
         out_pc = normalize_pc(out_pc)
@@ -85,19 +79,29 @@ def process_one(data_id):
     write_ply(out_pc, save_path)
 
 
-with open(RECORD_FILE, "r") as fp:
-    all_data = json.load(fp)
+def parse():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--only_test", action="store_true", help="only convert test data")
+    args = parser.parse_args()
+    return parser, args
 
-# process_one(all_data["train"][3])
-# exit()
+def main():
+    parser, args = parse()
+    with open(RECORD_FILE, "r") as fp:
+        all_data = json.load(fp)
+        
+    if not os.path.exists(SAVE_DIR):
+        os.makedirs(SAVE_DIR)
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--only_test", action="store_true", help="only convert test data")
-args = parser.parse_args()
+    # process_one(all_data["train"][3])
+    # exit()
 
-if not args.only_test:
-    Parallel(n_jobs=10, verbose=2)(delayed(process_one)(x) for x in all_data["train"])
-    Parallel(n_jobs=10, verbose=2)(
-        delayed(process_one)(x) for x in all_data["validation"]
-    )
-Parallel(n_jobs=10, verbose=2)(delayed(process_one)(x) for x in all_data["test"])
+    if not args.only_test:
+        Parallel(n_jobs=10, verbose=2)(delayed(process_one)(x) for x in all_data["train"])
+        Parallel(n_jobs=10, verbose=2)(
+            delayed(process_one)(x) for x in all_data["validation"]
+        )
+    Parallel(n_jobs=10, verbose=2)(delayed(process_one)(x) for x in all_data["test"])
+
+if __name__ == '__main__':
+    main()

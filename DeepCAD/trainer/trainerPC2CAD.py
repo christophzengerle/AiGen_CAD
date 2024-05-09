@@ -10,7 +10,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from dataset import vec2pc
 from joblib import Parallel, delayed
 from OCC.Core.BRepCheck import BRepCheck_Analyzer
 from tqdm import tqdm
@@ -19,7 +18,9 @@ from utils.step_utils import create_step_file, step_file_exists
 from .loss import CADLoss
 
 sys.path.append("..")
+from cadlib.macro import trim_vec_EOS
 from cadlib.macro import *
+from dataset.vec2pc import convert_vec2pc
 from cadlib.visualize import CADsolid2pc, vec2CADsolid
 from evaluation.pc2cad.evaluate_pc2cad_cd import chamfer_dist
 from evaluation.pc2cad.evaluate_pc2cad_gen import (
@@ -383,17 +384,12 @@ class TrainerPC2CAD(BaseTrainer):
         save_path = os.path.join(save_dir, "test_cd_stats.txt")
 
         def process_one_cd(out_vec, gt_pc, data_id):
-            try:
-                out_pc = vec2pc(out_vec, data_id, self.cfg.n_points)
+            out_pc = convert_vec2pc(out_vec, data_id, self.cfg.n_points)
 
-                # sample_idx = random.sample(list(range(gt_pc.shape[0])), self.cfg.n_points)
-                # gt_pc = gt_pc[sample_idx]
-                cd = chamfer_dist(gt_pc, out_pc)
-                return cd
-
-            except Exception as e:
-                print("create_CAD failed", data_id)
-                return None
+            # sample_idx = random.sample(list(range(gt_pc.shape[0])), self.cfg.n_points)
+            # gt_pc = gt_pc[sample_idx]
+            cd = chamfer_dist(gt_pc, out_pc)
+            return cd
 
         dists = []
         pbar = tqdm(test_loader)
@@ -403,22 +399,24 @@ class TrainerPC2CAD(BaseTrainer):
 
                 pred = self.forward(points)
                 batch_out_vec = self.trainer_ae.logits2vec(pred)
+                points = points.detach().cpu().numpy()
 
             if PROCESS_PARALLEL:
                 res = Parallel(n_jobs=self.cfg.num_workers, verbose=2)(
-                    delayed(process_one_cd)(out_vec, gt_pc, data_id)
+                    delayed(process_one_cd)(trim_vec_EOS(out_vec), gt_pc, data_id)
                     for gt_pc, out_vec, data_id in zip(
-                        points.detach().cpu().numpy(),
-                        batch_out_vec[i].detach().cpu().numpy(),
-                        data["data_id"],
+                        points,
+                        batch_out_vec,
+                        data["ids"],
                     )
                 )
                 dists.extend(res)
             else:
                 for i in range(len(points)):
-                    gt_pc = points[i].detach().cpu().numpy()
-                    out_vec = batch_out_vec[i].detach().cpu().numpy()
-                    data_id = data["data_id"][i]
+                    gt_pc = points[i]
+                    out_vec = batch_out_vec[i]
+                    out_vec = trim_vec_EOS(out_vec)
+                    data_id = data["ids"][i]
 
                     print("processing[{}] {}".format(i, data_id))
 
@@ -502,9 +500,10 @@ class TrainerPC2CAD(BaseTrainer):
 
             gen_pcs = []
             for i in range(len(points)):
-                out_vec = batch_out_vec[i].detach().cpu().numpy()
-                data_id = data["data_id"][i]
-                out_pc = vec2pc(out_vec, data_id, self.cfg.n_points)
+                out_vec = batch_out_vec[i]
+                out_vec = trim_vec_EOS(out_vec)
+                data_id = data["ids"][i]
+                out_pc = convert_vec2pc(out_vec, data_id, self.cfg.n_points)
                 gen_pcs.append(out_pc)
 
             gen_pcs = np.stack(gen_pcs, axis=0)
@@ -576,6 +575,7 @@ class TrainerPC2CAD(BaseTrainer):
                     pred = self.forward(pc)
                     batch_out_vec = self.trainer_ae.logits2vec(pred)
                     out_vec = batch_out_vec.squeeze(0)
+                    out_vec = trim_vec_EOS(out_vec)
 
                 if len(out_vec) > 0:
                     # save generated z
@@ -595,10 +595,6 @@ class TrainerPC2CAD(BaseTrainer):
                         print(
                             f'{pc_path.split("/")[-1]} encoded and saved to: {save_path}'
                         )
-
-                    out_command = out_vec[:, 0]
-                    seq_len = out_command.tolist().index(EOS_IDX)
-                    out_vec = out_vec[:seq_len]
 
                     # check generated CAD-Shape and save it
                     out_shape = None
@@ -623,9 +619,7 @@ class TrainerPC2CAD(BaseTrainer):
                             out_batch_vec = self.trainer_ae.logits2vec(new_batch_output)
                             out_vec = out_batch_vec.squeeze(0)
 
-                            out_command = out_vec[:, 0]
-                            seq_len = out_command.tolist().index(EOS_IDX)
-                            out_vec = out_vec[:seq_len]
+                            out_vec = trim_vec_EOS(out_vec)
 
                             try:
                                 out_shape = vec2CADsolid(out_vec)

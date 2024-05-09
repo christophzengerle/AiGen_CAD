@@ -5,7 +5,7 @@ from copy import copy
 import trimesh
 from OCC.Core.Bnd import Bnd_Box
 from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Common, BRepAlgoAPI_Cut, BRepAlgoAPI_Fuse
-from OCC.Core.BRepBndLib import brepbndlib_Add
+from OCC.Core.BRepBndLib import brepbndlib
 from OCC.Core.BRepBuilderAPI import (
     BRepBuilderAPI_MakeEdge,
     BRepBuilderAPI_MakeFace,
@@ -169,14 +169,18 @@ def point_local2global(point, sketch_plane: CoordSystem, to_gp_Pnt=True):
 def CADsolid2pc(shape, n_points, name=None):
     """convert opencascade solid to point clouds"""
     bbox = Bnd_Box()
-    brepbndlib_Add(shape, bbox)
+    brepbndlib.Add(shape, bbox)
     if bbox.IsVoid():
         raise ValueError("box check failed")
 
     if name is None:
         name = random.randint(100000, 999999)
-    write_stl_file(shape, "tmp_out_{}.stl".format(name))
-    out_mesh = trimesh.load("tmp_out_{}.stl".format(name))
-    os.system("rm tmp_out_{}.stl".format(name))
+    tmp_file_dir = os.path.join("data", "tmp_stl")
+    if not os.path.exists:
+        os.mkdir(tmp_file_dir)
+    tmp_file_path = os.path.join(tmp_file_dir, "tmp_out_{}.stl".format(name))
+    write_stl_file(shape, tmp_file_path)
+    out_mesh = trimesh.load(tmp_file_path)
+    # os.system("rm tmp_out_{}.stl".format(name))
     out_pc, _ = sample_surface(out_mesh, n_points)
     return out_pc
