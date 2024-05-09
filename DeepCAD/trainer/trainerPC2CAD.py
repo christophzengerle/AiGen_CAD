@@ -216,7 +216,7 @@ class TrainerPC2CAD(BaseTrainer):
             global_step=self.clock.epoch,
         )
         
-    def test_acc(self, test_loader):
+    def test_model_acc(self, test_loader):
         save_dir = os.path.join(
             self.cfg.exp_dir,
             "evaluation/accuracy/",
@@ -331,6 +331,10 @@ class TrainerPC2CAD(BaseTrainer):
             res = fp.readlines()
             for l in res:
                 print(l, end='')
+                
+                
+    def test_model_chamfer_dist():
+        pass
         
 
     def pc2cad(self):
