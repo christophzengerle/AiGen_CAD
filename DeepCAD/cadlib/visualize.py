@@ -11,11 +11,11 @@ from OCC.Core.BRepBuilderAPI import (
     BRepBuilderAPI_MakeFace,
     BRepBuilderAPI_MakeWire,
 )
-from OCC.Core.ShapeExtend import ShapeExtend_WireData
-from OCC.Core.ShapeFix import ShapeFix_Wire, ShapeFix_Face
 from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakePrism
 from OCC.Core.GC import GC_MakeArcOfCircle
 from OCC.Core.gp import gp_Ax2, gp_Ax3, gp_Circ, gp_Dir, gp_Lin, gp_Pln, gp_Pnt, gp_Vec
+from OCC.Core.ShapeExtend import ShapeExtend_WireData
+from OCC.Core.ShapeFix import ShapeFix_Face, ShapeFix_Wire
 from OCC.Extend.DataExchange import write_stl_file
 from trimesh.sample import sample_surface
 
@@ -65,8 +65,8 @@ def create_by_extrude(extrude_op: Extrude):
     fix_face.Perform()
     fix_face.FixIntersectingWires()
     fix_face.FixAddNaturalBound()
-    face = fix_face.Face()    
-    
+    face = fix_face.Face()
+
     normal = gp_Dir(*extrude_op.sketch_plane.normal)
     ext_vec = gp_Vec(normal).Multiplied(extrude_op.extent_one)
     body = BRepPrimAPI_MakePrism(face, ext_vec).Shape()
@@ -106,7 +106,6 @@ def create_profile_face(profile: Profile, sketch_plane: CoordSystem):
 #     return topo_wire.Wire()
 
 
-
 def create_loop_3d(loop: Loop, sketch_plane: CoordSystem):
     """create a 3D sketch loop"""
     topo_wire = ShapeExtend_WireData()
@@ -115,18 +114,16 @@ def create_loop_3d(loop: Loop, sketch_plane: CoordSystem):
         if topo_edge == -1:  # omitted
             continue
         topo_wire.Add(topo_edge)
-    
+
     fix_wire = ShapeFix_Wire()
-    fix_wire.Load(topo_wire);   
-    
-    fix_wire.Perform();
-    fix_wire.FixReorder();
-    fix_wire.FixConnected();
-    # print(fix_wire.NbEdges()) 
-    
+    fix_wire.Load(topo_wire)
+
+    fix_wire.Perform()
+    fix_wire.FixReorder()
+    fix_wire.FixConnected()
+    # print(fix_wire.NbEdges())
+
     return fix_wire.WireAPIMake()
-
-
 
 
 def create_edge_3d(curve: CurveBase, sketch_plane: CoordSystem):
@@ -150,7 +147,7 @@ def create_edge_3d(curve: CurveBase, sketch_plane: CoordSystem):
         topo_edge = BRepBuilderAPI_MakeEdge(arc)
     else:
         raise NotImplementedError(type(curve))
-    
+
     return topo_edge.Edge()
 
 
@@ -175,12 +172,12 @@ def CADsolid2pc(shape, n_points, name=None):
 
     if name is None:
         name = random.randint(100000, 999999)
-    tmp_file_dir = os.path.join("data", "tmp_stl")
-    if not os.path.exists:
+    tmp_file_dir = os.path.join("../data", "tmp_stl")
+    if not os.path.exists(tmp_file_dir):
         os.mkdir(tmp_file_dir)
     tmp_file_path = os.path.join(tmp_file_dir, "tmp_out_{}.stl".format(name))
     write_stl_file(shape, tmp_file_path)
     out_mesh = trimesh.load(tmp_file_path)
-    # os.system("rm tmp_out_{}.stl".format(name))
+    os.system("rm {}".format(tmp_file_path))
     out_pc, _ = sample_surface(out_mesh, n_points)
     return out_pc

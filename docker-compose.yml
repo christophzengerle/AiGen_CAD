@@ -5,11 +5,11 @@ services:
     container_name: deepcad
     volumes:
       - ./DeepCAD:/usr/app/src/DeepCAD
-      
+
       # Cluster bindings
       - ../utils/models/DeepCAD:/usr/app/src/DeepCAD/proj_log
       - ../utils/data:/usr/app/src/DeepCAD/data
-      
+
       # local Windows bindings (Christoph)
       # - C:/ArtificialIntelligence/DeepCAD/data:/usr/app/src/DeepCAD/data
       # - C:/ArtificialIntelligence/DeepCAD/proj_log:/usr/app/src/DeepCAD/proj_log
