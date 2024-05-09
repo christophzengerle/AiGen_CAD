@@ -107,7 +107,7 @@ class ConfigPC2CAD(object):
             "--mode",
             "-m",
             type=str,
-            choices=["test", "acc"],
+            choices=["test", "acc", "cd", "gen"],
             default="acc",
             help="choose different execution modes: enc - encode point clouds to latent vecs, rec - reconstruct CAD models out of point clouds",
         )

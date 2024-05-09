@@ -27,27 +27,28 @@ def main():
 
     elif cfg.exec == "test":
         agent.load_ckpt(cfg.ckpt)
-        agent.net.eval()
-
         # create dataloader
         test_loader = get_dataloader("test", cfg)
 
         if cfg.mode == "test":
             agent.test(test_loader)
-            
+
         elif cfg.mode == "acc":
-            agent.test_acc(test_loader)
-            
+            agent.test_model_acc(test_loader)
+
+        elif cfg.mode == "cd":
+            agent.test_model_chamfer_dist(test_loader)
+
+        elif cfg.mode == "gen":
+            agent.test_cov_mmd_jsd(test_loader)
+
         else:
             raise ValueError(
                 "Invalid execution mode. Please specify --mode 'enc' or 'rec' mode"
             )
-        
 
     elif cfg.exec == "inf":
         agent.load_ckpt(cfg.ckpt)
-        agent.net.eval()
-
         agent.pc2cad()
 
     else:
