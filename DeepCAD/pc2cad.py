@@ -15,7 +15,7 @@ def main():
     if cfg.exec == "train":
         # load from checkpoint if provided
         if cfg.cont:
-            agent.load_ckpt(cfg.ckpt)
+            agent.load_ckpt()
 
         # create dataloader
         train_loader = get_dataloader("train", cfg, noise=cfg.noise)
@@ -26,7 +26,7 @@ def main():
         agent.train(train_loader, val_loader, test_loader)
 
     elif cfg.exec == "test":
-        agent.load_ckpt(cfg.ckpt)
+        agent.load_ckpt()
         # create dataloader
         test_loader = get_dataloader("test", cfg)
 
@@ -48,7 +48,7 @@ def main():
             )
 
     elif cfg.exec == "inf":
-        agent.load_ckpt(cfg.ckpt)
+        agent.load_ckpt()
         agent.pc2cad()
 
     else:

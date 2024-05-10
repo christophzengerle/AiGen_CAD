@@ -141,15 +141,28 @@ class TrainerPCEncoder(BaseTrainer):
         else:
             raise ValueError("Invalid path")
 
-        # save_dir = os.path.join(cfg.exp_dir, "results/fake_z_ckpt{}_num{}_pc".format(args.ckpt, args.n_samples))
-        save_dir = os.path.join(
+        out_dir = os.path.join(
             self.cfg.exp_dir,
-            "results/pcEncodings/",
+            "results/pc2cad/",
             self.cfg.ckpt,
             save_name
             + "_"
             + str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")),
         )
+
+        if self.cfg.output is not None:
+            if os.path.isfile(self.cfg.output):
+                out_dir = os.path.split(self.cfg.output)[0]
+            elif os.path.isdir(self.cfg.output):
+                out_dir = self.cfg.output
+            else:
+                try:
+                    os.makedirs(self.cfg.output)
+                    out_dir = self.cfg.output
+                except Exception as e:
+                    print("Output-path is invalid. Using default path.")
+
+        save_dir = out_dir
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
@@ -164,7 +177,12 @@ class TrainerPCEncoder(BaseTrainer):
                     pc = read_ply(pc_path)
                     try:
                         sample_idx = random.sample(
-                            list(range(pc.shape[0])), self.cfg.n_points
+                            list(range(pc.shape[0])),
+                            (
+                                self.cfg.n_points
+                                if self.cfg.n_points < pc.shape[0]
+                                else pc.shape[0]
+                            ),
                         )
                     except ValueError:
                         print(

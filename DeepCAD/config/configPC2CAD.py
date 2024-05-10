@@ -88,7 +88,7 @@ class ConfigPC2CAD(object):
         self.loss_weights = {"loss_cmd_weight": 1.0, "loss_args_weight": 2.0}
 
         # General Settings
-        self.save_frequency = 10
+        self.save_frequency = 1
         self.val_frequency = 5
 
         self.expSourcePNG = True
@@ -107,9 +107,10 @@ class ConfigPC2CAD(object):
             "--mode",
             "-m",
             type=str,
+            dest="mode",
             choices=["test", "acc", "cd", "gen"],
             default="acc",
-            help="choose different execution modes: enc - encode point clouds to latent vecs, rec - reconstruct CAD models out of point clouds",
+            help="choose different testing modes: test - test model, acc - test model accuracy, cd - test chamfer distance, gen - test cov, mmd, jsd",
         )
         parser.add_argument(
             "--proj_dir",
@@ -133,6 +134,14 @@ class ConfigPC2CAD(object):
             help="path to train-val-test split",
         )
         parser.add_argument(
+            "--output",
+            "-o",
+            dest="output",
+            type=str,
+            default=None,
+            help="specify output-path for results in inference mode",
+        )
+        parser.add_argument(
             "--exp_name",
             type=str,
             required=True,
@@ -145,6 +154,22 @@ class ConfigPC2CAD(object):
             default="latest",
             required=False,
             help="desired Pc-Encoder checkpoint to restore",
+        )
+        parser.add_argument(
+            "--continue",
+            "-cont",
+            dest="cont",
+            action="store_true",
+            help="continue training from checkpoint",
+        )
+        parser.add_argument(
+            "--load_pce_ae_ckpt",
+            "--load_module_ckpt",
+            "--module_ckpt",
+            dest="load_module_ckpt",
+            action="store_true",
+            default=False,
+            help="load pretrained PointCloud and Autoencoder checkpoint",
         )
         parser.add_argument(
             "--pce_exp_name",
@@ -175,13 +200,6 @@ class ConfigPC2CAD(object):
             help="desired Autoencoder checkpoint to restore",
         )
         parser.add_argument(
-            "--continue",
-            "-cont",
-            dest="cont",
-            action="store_true",
-            help="continue training from checkpoint",
-        )
-        parser.add_argument(
             "--n_points",
             type=int,
             default=4096,
@@ -209,7 +227,7 @@ class ConfigPC2CAD(object):
         parser.add_argument(
             "--warmup_step",
             type=int,
-            default=2000,
+            default=10,
             help="step size for learning rate warm up",
         )
         parser.add_argument(

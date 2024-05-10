@@ -16,8 +16,6 @@ from cadlib.extrude import CADSequence
 from cadlib.visualize import CADsolid2pc, create_CAD, vec2CADsolid
 from utils.pc_utils import read_ply, write_ply
 
-
-
 DATA_ROOT = "../data"
 RAW_DATA = os.path.join(DATA_ROOT, "cad_vec")
 RECORD_FILE = os.path.join(DATA_ROOT, "train_val_test_split.json")
@@ -30,23 +28,22 @@ INVALID_IDS = []
 
 
 def convert_vec2pc(vec, data_id, n_points):
-    # try:
-    #     shape = vec2CADsolid(vec)
-    # except Exception as e:
-    #     print("create_CAD failed", data_id)
-    #     return None
+    try:
+        shape = vec2CADsolid(vec)
+    except Exception as e:
+        print("create_CAD failed", data_id)
+        print(e)
+        return None
 
-    # try:
-    #     out_pc = CADsolid2pc(shape, n_points, data_id)
-    # except Exception as e:
-    #     print("convert pc failed:", data_id)
-    #     return None
+    try:
+        out_pc = CADsolid2pc(shape, n_points, data_id)
+    except Exception as e:
+        print("convert pc failed:", data_id)
+        print(e)
+        return None
 
-    # if np.max(np.abs(out_pc)) > 2:  # normalize out-of-bound data
-    #     out_pc = normalize_pc(out_pc)
-    
-    shape = vec2CADsolid(vec)
-    out_pc = CADsolid2pc(shape, n_points, data_id)
+    if np.max(np.abs(out_pc)) > 2:  # normalize out-of-bound data
+        out_pc = normalize_pc(out_pc)
 
     return out_pc
 
@@ -90,15 +87,18 @@ def process_one(data_id):
 
 def parse():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--only_test", action="store_true", help="only convert test data")
+    parser.add_argument(
+        "--only_test", action="store_true", help="only convert test data"
+    )
     args = parser.parse_args()
     return parser, args
+
 
 def main():
     parser, args = parse()
     with open(RECORD_FILE, "r") as fp:
         all_data = json.load(fp)
-        
+
     if not os.path.exists(SAVE_DIR):
         os.makedirs(SAVE_DIR)
 
@@ -106,11 +106,14 @@ def main():
     # exit()
 
     if not args.only_test:
-        Parallel(n_jobs=10, verbose=2)(delayed(process_one)(x) for x in all_data["train"])
+        Parallel(n_jobs=10, verbose=2)(
+            delayed(process_one)(x) for x in all_data["train"]
+        )
         Parallel(n_jobs=10, verbose=2)(
             delayed(process_one)(x) for x in all_data["validation"]
         )
     Parallel(n_jobs=10, verbose=2)(delayed(process_one)(x) for x in all_data["test"])
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

@@ -55,15 +55,15 @@ class ConfigPCEncoder(object):
 
     def set_configuration(self):
 
-        self.lr = 1e-3 # initial LR
-        self.lr_step_size = 25 # Nr Epochs after wich LR will be decresed
+        self.lr = 1e-3  # initial LR
+        self.lr_step_size = 25  # Nr Epochs after wich LR will be decresed
         # self.beta1 = 0.5
         self.grad_clip = None
         self.noiseAmount = 0.025
 
         self.save_frequency = 10
         self.val_frequency = 5
-        
+
         self.expSourcePNG = True
 
     def parse(self):
@@ -107,6 +107,14 @@ class ConfigPCEncoder(object):
             type=str,
             default="data/cad_all_zs.h5",
             help="path to zs.h5 file containing ground truth shape codes",
+        )
+        parser.add_argument(
+            "--output",
+            "-o",
+            dest="output",
+            type=str,
+            default=None,
+            help="specify output-path for results in inference mode",
         )
         parser.add_argument(
             "--exp_name",

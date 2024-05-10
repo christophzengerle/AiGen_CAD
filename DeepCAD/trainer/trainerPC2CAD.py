@@ -18,10 +18,10 @@ from utils.step_utils import create_step_file, step_file_exists
 from .loss import CADLoss
 
 sys.path.append("..")
-from cadlib.macro import trim_vec_EOS
 from cadlib.macro import *
-from dataset.vec2pc import convert_vec2pc
+from cadlib.macro import trim_vec_EOS
 from cadlib.visualize import CADsolid2pc, vec2CADsolid
+from dataset.vec2pc import convert_vec2pc
 from evaluation.pc2cad.evaluate_pc2cad_cd import chamfer_dist
 from evaluation.pc2cad.evaluate_pc2cad_gen import (
     compute_cov_mmd,
@@ -42,12 +42,10 @@ class TrainerPC2CAD(BaseTrainer):
     def __init__(self, cfg):
         super(TrainerPC2CAD, self).__init__(cfg)
 
-        self.build_net(cfg)
+        self.build_net(self.cfg)
 
     def build_net(self, cfg):
-        self.trainer_pc_enc = TrainerPCEncoder(cfg)
-        self.trainer_ae = TrainerAE(cfg)
-        self.net = PointCloud2CAD(self.trainer_pc_enc, self.trainer_ae)
+        self.net = PointCloud2CAD(cfg).cuda()
         # if len(cfg.gpu_ids) > 1:
         #     self.net = nn.DataParallel(self.net)
 
@@ -63,6 +61,23 @@ class TrainerPC2CAD(BaseTrainer):
         #     self.optimizer, config.lr_step_size
         # )
         self.scheduler = GradualWarmupScheduler(self.optimizer, 1.0, cfg.warmup_step)
+
+    def logits2vec(self, outputs, refill_pad=True, to_numpy=True):
+        """network outputs (logits) to final CAD vector"""
+        out_command = torch.argmax(
+            torch.softmax(outputs["command_logits"], dim=-1), dim=-1
+        )  # (N, S)
+        out_args = (
+            torch.argmax(torch.softmax(outputs["args_logits"], dim=-1), dim=-1) - 1
+        )  # (N, S, N_ARGS)
+        if refill_pad:  # fill all unused element to -1
+            mask = ~torch.tensor(CMD_ARGS_MASK).bool().cuda()[out_command.long()]
+            out_args[mask] = -1
+
+        out_cad_vec = torch.cat([out_command.unsqueeze(-1), out_args], dim=-1)
+        if to_numpy:
+            out_cad_vec = out_cad_vec.detach().cpu().numpy()
+        return out_cad_vec
 
     def forward(self, data):
         data = data.cuda()
@@ -166,7 +181,7 @@ class TrainerPC2CAD(BaseTrainer):
                 codes = data["codes"]
 
                 pred = self.forward(points)
-                batch_out_vec = self.trainer_ae.logits2vec(pred)
+                batch_out_vec = self.logits2vec(pred)
 
             commands, args = codes["command"], codes["args"]
             gt_commands = commands.squeeze(1).long().detach().cpu().numpy()  # (N, S)
@@ -177,8 +192,6 @@ class TrainerPC2CAD(BaseTrainer):
 
             cmd_acc = (out_cmd == gt_commands).astype(np.int32)
             all_cmd_comp.append(np.mean(cmd_acc))
-
-            out_args = out_args.long().detach().cpu().numpy()  # (N, S, n_args)
 
             loss = self.criterion(pred, codes)
             test_losses["losses_cmd"].append(loss["loss_cmd"].item())
@@ -215,7 +228,7 @@ class TrainerPC2CAD(BaseTrainer):
         arc_acc = np.mean(np.concatenate(all_arc_args_comp, axis=0))
         circle_acc = np.mean(np.concatenate(all_circle_args_comp, axis=0))
 
-        self.test_tb.add_scalars(
+        self.test_tb.add_scalar(
             "cmd_acc",
             all_cmd_comp,
             global_step=self.clock.epoch,
@@ -275,7 +288,7 @@ class TrainerPC2CAD(BaseTrainer):
                 gt_param = codes["args"].detach().cpu().numpy()
 
                 pred = self.forward(points)
-                batch_out_vec = self.trainer_ae.logits2vec(pred)
+                batch_out_vec = self.logits2vec(pred)
 
                 out_cmd = batch_out_vec[:, :, 0]
                 out_param = batch_out_vec[:, :, 1:]
@@ -341,8 +354,6 @@ class TrainerPC2CAD(BaseTrainer):
         avg_cmd_acc = np.mean(avg_cmd_acc)
         print("avg command acc (ACC_cmd):", avg_cmd_acc, file=fp)
 
-        print(avg_param_acc)
-        print(np.mean(avg_param_acc))
         avg_param_acc = np.mean(avg_param_acc)
         print("avg param acc (ACC_param):", avg_param_acc, file=fp)
 
@@ -370,7 +381,8 @@ class TrainerPC2CAD(BaseTrainer):
 
     def test_model_chamfer_dist(self, test_loader):
         self.net.eval()
-        PROCESS_PARALLEL = True if self.cfg.num_workers > 1 else False
+        # PROCESS_PARALLEL = True if self.cfg.num_workers > 1 else False
+        PROCESS_PARALLEL = False
 
         save_dir = os.path.join(
             self.cfg.exp_dir,
@@ -388,19 +400,20 @@ class TrainerPC2CAD(BaseTrainer):
             if out_pc is None:
                 return None
 
-            # sample_idx = random.sample(list(range(gt_pc.shape[0])), self.cfg.n_points)
+            # sample_idx = random.sample(list(range(gt_pc.shape[0])), self.cfg.n_points if self.cfg.n_points < pc.shape[0] else pc.shape[0])
             # gt_pc = gt_pc[sample_idx]
             cd = chamfer_dist(gt_pc, out_pc)
             return cd
 
         dists = []
         pbar = tqdm(test_loader)
-        for _, data in enumerate(pbar):
+        for batch_nr, data in enumerate(pbar):
             with torch.no_grad():
+                print("processing Batch - [{}]-[{}]".format(batch_nr, len(test_loader)))
                 points = data["points"]  # Input Point Cloud
 
                 pred = self.forward(points)
-                batch_out_vec = self.trainer_ae.logits2vec(pred)
+                batch_out_vec = self.logits2vec(pred)
                 points = points.detach().cpu().numpy()
 
             if PROCESS_PARALLEL:
@@ -419,8 +432,6 @@ class TrainerPC2CAD(BaseTrainer):
                     out_vec = batch_out_vec[i]
                     out_vec = trim_vec_EOS(out_vec)
                     data_id = data["ids"][i]
-
-                    print("processing[{}] {}".format(i, data_id))
 
                     res = process_one_cd(out_vec, gt_pc, data_id)
                     dists.append(res)
@@ -488,25 +499,29 @@ class TrainerPC2CAD(BaseTrainer):
         save_path = os.path.join(save_dir, "test_gen_stats.txt")
 
         result_list = []
+        all_pcs = []
         pbar = tqdm(test_loader)
-        for _, data in enumerate(pbar):
+        for batch_nr, data in enumerate(pbar):
             with torch.no_grad():
+                print("processing Batch [{}]-[{}]".format(batch_nr, len(test_loader)))
                 points = data["points"]  # Input Point Cloud
 
                 pred = self.forward(points)
-                batch_out_vec = self.trainer_ae.logits2vec(pred)
+                batch_out_vec = self.logits2vec(pred)
 
             gt_pcs = points.detach().cpu().numpy()
 
-            gen_pcs = []
+            proc_pcs = []
             for i in range(len(points)):
                 out_vec = batch_out_vec[i]
                 out_vec = trim_vec_EOS(out_vec)
                 data_id = data["ids"][i]
-                print("processing[{}] {}".format(i, data_id))
-                out_pc = convert_vec2pc(out_vec, data_id, self.cfg.n_points)
-                gen_pcs.append(out_pc)
 
+                out_pc = convert_vec2pc(out_vec, data_id, self.cfg.n_points)
+                proc_pcs.append(out_pc)
+
+            all_pcs.extend(proc_pcs)
+            gen_pcs = [pc for pc in proc_pcs if pc is not None]
             gen_pcs = np.stack(gen_pcs, axis=0)
 
             jsd = jsd_between_point_cloud_sets(gen_pcs, gt_pcs, in_unit_sphere=False)
@@ -516,16 +531,38 @@ class TrainerPC2CAD(BaseTrainer):
             result = compute_cov_mmd(gen_pcs, ref_pcs, batch_size=len(gt_pcs))
             result.update({"JSD": jsd})
 
-            print(result)
-            with open(save_path, "a") as fp:
-                print(result, file=fp)
             result_list.append(result)
+
+        valid_pcs = [x for x in all_pcs if x is not None]
+        n_valid = len(valid_pcs)
+        n_invalid = len(all_pcs) - n_valid
         avg_result = {}
         for k in result_list[0].keys():
             avg_result.update({"avg-" + k: np.mean([x[k] for x in result_list])})
+        print("#####" * 10)
+        print(
+            "total:",
+            len(test_loader.dataset),
+            "\t invalid:",
+            n_invalid,
+            "\t invalid ratio:",
+            n_invalid / len(test_loader.dataset),
+        )
         print("average result:")
         print(avg_result)
-        print(avg_result, file=fp)
+        with open(save_path, "wr") as fp:
+            print("#####" * 10, file=fp)
+            print(
+                "total:",
+                len(test_loader.dataset),
+                "\t invalid:",
+                n_invalid,
+                "\t invalid ratio:",
+                n_invalid / len(test_loader.dataset),
+                file=fp,
+            )
+            print("average result:", file=fp)
+            print(avg_result, file=fp)
 
     def pc2cad(self):
         self.net.eval()
@@ -542,8 +579,7 @@ class TrainerPC2CAD(BaseTrainer):
         else:
             raise ValueError("Invalid path")
 
-        # save_dir = os.path.join(cfg.exp_dir, "results/fake_z_ckpt{}_num{}_pc".format(args.ckpt, args.n_samples))
-        save_dir = os.path.join(
+        out_dir = os.path.join(
             self.cfg.exp_dir,
             "results/pc2cad/",
             self.cfg.ckpt,
@@ -551,11 +587,26 @@ class TrainerPC2CAD(BaseTrainer):
             + "_"
             + str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")),
         )
+
+        if self.cfg.output is not None:
+            if os.path.isfile(self.cfg.output):
+                out_dir = os.path.split(self.cfg.output)[0]
+            elif os.path.isdir(self.cfg.output):
+                out_dir = self.cfg.output
+            else:
+                try:
+                    os.makedirs(self.cfg.output)
+                    out_dir = self.cfg.output
+                except Exception as e:
+                    print("Output-path is invalid. Using default path.")
+
+        save_dir = out_dir
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
         print(f"File-List: {file_list}")
         if len(file_list) > 0:
+            valid_preds = 0
             pbar = tqdm(file_list)
             for i, pc_path in enumerate(pbar):
                 with torch.no_grad():
@@ -563,18 +614,24 @@ class TrainerPC2CAD(BaseTrainer):
                     pc = read_ply(pc_path)
                     try:
                         sample_idx = random.sample(
-                            list(range(pc.shape[0])), self.cfg.n_points
+                            list(range(pc.shape[0])),
+                            (
+                                self.cfg.n_points
+                                if self.cfg.n_points < pc.shape[0]
+                                else pc.shape[0]
+                            ),
                         )
                     except ValueError:
                         print(
                             f"Point cloud {pc_path.split('/')[-1]} has less than {self.cfg.n_points} points."
                         )
                         continue
+
                     pc = pc[sample_idx]
                     pc = torch.tensor(pc, dtype=torch.float32).unsqueeze(0).cuda()
 
                     pred = self.forward(pc)
-                    batch_out_vec = self.trainer_ae.logits2vec(pred)
+                    batch_out_vec = self.logits2vec(pred)
                     out_vec = batch_out_vec.squeeze(0)
                     out_vec = trim_vec_EOS(out_vec)
 
@@ -603,11 +660,9 @@ class TrainerPC2CAD(BaseTrainer):
                     try:
                         out_shape = vec2CADsolid(out_vec)
                         is_valid_BRep = True
+                        valid_preds += 1
                     except Exception as e:
-                        print(
-                            f"Creation of CAD-Solid for file {save_path} failed.\n"
-                            + str(e.with_traceback)
-                        )
+                        print(str(e))
 
                         # check generated CAD-Shape
                         # if invalid -> generate again
@@ -617,9 +672,8 @@ class TrainerPC2CAD(BaseTrainer):
                             )
 
                             new_batch_output = self.forward(pc)
-                            out_batch_vec = self.trainer_ae.logits2vec(new_batch_output)
+                            out_batch_vec = self.logits2vec(new_batch_output)
                             out_vec = out_batch_vec.squeeze(0)
-
                             out_vec = trim_vec_EOS(out_vec)
 
                             try:
@@ -628,16 +682,14 @@ class TrainerPC2CAD(BaseTrainer):
                                 if analyzer.IsValid():
                                     print("Valid BRep-Model detected.")
                                     is_valid_BRep = True
+                                    valid_preds += 1
                                     break
                                 else:
                                     print("invalid BRep-Model detected.")
                                     continue
 
                             except Exception as e:
-                                print(
-                                    f"Creation of CAD-Solid for file {save_path} failed.\n"
-                                    + str(e.with_traceback)
-                                )
+                                print(str(e))
                                 continue
 
                     if not is_valid_BRep:
@@ -692,6 +744,7 @@ class TrainerPC2CAD(BaseTrainer):
             raise ValueError("No .ply files found in the provided path.")
 
         print("********* Prediction of CAD-Model from PointCloud Completed ***********")
+        print(f"********** {valid_preds} / {len(file_list)} completed ***********")
 
     def save_ckpt(self, name=None):
         """save checkpoint during training for future restore"""
@@ -721,22 +774,68 @@ class TrainerPC2CAD(BaseTrainer):
 
         self.net.cuda()
 
-    def load_ckpt(self, name=None):
+    def load_ckpt(self):
         """load checkpoint from saved checkpoint"""
-        # name = (name if name == "latest" else "ckpt_epoch{}".format(name))
-        load_path = os.path.join(self.model_dir, "{}.pth".format(name))
-        if not os.path.exists(load_path):
-            raise ValueError("Checkpoint {} not exists.".format(load_path))
+        if self.cfg.load_module_ckpt:
+            pcEnc_model_dir = os.path.join(
+                self.cfg.proj_dir, "pce", self.cfg.pce_exp_name, "model"
+            )
+            ae_model_dir = os.path.join(
+                self.cfg.proj_dir, "ae", self.cfg.ae_exp_name, "model"
+            )
 
-        checkpoint = torch.load(load_path)
-        print("Loading checkpoint from {} ...".format(load_path))
-        if isinstance(self.net, nn.DataParallel):
-            self.net.module.load_state_dict(checkpoint["model_state_dict"])
+            pcEnc_load_path = os.path.join(
+                pcEnc_model_dir, "{}.pth".format(self.cfg.pce_ckpt)
+            )
+            ae_load_path = os.path.join(ae_model_dir, "{}.pth".format(self.cfg.ae_ckpt))
+
+            if not os.path.exists(pcEnc_load_path):
+                raise ValueError(
+                    "PcEncoder-Checkpoint {} not exists.".format(pcEnc_load_path)
+                )
+            if not os.path.exists(ae_load_path):
+                raise ValueError(
+                    "AutoEncoder-Checkpoint {} not exists.".format(ae_load_path)
+                )
+
+            ae_checkpoint = torch.load(ae_load_path)
+            print("Loading AE-checkpoint from {} ...".format(ae_load_path))
+            if isinstance(self.net, nn.DataParallel):
+                self.net.module.load_state_dict(
+                    ae_checkpoint["model_state_dict"], strict=False
+                )
+            else:
+                self.net.load_state_dict(
+                    ae_checkpoint["model_state_dict"], strict=False
+                )
+
+            pcEnc_checkpoint = torch.load(pcEnc_load_path)
+            print("Loading pcEnc-checkpoint from {} ...".format(pcEnc_load_path))
+            if isinstance(self.net, nn.DataParallel):
+                self.net.pc_enc.module.load_state_dict(
+                    pcEnc_checkpoint["model_state_dict"]
+                )
+            else:
+                self.net.pc_enc.load_state_dict(pcEnc_checkpoint["model_state_dict"])
+
+            print("Pretrained AE + pcEnc - Checkpoints loaded successfully.")
+
         else:
-            self.net.load_state_dict(checkpoint["model_state_dict"])
-            self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-            self.scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
-            self.clock.restore_checkpoint(checkpoint["clock"])
+            load_path = os.path.join(self.model_dir, "{}.pth".format(self.cfg.ckpt))
+            if not os.path.exists(load_path):
+                raise ValueError("Checkpoint {} not exists.".format(load_path))
+
+            checkpoint = torch.load(load_path)
+            print("Loading checkpoint from {} ...".format(load_path))
+            if isinstance(self.net, nn.DataParallel):
+                self.net.module.load_state_dict(checkpoint["model_state_dict"])
+            else:
+                self.net.load_state_dict(checkpoint["model_state_dict"])
+                self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+                self.scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+                self.clock.restore_checkpoint(checkpoint["clock"])
+
+            print("Checkpoint loaded successfully.")
 
     def record_and_update_learning_rate(self):
         """record and update learning rate"""
