@@ -46,8 +46,8 @@ class TrainerPC2CAD(BaseTrainer):
 
     def build_net(self, cfg):
         self.net = PointCloud2CAD(cfg).cuda()
-        # if len(cfg.gpu_ids) > 1:
-        #     self.net = nn.DataParallel(self.net)
+        if len(cfg.gpu_ids) > 1:
+            self.net = nn.DataParallel(self.net)
 
     def set_loss_function(self):
         self.criterion = CADLoss(self.cfg).cuda()
@@ -56,10 +56,10 @@ class TrainerPC2CAD(BaseTrainer):
         """set optimizer and lr scheduler used in training"""
         self.optimizer = torch.optim.Adam(
             self.net.parameters(), cfg.lr
-        )  # , betas=(config.beta1, 0.9))
+            # , betas=(config.beta1, 0.9))
+        )  
         # self.scheduler = torch.optim.lr_scheduler.StepLR(
-        #     self.optimizer, config.lr_step_size
-        # )
+        #     self.optimizer, config.lr_step_size)
         self.scheduler = GradualWarmupScheduler(self.optimizer, 1.0, cfg.warmup_step)
 
     def logits2vec(self, outputs, refill_pad=True, to_numpy=True):
@@ -818,7 +818,7 @@ class TrainerPC2CAD(BaseTrainer):
             else:
                 self.net.pc_enc.load_state_dict(pcEnc_checkpoint["model_state_dict"])
 
-            print("Pretrained AE + pcEnc - Checkpoints loaded successfully.")
+            print("Checkpoints for pretrained AutoEncoder & PointCloud-Encoder loaded successfully.")
 
         else:
             load_path = os.path.join(self.model_dir, "{}.pth".format(self.cfg.ckpt))

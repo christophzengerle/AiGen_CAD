@@ -27,8 +27,8 @@ class TrainerPCEncoder(BaseTrainer):
 
     def build_net(self, config):
         self.net = PointNet2().cuda()
-        # if len(config.gpu_ids) > 1:
-        #     self.net = nn.DataParallel(self.net)
+        if len(config.gpu_ids) > 1:
+            self.net = nn.DataParallel(self.net)
 
     def set_loss_function(self):
         self.criterion = nn.MSELoss().cuda()

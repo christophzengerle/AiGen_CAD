@@ -54,7 +54,6 @@ class ConfigPC2CAD(object):
                 json.dump(self.__dict__, f, indent=2)
 
     def set_configuration(self):
-
         # Pc-Encoder
         self.lr = 1e-3  # initial LR
         self.lr_step_size = 25  # Nr Epochs after wich LR will be decresed
@@ -164,8 +163,8 @@ class ConfigPC2CAD(object):
         )
         parser.add_argument(
             "--load_pce_ae_ckpt",
-            "--load_module_ckpt",
-            "--module_ckpt",
+            "--load_modular_ckpt",
+            "--modular_ckpt",
             dest="load_module_ckpt",
             action="store_true",
             default=False,
@@ -227,7 +226,7 @@ class ConfigPC2CAD(object):
         parser.add_argument(
             "--warmup_step",
             type=int,
-            default=10,
+            default=2,
             help="step size for learning rate warm up",
         )
         parser.add_argument(

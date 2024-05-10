@@ -4,20 +4,20 @@ import os
 #     --batch_size 150 --num_workers 1 --nr_epochs 100 --noise -g 0"
 
 
-# cmd = "python pc2cad.py --exec train --exp_name pc2cad_Exp --num_workers 8 --batch_size 100 \
-#     --nr_epochs 100 --noise -g 0"
+cmd = "python pc2cad.py --exec train --exp_name pc2cad_ExpParallel --num_workers 1 --batch_size 150 \
+    --nr_epochs 100 --noise -g 0,1"
 
 # cmd = "python pcEnc.py --exec inf --mode rec --pc_root evaluation/eval_pc_cad_images/point_e \
 #     --exp_name pcEncRandNoise100New --ckpt latest --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000 \
 #     --n_points 4096 --expSTEP --expPNG --expGIF -g 0"
 
-cmd = "python pc2cad.py --exec inf --pc_root evaluation/eval_testimages/point_e/00001817.ply \
-    --exp_name pc2cad_Exp --ckpt latest --n_points 4096 --expSTEP --expPNG --expGIF -g 0"
+# cmd = "python pc2cad.py --exec inf --pc_root evaluation/eval_testimages/point_e/00001817.ply \
+#     --exp_name pc2cad_Exp --ckpt latest --n_points 4096 --expSTEP --expPNG --expGIF -g 0"
 
 
-# cmd = "python pc2cad.py --exec test --mode cd --num_worker 1  \
+# cmd = "python pc2cad.py --exec test --mode gen --num_worker 1  \
 #         --exp_name pc2cad_Exp --ckpt latest --n_points 4096 -g 0 \
-#         --load_module_ckpt --pce_exp_name pcEncoder --pce_ckpt ckpt_epoch2_num4096 \
+#         --load_modular_ckpt --pce_exp_name pcEncRandNoise100New --pce_ckpt latest \
 #         --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000"
 
 
