@@ -25,7 +25,9 @@ from .sketch import Loop, Profile
 
 
 def vec2CADsolid(vec, is_numerical=True, n=256):
+    print(vec.shape)
     cad = CADSequence.from_vector(vec, is_numerical=is_numerical, n=256)
+    print(cad)
     cad = create_CAD(cad)
     return cad
 
@@ -169,13 +171,12 @@ def CADsolid2pc(shape, n_points, name=None):
     brepbndlib.Add(shape, bbox)
     if bbox.IsVoid():
         raise ValueError("box check failed")
-
     if name is None:
         name = random.randint(100000, 999999)
     tmp_file_dir = os.path.join("../data", "tmp_stl")
-    if not os.path.exists(tmp_file_dir):
-        os.mkdir(tmp_file_dir)
-    tmp_file_path = os.path.join(tmp_file_dir, "tmp_out_{}.stl".format(name))
+    if not os.path.isdir(tmp_file_dir):
+        os.mkdir(tmp_file_dir)    
+    tmp_file_path = os.path.join(tmp_file_dir, "tmp_out_{}.stl".format(name.split("/")[-1]))
     write_stl_file(shape, tmp_file_path)
     out_mesh = trimesh.load(tmp_file_path)
     os.system("rm {}".format(tmp_file_path))

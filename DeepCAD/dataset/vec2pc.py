@@ -30,14 +30,23 @@ INVALID_IDS = []
 
 
 def convert_vec2pc(vec, data_id, n_points):
+    # try:
+    #     shape = vec2CADsolid(vec)
+    # except Exception as e:
+    #     print("create_CAD failed", data_id)
+    #     return None
+
+    # try:
+    #     out_pc = CADsolid2pc(shape, n_points, data_id)
+    # except Exception as e:
+    #     print("convert pc failed:", data_id)
+    #     return None
+
+    # if np.max(np.abs(out_pc)) > 2:  # normalize out-of-bound data
+    #     out_pc = normalize_pc(out_pc)
+    
     shape = vec2CADsolid(vec)
-
-
     out_pc = CADsolid2pc(shape, n_points, data_id)
-
-
-    if np.max(np.abs(out_pc)) > 2:  # normalize out-of-bound data
-        out_pc = normalize_pc(out_pc)
 
     return out_pc
 

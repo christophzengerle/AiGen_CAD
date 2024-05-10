@@ -385,6 +385,8 @@ class TrainerPC2CAD(BaseTrainer):
 
         def process_one_cd(out_vec, gt_pc, data_id):
             out_pc = convert_vec2pc(out_vec, data_id, self.cfg.n_points)
+            if out_pc is None:
+                return None
 
             # sample_idx = random.sample(list(range(gt_pc.shape[0])), self.cfg.n_points)
             # gt_pc = gt_pc[sample_idx]
@@ -421,8 +423,6 @@ class TrainerPC2CAD(BaseTrainer):
                     print("processing[{}] {}".format(i, data_id))
 
                     res = process_one_cd(out_vec, gt_pc, data_id)
-                    with open(save_path, "a") as fp:
-                        print("{}\t{}\t{}".format(i, data_id, res), file=fp)
                     dists.append(res)
 
         valid_dists = [x for x in dists if x is not None]
@@ -453,7 +453,7 @@ class TrainerPC2CAD(BaseTrainer):
             "med dist:",
             med_dist,
         )
-        with open(save_path, "a") as fp:
+        with open(save_path, "wr") as fp:
             print("#####" * 10, file=fp)
             print(
                 "total:",
@@ -503,6 +503,7 @@ class TrainerPC2CAD(BaseTrainer):
                 out_vec = batch_out_vec[i]
                 out_vec = trim_vec_EOS(out_vec)
                 data_id = data["ids"][i]
+                print("processing[{}] {}".format(i, data_id))
                 out_pc = convert_vec2pc(out_vec, data_id, self.cfg.n_points)
                 gen_pcs.append(out_pc)
 

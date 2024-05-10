@@ -146,6 +146,7 @@ class Extrude(object):
 
     @staticmethod
     def from_vector(vec, is_numerical=False, n=256):
+        print(vec.shape)
         """vector representation: commands [SOL, ..., SOL, ..., EXT]"""
         assert vec[-1][0] == EXT_IDX and vec[0][0] == SOL_IDX
         profile_vec = np.concatenate([vec[:-1], EOS_VEC[np.newaxis]])
@@ -251,6 +252,7 @@ class CADSequence(object):
         commands = vec[:, 0]
         ext_indices = [-1] + np.where(commands == EXT_IDX)[0].tolist()
         ext_seq = []
+        print(ext_indices)
         for i in range(len(ext_indices) - 1):
             start, end = ext_indices[i], ext_indices[i + 1]
             ext_seq.append(Extrude.from_vector(vec[start+1:end+1], is_numerical, n))
