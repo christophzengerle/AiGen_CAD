@@ -92,7 +92,10 @@ class TrainerPC2CAD(BaseTrainer):
         clock = self.clock
         nr_epochs = self.cfg.nr_epochs
 
-        print("********* Start Training ***********")
+        if self.cfg.cont:
+            print("********* Continue Training from Checkpoint ***********")
+        else:
+            print("********* Start Training ***********")
 
         for e in range(clock.epoch, nr_epochs):
             train_losses = {"losses_cmd": [], "losses_args": []}
@@ -776,7 +779,7 @@ class TrainerPC2CAD(BaseTrainer):
 
     def load_ckpt(self):
         """load checkpoint from saved checkpoint"""
-        if self.cfg.load_module_ckpt:
+        if self.cfg.load_modular_ckpt:
             pcEnc_model_dir = os.path.join(
                 self.cfg.proj_dir, "pce", self.cfg.pce_exp_name, "model"
             )

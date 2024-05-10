@@ -165,7 +165,7 @@ class ConfigPC2CAD(object):
             "--load_pce_ae_ckpt",
             "--load_modular_ckpt",
             "--modular_ckpt",
-            dest="load_module_ckpt",
+            dest="load_modular_ckpt",
             action="store_true",
             default=False,
             help="load pretrained PointCloud and Autoencoder checkpoint",

@@ -4,8 +4,10 @@ import os
 #     --batch_size 150 --num_workers 1 --nr_epochs 100 --noise -g 0"
 
 
-cmd = "python pc2cad.py --exec train --exp_name pc2cad_ExpParallel --num_workers 1 --batch_size 150 \
-    --nr_epochs 100 --noise -g 0,1"
+cmd = "python pc2cad.py --exec train --exp_name pc2cad_test --num_workers 8 --batch_size 150 \
+    --nr_epochs 6 --noise -g 0 \
+        --continue --load_modular_ckpt --pce_exp_name pcEncRandNoise100New --pce_ckpt latest \
+       --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000"
 
 # cmd = "python pcEnc.py --exec inf --mode rec --pc_root evaluation/eval_pc_cad_images/point_e \
 #     --exp_name pcEncRandNoise100New --ckpt latest --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000 \
