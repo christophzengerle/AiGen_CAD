@@ -56,7 +56,7 @@ class ConfigPC2CAD(object):
     def set_configuration(self):
         # Pc-Encoder
         self.lr = 1e-3  # initial LR
-        self.lr_step_size = 25  # Nr Epochs after wich LR will be decresed
+        self.lr_step_size = 30  # Nr Epochs after wich LR will be decresed
         # self.beta1 = 0.5
         # self.grad_clip = None
         self.noiseAmount = 0.025
@@ -87,7 +87,7 @@ class ConfigPC2CAD(object):
         self.loss_weights = {"loss_cmd_weight": 1.0, "loss_args_weight": 2.0}
 
         # General Settings
-        self.save_frequency = 1
+        self.save_frequency = 20
         self.val_frequency = 5
 
         self.expSourcePNG = True
@@ -226,7 +226,7 @@ class ConfigPC2CAD(object):
         parser.add_argument(
             "--warmup_step",
             type=int,
-            default=2,
+            default=10,
             help="step size for learning rate warm up",
         )
         parser.add_argument(
