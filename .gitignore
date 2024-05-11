@@ -1,2 +1,5 @@
 # ignore __pycache__
 __pycache__/
+
+# ignore nohup-file
+nohup.out
