@@ -9,10 +9,10 @@ import os
 #     --batch_size 150 --num_workers 1 --nr_epochs 100 --noise -g 0"
 
 
-cmd = "nohup python pc2cad.py --exec train --exp_name pc2cad_Exp200 --num_workers 8 --batch_size 175 \
-    --nr_epochs 200 --noise -g 1 &"
-    #     --continue --load_modular_ckpt --pce_exp_name pcEncRandNoise100New --pce_ckpt latest \
-    #    --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000"
+# cmd = "nohup python pc2cad.py --exec train --exp_name pc2cad_Exp200 --num_workers 8 --batch_size 175 \
+#     --nr_epochs 200 --noise -g 1 &"
+#           --continue --load_modular_ckpt --pce_exp_name pcEncRandNoise100New --pce_ckpt latest \
+#           --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000"
 
 
 # cmd = "python pcEnc.py --exec inf --mode rec --pc_root evaluation/eval_pc_cad_images/point_e \
@@ -33,6 +33,6 @@ cmd = "nohup python pc2cad.py --exec train --exp_name pc2cad_Exp200 --num_worker
 #         --expSTEP --expPNG --expGIF -g 0 \
 #          --z_path proj_log/pce/pcEncNoNoise/results/pcEncodings/ckpt_epoch20_num4096/00195139_2024-05-01-23-49-26/00195139.h5"
 
-# cmd = "tensorboard --logdir proj_log/pc2cad/pc2cad_test100/log --host 0.0.0.0"
+cmd = "tensorboard --logdir proj_log/pc2cad/pc2cad_Exp200/log --host 0.0.0.0 &"
 
 os.system(cmd)
