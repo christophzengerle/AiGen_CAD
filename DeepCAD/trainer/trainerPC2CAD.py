@@ -186,6 +186,17 @@ class TrainerPC2CAD(BaseTrainer):
 
                 pred = self.forward(points)
                 batch_out_vec = self.logits2vec(pred)
+                
+                loss = self.criterion(pred, codes)
+            test_losses["losses_cmd"].append(loss["loss_cmd"].item())
+            test_losses["losses_args"].append(loss["loss_args"].item())
+
+            pbar.set_description(
+                "TEST - EPOCH[{}]-[{}] BATCH[{}]-[{}]".format(
+                    self.clock.epoch, self.nr_epochs, i, len(test_loader)
+                )
+            )
+            pbar.set_postfix(OrderedDict({k: v.item() for k, v in loss.items()}))
 
             commands, args = codes["command"], codes["args"]
             gt_commands = commands.squeeze(1).long().detach().cpu().numpy()  # (N, S)
@@ -196,17 +207,6 @@ class TrainerPC2CAD(BaseTrainer):
 
             cmd_acc = (out_cmd == gt_commands).astype(np.int32)
             all_cmd_comp.append(np.mean(cmd_acc))
-
-            loss = self.criterion(pred, codes)
-            test_losses["losses_cmd"].append(loss["loss_cmd"].item())
-            test_losses["losses_args"].append(loss["loss_args"].item())
-
-            pbar.set_description(
-                "TEST - EPOCH[{}]-[{}] BATCH[{}]-[{}]".format(
-                    self.clock.epoch, self.nr_epochs, i, len(test_loader)
-                )
-            )
-            pbar.set_postfix(OrderedDict({k: v.item() for k, v in loss.items()}))
 
             ext_pos = np.where(gt_commands == EXT_IDX)
             line_pos = np.where(gt_commands == LINE_IDX)
@@ -252,6 +252,8 @@ class TrainerPC2CAD(BaseTrainer):
         )
 
     def test_model_acc(self, test_loader):
+        TOLERANCE = ACC_TOLERANCE
+        print("********** Calculating Accuracy-Metrics **********")
         self.net.eval()
         save_dir = os.path.join(
             self.cfg.exp_dir,
@@ -261,8 +263,6 @@ class TrainerPC2CAD(BaseTrainer):
         )
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
-
-        TOLERANCE = 3
 
         # overall accuracy
         avg_cmd_acc = []  # ACC_cmd
@@ -354,6 +354,7 @@ class TrainerPC2CAD(BaseTrainer):
 
         save_path = os.path.join(save_dir, "test_acc_stats.txt")
         fp = open(save_path, "w")
+        print("Tolerance: ", TOLERANCE, file=fp)
         # overall accuracy (averaged over all data)
         avg_cmd_acc = np.mean(avg_cmd_acc)
         print("avg command acc (ACC_cmd):", avg_cmd_acc, file=fp)
@@ -384,6 +385,7 @@ class TrainerPC2CAD(BaseTrainer):
                 print(l, end="")
 
     def test_model_chamfer_dist(self, test_loader):
+        print("********** Calculating Chamfer-Distance **********")
         self.net.eval()
         # PROCESS_PARALLEL = True if self.cfg.num_workers > 1 else False
         PROCESS_PARALLEL = False
@@ -409,7 +411,8 @@ class TrainerPC2CAD(BaseTrainer):
             cd = chamfer_dist(gt_pc, out_pc)
             return cd
 
-        dists = []
+        n_dists = len(test_loader.dataset)
+        valid_dists = []
         pbar = tqdm(test_loader)
         for batch_nr, data in enumerate(pbar):
             with torch.no_grad():
@@ -429,7 +432,7 @@ class TrainerPC2CAD(BaseTrainer):
                         data["ids"],
                     )
                 )
-                dists.extend(res)
+                valid_dists.extend([x for x in res if x is not None])
             else:
                 for i in range(len(points)):
                     gt_pc = points[i]
@@ -438,14 +441,14 @@ class TrainerPC2CAD(BaseTrainer):
                     data_id = data["ids"][i]
 
                     res = process_one_cd(out_vec, gt_pc, data_id)
-                    dists.append(res)
+                    if res is not None:
+                        valid_dists.append(res)
 
-        valid_dists = [x for x in dists if x is not None]
         valid_dists = sorted(valid_dists)
         print("top 20 largest error:")
         print(valid_dists[-20:][::-1])
         n_valid = len(valid_dists)
-        n_invalid = len(dists) - n_valid
+        n_invalid = n_dists - n_valid
 
         avg_dist = np.mean(valid_dists)
         trim_avg_dist = np.mean(valid_dists[int(n_valid * 0.1) : -int(n_valid * 0.1)])
@@ -454,11 +457,11 @@ class TrainerPC2CAD(BaseTrainer):
         print("#####" * 10)
         print(
             "total:",
-            len(test_loader.dataset),
+            n_dists,
             "\t invalid:",
             n_invalid,
             "\t invalid ratio:",
-            n_invalid / len(test_loader.dataset),
+            n_invalid / n_dists,
         )
         print(
             "avg dist:",
@@ -472,11 +475,11 @@ class TrainerPC2CAD(BaseTrainer):
             print("#####" * 10, file=fp)
             print(
                 "total:",
-                len(test_loader.dataset),
+                n_dists,
                 "\t invalid:",
                 n_invalid,
                 "\t invalid ratio:",
-                n_invalid / len(test_loader.dataset),
+                n_invalid / n_dists,
                 file=fp,
             )
             print(
@@ -490,6 +493,7 @@ class TrainerPC2CAD(BaseTrainer):
             )
 
     def test_cov_mmd_jsd(self, test_loader):
+        print("********** Calculating COV - MMD - JSD **********")
         self.net.eval()
         save_dir = os.path.join(
             self.cfg.exp_dir,
@@ -502,8 +506,8 @@ class TrainerPC2CAD(BaseTrainer):
 
         save_path = os.path.join(save_dir, "test_gen_stats.txt")
 
+        n_measures = len(test_loader.dataset)
         result_list = []
-        all_pcs = []
         pbar = tqdm(test_loader)
         for batch_nr, data in enumerate(pbar):
             with torch.no_grad():
@@ -524,7 +528,6 @@ class TrainerPC2CAD(BaseTrainer):
                 out_pc = convert_vec2pc(out_vec, data_id, self.cfg.n_points)
                 proc_pcs.append(out_pc)
 
-            all_pcs.extend(proc_pcs)
             gen_pcs = [pc for pc in proc_pcs if pc is not None]
             gen_pcs = np.stack(gen_pcs, axis=0)
 
@@ -537,20 +540,19 @@ class TrainerPC2CAD(BaseTrainer):
 
             result_list.append(result)
 
-        valid_pcs = [x for x in all_pcs if x is not None]
-        n_valid = len(valid_pcs)
-        n_invalid = len(all_pcs) - n_valid
+        n_valid = len(result_list)
+        n_invalid = n_measures - n_valid
         avg_result = {}
         for k in result_list[0].keys():
             avg_result.update({"avg-" + k: np.mean([x[k] for x in result_list])})
         print("#####" * 10)
         print(
             "total:",
-            len(test_loader.dataset),
+            n_measures,
             "\t invalid:",
             n_invalid,
             "\t invalid ratio:",
-            n_invalid / len(test_loader.dataset),
+            n_invalid / n_measures,
         )
         print("average result:")
         print(avg_result)
@@ -558,11 +560,11 @@ class TrainerPC2CAD(BaseTrainer):
             print("#####" * 10, file=fp)
             print(
                 "total:",
-                len(test_loader.dataset),
+                n_measures,
                 "\t invalid:",
                 n_invalid,
                 "\t invalid ratio:",
-                n_invalid / len(test_loader.dataset),
+                n_invalid / n_measures,
                 file=fp,
             )
             print("average result:", file=fp)
@@ -748,7 +750,7 @@ class TrainerPC2CAD(BaseTrainer):
             raise ValueError("No .ply files found in the provided path.")
 
         print("********* Prediction of CAD-Model from PointCloud Completed ***********")
-        print(f"********** {valid_preds} / {len(file_list)} completed ***********")
+        print(f"********** {valid_preds} / {len(file_list)} succeeded ***********")
 
     def save_ckpt(self, name=None):
         """save checkpoint during training for future restore"""
