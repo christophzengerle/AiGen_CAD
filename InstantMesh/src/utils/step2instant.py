@@ -34,9 +34,6 @@ def setup_dir(source_folder, destination_folder):
 
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
-        os.makedirs(os.path.join(destination_folder, "train"))
-        os.makedirs(os.path.join(destination_folder, "test"))
-
 
 def walk_dir(dir):
     file_list = []
@@ -185,7 +182,7 @@ def main():
     setup_dir(args.src, args.dest)
     
     with open(args.split, "r") as f:
-        train_test_split = f.read()
+        train_test_split = json.load(f)
         f.close()
 
     train = train_test_split["train"]
@@ -209,8 +206,14 @@ def main():
     for i, file_path in enumerate(objfiles):
         path, file = os.path.split(file_path)
         out_folder = os.path.join(args.dest, file).split('.')[0]
-        
-        train_files.append(os.path.abspath(out_folder))
+        file_id = os.path.join(os.path.split(path)[-1], file.replace(".step", ""))
+
+        if file_id in train:
+            train_files.append(os.path.abspath(out_folder))
+        elif file_id in val:
+            val_files.append(os.path.abspath(out_folder))
+        elif file_id in test:
+            test_files.append(os.path.abspath(out_folder))
 
         if not os.path.exists(out_folder):
             os.makedirs(out_folder)
@@ -231,10 +234,8 @@ def main():
 
         print(f"Progress: {(i+1) / len(objfiles) * 100}")
 
-    file_path_dict = {"good_objs": train_files, "val_objs": val_files, "test_objs": test_files}
+    file_path_dict = {"good_objs": train_files, "val_objs": val_files, "test_objs": test_files, "failed_objs": failed_files}
     with open(os.path.join(args.dest, "valid_paths.json"), "w") as f:
-        json.dump(file_path_dict, f)
-    with open(os.path.join(args.dest, "failed_files.json"), "w") as f:
         json.dump(file_path_dict, f)
 
 
