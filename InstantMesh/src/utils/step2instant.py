@@ -8,7 +8,7 @@ import cv2
 import pyrender
 import json
 
-sys.path.append("..")
+sys.path.append("../../../src")
 
 def parse():
     parser = argparse.ArgumentParser()
@@ -99,6 +99,7 @@ class CustomShaderCache():
             self.program = pyrender.shader_program.ShaderProgram("src/shaders/mesh.vert", "src/shaders/mesh.frag", defines=defines)
         return self.program
 
+
 def transform(file_path, out_folder, res, num):
     # print('filepath', file_path)
     if file_path.endswith(".ply"):
@@ -171,6 +172,7 @@ def transform(file_path, out_folder, res, num):
         np.savez(f, cam_poses=np.array(camera_poses))
         f.close()
 
+
 def main():
     files_paths = []
     args = parse()
@@ -201,7 +203,7 @@ def main():
         # transform(file_path, outfile, args.rot, args.ele, args.qual, i)
 
         p = multiprocessing.Process(
-            target=transform, args=(file_path, out_folder, args.res, 1)
+            target=transform, args=(file_path, out_folder, args.res, 32)
         )
         p.start()
         p.join(60)
@@ -216,6 +218,7 @@ def main():
     file_path_dict = {"good_objs": files_paths}
     with open(os.path.join(args.dest, "valid_paths.json"), "w") as f:
         json.dump(file_path_dict, f)
+
 
 if __name__ == '__main__':
     main()
