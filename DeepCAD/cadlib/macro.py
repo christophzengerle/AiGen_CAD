@@ -52,6 +52,8 @@ MAX_N_CURVES = 15  # maximum number of curves per loop
 MAX_TOTAL_LEN = 60  # maximum cad sequence length
 ARGS_DIM = 256
 
+ACC_TOLERANCE = 3
+
 
 def trim_vec_EOS(out_vec):
     out_command = out_vec[:, 0]

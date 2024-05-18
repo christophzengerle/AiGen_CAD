@@ -32,7 +32,12 @@ class CADLoss(nn.Module):
             command_logits[padding_mask.bool()].reshape(-1, self.n_commands),
             tgt_commands[padding_mask.bool()].reshape(-1).long(),
         )
-        loss_args = F.cross_entropy(
+        # loss_args = F.cross_entropy(
+        #     args_logits[mask.bool()].reshape(-1, self.args_dim),
+        #     tgt_args[mask.bool()].reshape(-1).long() + 1,
+        # )  # shift due to -1 PAD_VAL
+        
+        loss_args = F.mse_loss(
             args_logits[mask.bool()].reshape(-1, self.args_dim),
             tgt_args[mask.bool()].reshape(-1).long() + 1,
         )  # shift due to -1 PAD_VAL

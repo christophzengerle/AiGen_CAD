@@ -34,7 +34,7 @@ class ShapeCodesDataset(Dataset):
         pc = read_ply(pc_path)
         sample_idx = random.sample(
             list(range(pc.shape[0])),
-            self.cfg.n_points if self.cfg.n_points < pc.shape[0] else pc.shape[0],
+            self.n_points if self.n_points < pc.shape[0] else pc.shape[0],
         )
         pc = pc[sample_idx]
 

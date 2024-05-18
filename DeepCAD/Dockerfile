@@ -25,7 +25,8 @@ RUN apt-get update && \
     libglu1 libglu1-mesa:i386 libxcursor-dev \
     libxft2 libxft2:i386 libxinerama-dev \
     openssh-client \
-    xvfb xserver-xephyr
+    xvfb xserver-xephyr \
+    less
 
     
 # Install dependencies for building custom C++ ops

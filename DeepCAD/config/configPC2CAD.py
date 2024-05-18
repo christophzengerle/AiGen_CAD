@@ -55,7 +55,7 @@ class ConfigPC2CAD(object):
 
     def set_configuration(self):
         # Pc-Encoder
-        self.lr = 1e-2  # initial LR
+        self.lr = 1e-3  # initial LR
         self.lr_step_size = 25  # Nr Epochs after wich LR will be decresed
         # self.beta1 = 0.5
         # self.grad_clip = None
@@ -218,7 +218,7 @@ class ConfigPC2CAD(object):
         )
         parser.add_argument("--batch_size", type=int, default=128, help="batch size")
         parser.add_argument(
-            "--lr", type=float, default=1e-2, help="initial learning rate"
+            "--lr", type=float, default=1e-3, help="initial learning rate"
         )
         parser.add_argument(
             "--grad_clip", type=float, default=1.0, help="initial learning rate"
