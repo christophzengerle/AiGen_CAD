@@ -23,6 +23,7 @@ def parse():
         default=512,
         help="camera rotation",
     )
+    parser.add_argument("--split", type=str, help="train-test-split", required=True)
     args = parser.parse_args()
     return args
 
@@ -33,6 +34,8 @@ def setup_dir(source_folder, destination_folder):
 
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
+        os.makedirs(os.path.join(destination_folder, "train"))
+        os.makedirs(os.path.join(destination_folder, "test"))
 
 
 def walk_dir(dir):
@@ -174,9 +177,20 @@ def transform(file_path, out_folder, res, num):
 
 
 def main():
-    files_paths = []
+    train_files = []
+    val_files = []
+    test_files = []
+    failed_files = []
     args = parse()
     setup_dir(args.src, args.dest)
+    
+    with open(args.split, "r") as f:
+        train_test_split = f.read()
+        f.close()
+
+    train = train_test_split["train"]
+    val = train_test_split["validation"]
+    test = train_test_split["test"]
 
     if os.path.isfile(args.src):
         if args.src.endswith(".step"):
@@ -195,7 +209,8 @@ def main():
     for i, file_path in enumerate(objfiles):
         path, file = os.path.split(file_path)
         out_folder = os.path.join(args.dest, file).split('.')[0]
-        files_paths.append(os.path.abspath(out_folder))
+        
+        train_files.append(os.path.abspath(out_folder))
 
         if not os.path.exists(out_folder):
             os.makedirs(out_folder)
@@ -212,11 +227,14 @@ def main():
             print("still running")
             p.terminate()
             p.join()
+            failed_files.append(os.path.abspath(out_folder))
 
         print(f"Progress: {(i+1) / len(objfiles) * 100}")
 
-    file_path_dict = {"good_objs": files_paths}
+    file_path_dict = {"good_objs": train_files, "val_objs": val_files, "test_objs": test_files}
     with open(os.path.join(args.dest, "valid_paths.json"), "w") as f:
+        json.dump(file_path_dict, f)
+    with open(os.path.join(args.dest, "failed_files.json"), "w") as f:
         json.dump(file_path_dict, f)
 
 
