@@ -1,14 +1,43 @@
 services:
-  deepcad:
-    build: ./DeepCAD
-    image: chriszengerle/aigen_deepcad:0.1
-    container_name: deepcad
+#  deepcad:
+#    build: ./DeepCAD
+#    image: chriszengerle/aigen_deepcad:0.1
+#    container_name: deepcad
+#    volumes:
+#      - ./DeepCAD:/usr/app/src/DeepCAD
+#
+#      # Cluster bindings
+#      - ../utils/models/DeepCAD:/usr/app/src/DeepCAD/proj_log
+#      - ../utils/data:/usr/app/src/DeepCAD/data
+#
+#      # local Windows bindings (Christoph)
+#      # - C:/ArtificialIntelligence/DeepCAD/data:/usr/app/src/DeepCAD/data
+#      # - C:/ArtificialIntelligence/DeepCAD/proj_log:/usr/app/src/DeepCAD/proj_log
+#
+#    # network_mode: "host"
+#    ports:
+#      - "8082:22" # SSH
+#      - "8083:6006" # Tensorboard
+#      - "8084:8888" # Jupyter
+#
+#    command: tail -F anything #to keep Container running
+#    ipc: host
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#            - driver: nvidia
+#              # device_ids: ["0", "1"] # binds to GPU 0 and 1
+#              count: all
+#              capabilities: [gpu]
+  instantmesh:
+    build: ./InstantMesh
+    container_name: instantmesh
     volumes:
-      - ./DeepCAD:/usr/app/src/DeepCAD
+      - ./InstantMesh:/usr/app/src/InstantMesh
 
       # Cluster bindings
-      - ../utils/models/DeepCAD:/usr/app/src/DeepCAD/proj_log
-      - ../utils/data:/usr/app/src/DeepCAD/data
+      - ../utils/data:/usr/app/src/InstantMesh/data
 
       # local Windows bindings (Christoph)
       # - C:/ArtificialIntelligence/DeepCAD/data:/usr/app/src/DeepCAD/data
@@ -30,3 +59,4 @@ services:
               # device_ids: ["0", "1"] # binds to GPU 0 and 1
               count: all
               capabilities: [gpu]
+

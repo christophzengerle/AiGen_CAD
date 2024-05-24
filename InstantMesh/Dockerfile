@@ -1,14 +1,13 @@
 # get the development image from nvidia cuda 12.1
 FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
 
-LABEL name="instantmesh" maintainer="instantmesh"
+# LABEL name="instantmesh" maintainer="instantmesh"
 
-# Add a volume for downloaded models
-VOLUME /workspace/models
+# # Add a volume for downloaded models
+# VOLUME /workspace/models
 
 # create workspace folder and set it as working directory
-RUN mkdir -p /workspace/instantmesh
-WORKDIR /workspace
+WORKDIR /usr/app/src
 
 # Set the timezone
 ENV DEBIAN_FRONTEND=noninteractive
@@ -45,10 +44,10 @@ RUN pip install xformers==0.0.22.post7
 RUN pip install triton
 
 # change the working directory to the repository
-WORKDIR /workspace/instantmesh
+WORKDIR /instantmesh
 
 # other dependencies
-ADD ./requirements.txt /workspace/instantmesh/requirements.txt
+COPY ../requirements.txt ./
 RUN pip install -r requirements.txt
 
 COPY . /workspace/instantmesh
