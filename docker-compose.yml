@@ -34,10 +34,10 @@ services:
     build: ./InstantMesh
     container_name: instantmesh
     volumes:
-      - ./InstantMesh:/usr/app/src/InstantMesh
+      - ./InstantMesh:/usr/app/src/instantmesh
 
       # Cluster bindings
-      - ../utils/data:/usr/app/src/InstantMesh/data
+      - ./utils/data:/usr/app/src/instantmesh/data
 
       # local Windows bindings (Christoph)
       # - C:/ArtificialIntelligence/DeepCAD/data:/usr/app/src/DeepCAD/data

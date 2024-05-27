@@ -14,12 +14,26 @@ import numpy as np
 def projection(x=0.1, n=1.0, f=50.0, near_plane=None):
     if near_plane is None:
         near_plane = n
-    return np.array(
-        [[n / x, 0, 0, 0],
-         [0, n / -x, 0, 0],
-         [0, 0, -(f + near_plane) / (f - near_plane), -(2 * f * near_plane) / (f - near_plane)],
-         [0, 0, -1, 0]]).astype(np.float32)
+    # return np.array(
+    #     [[n / x, 0, 0, 0],
+    #      [0, n / -x, 0, 0],
+    #      [0, 0, -(f + near_plane) / (f - near_plane), -(2 * f * near_plane) / (f - near_plane)],
+    #      [0, 0, -1, 0]]).astype(np.float32)
 
+    # return np.array(
+    #     [[n / x, 0, 0, 0],
+    #      [0, n / -x, 0, 0],
+    #      [0, 0, -(f + near_plane) / (f - near_plane), -(2 * f * near_plane) / (f - near_plane)],
+    #      [0, 0, -1, 0]]).astype(np.float32)
+
+    # return np.array([
+    #     [0.0, -np.sqrt(2) / 2, np.sqrt(2) / 2, 0],
+    #     [1.0, 0.0, 0.0, 0],
+    #     [0.0, np.sqrt(2) / 2, np.sqrt(2) / 2, 0],
+    #     [0.0, 0.0, 0.0, 1.0]
+    # ]).astype(np.float32)
+
+    return np.identity(4).astype(np.float32)
 
 class PerspectiveCamera(Camera):
     def __init__(self, fovy=49.0, device='cuda'):

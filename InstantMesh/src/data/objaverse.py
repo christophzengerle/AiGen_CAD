@@ -50,14 +50,12 @@ class DataModuleFromConfig(pl.LightningDataModule):
             self.dataset_configs['test'] = test
     
     def setup(self, stage):
-        breakpoint()
         if stage in ['fit']:
             self.datasets = dict((k, instantiate_from_config(self.dataset_configs[k])) for k in self.dataset_configs)
         else:
             raise NotImplementedError
 
     def train_dataloader(self):
-        breakpoint()
         sampler = DistributedSampler(self.datasets['train'])
         return wds.WebLoader(self.datasets['train'], batch_size=self.batch_size, num_workers=self.num_workers, shuffle=False, sampler=sampler)
 
@@ -94,10 +92,9 @@ class ObjaverseData(Dataset):
         self.fov = fov
         self.camera_rotation = camera_rotation
 
-        breakpoint()
         with open(os.path.join(root_dir, meta_fname)) as f:
             filtered_dict = json.load(f)
-            breakpoint()
+
         paths = filtered_dict['good_objs']
         self.paths = paths
         

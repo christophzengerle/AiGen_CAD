@@ -96,7 +96,7 @@ class CustomShaderCache():
 
     def get_program(self, vertex_shader, fragment_shader, geometry_shader=None, defines=None):
         if self.program is None:
-            self.program = pyrender.shader_program.ShaderProgram("src/shaders/mesh.vert", "src/shaders/mesh.frag", defines=defines)
+            self.program = pyrender.shader_program.ShaderProgram("InstantMesh/src/shaders/mesh.vert", "InstantMesh/src/shaders/mesh.frag", defines=defines)
         return self.program
 
 
@@ -128,9 +128,9 @@ def transform(file_path, out_folder, res, num):
         mesh = pyrender.Mesh.from_trimesh(m)
         scene = pyrender.Scene()
         mesh_node = scene.add(mesh)
-        ren = pyrender.OffscreenRenderer(800, 800)
+        ren = pyrender.OffscreenRenderer(512, 512)
         # Create a camera
-        camera = pyrender.PerspectiveCamera(yfov=np.pi / 3.0)
+        camera = pyrender.PerspectiveCamera(yfov=49.0)
 
         # Generate a random camera pose
         camera_pose = random_camera_pose()
@@ -236,6 +236,7 @@ def main():
 
     file_path_dict = {"good_objs": train_files, "val_objs": val_files, "test_objs": test_files, "failed_objs": failed_files}
     with open(os.path.join(args.dest, "valid_paths.json"), "w") as f:
+        breakpoint()
         json.dump(file_path_dict, f)
 
 

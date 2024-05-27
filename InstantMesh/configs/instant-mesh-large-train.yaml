@@ -31,10 +31,10 @@ data:
     train:
       target: src.data.objaverse.ObjaverseData
       params:
-        root_dir: objaverse
+        root_dir: data/
         meta_fname: valid_paths.json
-        input_image_dir: rendering_random_32views
-        target_image_dir: rendering_random_32views
+        input_image_dir: png_files
+        target_image_dir: png_files
         input_view_num: 6
         target_view_num: 4
         total_view_n: 32

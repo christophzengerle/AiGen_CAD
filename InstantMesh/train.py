@@ -8,7 +8,7 @@ from pytorch_lightning import seed_everything
 from pytorch_lightning.trainer import Trainer
 from pytorch_lightning.strategies import DDPStrategy
 from pytorch_lightning.callbacks import Callback
-from pytorch_lightning.utilities import rank_zero_only
+from pytorch_lightning.utilities import rank_zero_only, rank_zero_warn
 
 from src.utils.train_util import instantiate_from_config
 
@@ -180,98 +180,94 @@ if __name__ == "__main__":
 
     # model
 
-    # model = instantiate_from_config(config.model)
-    #
-    # if opt.resume and opt.resume_weights_only:
-    #     model = model.__class__.load_from_checkpoint(opt.resume, **config.model.params)
-    #
-    # model.logdir = logdir
-    #
-    # # trainer and callbacks
-    # trainer_kwargs = dict()
-    #
-    # # logger
-    # default_logger_cfg = {
-    #     "target": "pytorch_lightning.loggers.TensorBoardLogger",
-    #     "params": {
-    #         "name": "tensorboard",
-    #         "save_dir": logdir,
-    #         "version": "0",
-    #     }
-    # }
-    # logger_cfg = OmegaConf.merge(default_logger_cfg)
-    # trainer_kwargs["logger"] = instantiate_from_config(logger_cfg)
-    #
-    # # model checkpoint
-    # default_modelckpt_cfg = {
-    #     "target": "pytorch_lightning.callbacks.ModelCheckpoint",
-    #     "params": {
-    #         "dirpath": ckptdir,
-    #         "filename": "{step:08}",
-    #         "verbose": True,
-    #         "save_last": True,
-    #         "every_n_train_steps": 5000,
-    #         "save_top_k": -1,   # save all checkpoints
-    #     }
-    # }
-    #
-    # if "modelcheckpoint" in lightning_config:
-    #     modelckpt_cfg = lightning_config.modelcheckpoint
-    # else:
-    #     modelckpt_cfg = OmegaConf.create()
-    # modelckpt_cfg = OmegaConf.merge(default_modelckpt_cfg, modelckpt_cfg)
-    #
-    # # callbacks
-    # default_callbacks_cfg = {
-    #     "setup_callback": {
-    #         "target": "train.SetupCallback",
-    #         "params": {
-    #             "resume": opt.resume,
-    #             "logdir": logdir,
-    #             "ckptdir": ckptdir,
-    #             "cfgdir": cfgdir,
-    #             "config": config,
-    #         }
-    #     },
-    #     "learning_rate_logger": {
-    #         "target": "pytorch_lightning.callbacks.LearningRateMonitor",
-    #         "params": {
-    #             "logging_interval": "step",
-    #         }
-    #     },
-    #     "code_snapshot": {
-    #         "target": "train.CodeSnapshot",
-    #         "params": {
-    #             "savedir": codedir,
-    #         }
-    #     },
-    # }
-    # default_callbacks_cfg["checkpoint_callback"] = modelckpt_cfg
-    #
-    # if "callbacks" in lightning_config:
-    #     callbacks_cfg = lightning_config.callbacks
-    # else:
-    #     callbacks_cfg = OmegaConf.create()
-    # callbacks_cfg = OmegaConf.merge(default_callbacks_cfg, callbacks_cfg)
-    #
-    # trainer_kwargs["callbacks"] = [
-    #     instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg]
-    #
-    # trainer_kwargs['precision'] = '32-true'
-    # trainer_kwargs["strategy"] = DDPStrategy(find_unused_parameters=True)
-    #
-    # # trainer
-    # trainer = Trainer(**trainer_config, **trainer_kwargs, num_nodes=opt.num_nodes)
-    # trainer.logdir = logdir
+    model = instantiate_from_config(config.model)
+
+    if opt.resume and opt.resume_weights_only:
+        model = model.__class__.load_from_checkpoint(opt.resume, **config.model.params)
+
+    model.logdir = logdir
+
+    # trainer and callbacks
+    trainer_kwargs = dict()
+
+    # logger
+    default_logger_cfg = {
+        "target": "pytorch_lightning.loggers.TensorBoardLogger",
+        "params": {
+            "name": "tensorboard",
+            "save_dir": logdir,
+            "version": "0",
+        }
+    }
+    logger_cfg = OmegaConf.merge(default_logger_cfg)
+    trainer_kwargs["logger"] = instantiate_from_config(logger_cfg)
+
+    # model checkpoint
+    default_modelckpt_cfg = {
+        "target": "pytorch_lightning.callbacks.ModelCheckpoint",
+        "params": {
+            "dirpath": ckptdir,
+            "filename": "{step:08}",
+            "verbose": True,
+            "save_last": True,
+            "every_n_train_steps": 5000,
+            "save_top_k": -1,   # save all checkpoints
+        }
+    }
+
+    if "modelcheckpoint" in lightning_config:
+        modelckpt_cfg = lightning_config.modelcheckpoint
+    else:
+        modelckpt_cfg = OmegaConf.create()
+    modelckpt_cfg = OmegaConf.merge(default_modelckpt_cfg, modelckpt_cfg)
+
+    # callbacks
+    default_callbacks_cfg = {
+        "setup_callback": {
+            "target": "train.SetupCallback",
+            "params": {
+                "resume": opt.resume,
+                "logdir": logdir,
+                "ckptdir": ckptdir,
+                "cfgdir": cfgdir,
+                "config": config,
+            }
+        },
+        "learning_rate_logger": {
+            "target": "pytorch_lightning.callbacks.LearningRateMonitor",
+            "params": {
+                "logging_interval": "step",
+            }
+        },
+        "code_snapshot": {
+            "target": "train.CodeSnapshot",
+            "params": {
+                "savedir": codedir,
+            }
+        },
+    }
+    default_callbacks_cfg["checkpoint_callback"] = modelckpt_cfg
+
+    if "callbacks" in lightning_config:
+        callbacks_cfg = lightning_config.callbacks
+    else:
+        callbacks_cfg = OmegaConf.create()
+    callbacks_cfg = OmegaConf.merge(default_callbacks_cfg, callbacks_cfg)
+
+    trainer_kwargs["callbacks"] = [
+        instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg]
+
+    trainer_kwargs['precision'] = '32-true'
+    trainer_kwargs["strategy"] = DDPStrategy(find_unused_parameters=True)
+
+    # trainer
+    trainer = Trainer(**trainer_config, **trainer_kwargs, num_nodes=opt.num_nodes)
+    trainer.logdir = logdir
 
     # data
     data = instantiate_from_config(config.data)
     data.prepare_data()
     data.setup("fit")
-
-    data.datasets['train'].__getitem__(0)
-
-    breakpoint()
 
     # configure learning rate
     base_lr = config.model.base_learning_rate

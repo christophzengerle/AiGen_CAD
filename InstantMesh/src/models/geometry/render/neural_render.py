@@ -86,7 +86,7 @@ class NeuralRender(Renderer):
             hierarchical_mask=False
     ):
         assert not hierarchical_mask
-        
+
         mtx_in = torch.tensor(camera_mv_bx4x4, dtype=torch.float32, device=device) if not torch.is_tensor(camera_mv_bx4x4) else camera_mv_bx4x4
         v_pos = xfm_points(mesh_v_pos_bxnx3, mtx_in)  # Rotate it to camera coordinates
         v_pos_clip = self.camera.project(v_pos)  # Projection in the camera
