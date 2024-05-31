@@ -5,18 +5,23 @@ import numpy as np
 import sys
 import trimesh
 import cv2
-import pyrender
 import json
+sys.path.append("/usr/app/src/instantmesh/")
+from src.models.lrm_mesh import InstantMesh
+from src.utils.camera_util import (
+    FOV_to_intrinsics,
+    get_zero123plus_input_cameras,
+    get_circular_camera_poses,
+    spherical_camera_pose
+)
+import torch
+import numpy as np
 
-sys.path.append("../../../src")
 
 def parse():
     parser = argparse.ArgumentParser()
     parser.add_argument("--src", type=str, help="source folder", required=True)
     parser.add_argument("--dest", type=str, default="png_files", help="destination folder")
-    parser.add_argument("--ele", type=int, default=45, help="camera elevation")
-    parser.add_argument("--rot", type=int, default=135, help="camera rotation")
-    parser.add_argument("--gif", type=bool, default=False, help="make gif")
     parser.add_argument(
         "--res",
         type=int,
@@ -35,6 +40,7 @@ def setup_dir(source_folder, destination_folder):
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
 
+
 def walk_dir(dir):
     file_list = []
     for subdir, dirs, files in os.walk(dir):
@@ -43,130 +49,63 @@ def walk_dir(dir):
     return file_list
 
 
-def random_camera_pose(radius=2.0):
-    theta_x = np.random.uniform(0, 2 * np.pi)  # theta is the angle with the z-axis
-    theta_y = np.random.uniform(0, 2 * np.pi)
-    theta_z = np.random.uniform(0, 2 * np.pi)
+def get_render_cameras(batch_size=1, radius=0.2):
+    """
+    Get the rendering camera parameters.
+    """
+    azim = np.random.uniform(0, 360)
+    ele = np.random.uniform(0, 360)
+    radius = radius
+    c2ws = spherical_camera_pose(azimuths=azim, elevations=ele, radius=radius)
 
-    rot_z = np.array([
-        [np.cos(theta_z), -np.sin(theta_z), 0, 0],
-        [np.sin(theta_z), np.cos(theta_z), 0, 0],
-        [0, 0, 1, 0],
-        [0, 0, 0, 1]
-    ])
-
-    rot_x = np.array([
-        [1, 0, 0, 0],
-        [0, np.cos(theta_x), -np.sin(theta_x), 0],
-        [0, np.sin(theta_x), np.cos(theta_x), 0],
-        [0, 0, 0, 1]
-    ])
-
-    rot_y = np.array([
-        [np.cos(theta_y), 0, np.sin(theta_y), 0],
-        [0, 1, 0, 0],
-        [-np.sin(theta_y), 0, np.cos(theta_y), 0],
-        [0, 0, 0, 1]
-    ])
-
-    pose = np.array([
-        [0.0, -np.sqrt(2) / 2, np.sqrt(2) / 2, 0],
-        [1.0, 0.0, 0.0, 0],
-        [0.0, np.sqrt(2) / 2, np.sqrt(2) / 2, 0],
-        [0.0, 0.0, 0.0, 1.0]
-    ])
-
-    pose2 = np.array([
-        [1, 0, 0, 0],
-        [0, 1.0, 0.0, 0],
-        [0, 0, 1.0, 2],
-        [0.0, 0.0, 0.0, 1.0],
-    ])
-    pose = np.dot(pose, pose2)
-    pose = np.dot(rot_x, pose)
-    pose = np.dot(rot_y, pose)
-    pose = np.dot(rot_z, pose)
-
-    return pose
+    cameras = torch.linalg.inv(c2ws)
+    cameras = cameras.unsqueeze(0).repeat(batch_size, 1, 1, 1)
+    return cameras
 
 
-class CustomShaderCache():
-    def __init__(self):
-        self.program = None
-
-    def get_program(self, vertex_shader, fragment_shader, geometry_shader=None, defines=None):
-        if self.program is None:
-            self.program = pyrender.shader_program.ShaderProgram("InstantMesh/src/shaders/mesh.vert", "InstantMesh/src/shaders/mesh.frag", defines=defines)
-        return self.program
-
-
-def transform(file_path, out_folder, res, num):
+def transform(model, file_path, out_folder, res, num):
     # print('filepath', file_path)
-    if file_path.endswith(".ply"):
+    if file_path.endswith(".obj"):
         m = trimesh.load_mesh(file_path)
-    elif file_path.endswith(".step"):
-        m = trimesh.Trimesh(
-            **trimesh.interfaces.gmsh.load_gmsh(
-                file_name=file_path,
-                gmsh_args=[
-                    ("Mesh.Algorithm", 1),  # Different algorithm types, check them out
-                    (
-                        "Mesh.CharacteristicLengthFromCurvature",
-                        50,
-                    ),  # Tuning the smoothness, + smoothness = + time
-                    ("General.NumThreads", 10),  # Multithreading capability
-                    ("Mesh.MinimumCirclePoints", 32),
-                ],
-            )
-        )
-
     else:
         raise ValueError("Invalid File-Type {}.".format(file_path.split(".")[-1]))
 
     camera_poses = []
     for idx in range(num):
-        mesh = pyrender.Mesh.from_trimesh(m)
-        scene = pyrender.Scene()
-        mesh_node = scene.add(mesh)
-        ren = pyrender.OffscreenRenderer(512, 512)
-        # Create a camera
-        camera = pyrender.PerspectiveCamera(yfov=49.0)
+        render_cameras = get_render_cameras()
+        cam_mv = render_cameras
+        camera_poses.append(cam_mv[:3, :])
 
-        # Generate a random camera pose
-        camera_pose = random_camera_pose()
+        device = torch.device('cuda')
+        m.vertices -= m.center_mass
+        vert = torch.Tensor([m.vertices]).to(device)
+        face = torch.Tensor([m.faces]).to(device)
 
-        # Add the camera to the scene with the specified pose
-        camera_node = scene.add(camera, pose=camera_pose)
+        mask, hard_mask, tex_pos, depth, normal = model.render_mesh(mesh_v=vert, mesh_f=face, cam_mv=cam_mv.to(device), render_size=res)
 
-        light = pyrender.SpotLight(color=np.ones(3), intensity=3.0,
-                                   innerConeAngle=np.pi / 16.0,
-                                   outerConeAngle=np.pi / 6.0)
-        light_node = scene.add(light, pose=camera_pose)
+        depth_np = depth.squeeze().to('cpu').numpy()
+        depth_np = depth_np - np.min(depth_np)
+        depth_np = (depth_np / np.max(depth_np) * 255).astype(int)
 
-        # Render the scene
-        color, depth = ren.render(scene, flags=2048)
+        normal_np = normal.squeeze().to('cpu').numpy()
+        normal_np = normal_np - np.min(normal_np)
+        normal_np = (normal_np / np.max(normal_np) * 255).astype(int)
 
-        depth = (depth/np.max(depth)*255).astype(np.uint8)
+        mask_np = mask.squeeze().to('cpu').numpy()
+        mask_np = mask_np - np.min(mask_np)
+        mask_np = (mask_np / np.max(mask_np) * 255).astype(int)
 
-        # cv2.imshow("depth", depth)
-        # cv2.imshow("color", color)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
+        hard_mask_np = hard_mask.squeeze().to('cpu').numpy()
+        hard_mask_np = hard_mask_np - np.min(hard_mask_np)
+        hard_mask_np = (hard_mask_np / np.max(hard_mask_np) * 255).astype(int)
 
-        cv2.imwrite(os.path.join(out_folder, '%03d.png' % idx), color)
-        cv2.imwrite(os.path.join(out_folder, '%03d_depth.png' % idx), depth)
+        tex_pos_np = tex_pos[0].squeeze().to('cpu').numpy()
+        tex_pos_np = tex_pos_np - np.min(tex_pos_np)
+        tex_pos_np = (tex_pos_np / np.max(tex_pos_np) * 255).astype(int)
 
-        ren._renderer._program_cache = CustomShaderCache()
-
-        normal, depth = ren.render(scene, flags=2048)
-
-        cv2.imwrite(os.path.join(out_folder, '%03d_normal.png' % idx), normal)
-
-        camera_poses.append(camera_pose[:3, :])
-
-        # Remove the camera from the scene
-        scene.remove_node(camera_node)
-        scene.remove_node(light_node)
+        cv2.imwrite(os.path.join(out_folder, '%03d.png' % idx), normal_np)
+        cv2.imwrite(os.path.join(out_folder, '%03d_depth.png' % idx), depth_np)
+        cv2.imwrite(os.path.join(out_folder, '%03d_normal.png' % idx), normal_np)
 
     with open(os.path.join(out_folder, "cameras.npz"), "wb") as f:
         np.savez(f, cam_poses=np.array(camera_poses))
@@ -174,13 +113,16 @@ def transform(file_path, out_folder, res, num):
 
 
 def main():
+    model = InstantMesh()
+    device = torch.device('cuda')
+    model.init_flexicubes_geometry(device=device, fovy=49)
     train_files = []
     val_files = []
     test_files = []
     failed_files = []
     args = parse()
     setup_dir(args.src, args.dest)
-    
+
     with open(args.split, "r") as f:
         train_test_split = json.load(f)
         f.close()
@@ -190,14 +132,14 @@ def main():
     test = train_test_split["test"]
 
     if os.path.isfile(args.src):
-        if args.src.endswith(".step"):
+        if args.src.endswith(".obj"):
             objfiles = [args.src]
 
     elif os.path.isdir(args.src):
         objfiles = [
             file
             for file in walk_dir(args.src)
-            if file.endswith(".step")
+            if file.endswith(".obj")
         ]
 
     else:
@@ -206,7 +148,7 @@ def main():
     for i, file_path in enumerate(objfiles):
         path, file = os.path.split(file_path)
         out_folder = os.path.join(args.dest, file).split('.')[0]
-        file_id = os.path.join(os.path.split(path)[-1], file.replace(".step", ""))
+        file_id = os.path.join(os.path.split(path)[-1], file.replace(".obj", ""))
 
         if file_id in train:
             train_files.append(os.path.abspath(out_folder))
@@ -219,24 +161,12 @@ def main():
             os.makedirs(out_folder)
 
         # transform(file_path, outfile, args.rot, args.ele, args.qual, i)
-
-        p = multiprocessing.Process(
-            target=transform, args=(file_path, out_folder, args.res, 32)
-        )
-        p.start()
-        p.join(60)
-
-        if p.is_alive():
-            print("still running")
-            p.terminate()
-            p.join()
-            failed_files.append(os.path.abspath(out_folder))
+        transform(model, file_path, out_folder, args.res, 32)
 
         print(f"Progress: {(i+1) / len(objfiles) * 100}")
 
     file_path_dict = {"good_objs": train_files, "val_objs": val_files, "test_objs": test_files, "failed_objs": failed_files}
     with open(os.path.join(args.dest, "valid_paths.json"), "w") as f:
-        breakpoint()
         json.dump(file_path_dict, f)
 
 
