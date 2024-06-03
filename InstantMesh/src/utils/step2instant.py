@@ -63,21 +63,18 @@ def get_render_cameras(batch_size=1, radius=0.2):
     return cameras
 
 
-def transform(model, file_path, out_folder, res, num):
+def transform(model, mesh, out_folder, res, num, obj_with_no_mass):
     # print('filepath', file_path)
-    if file_path.endswith(".obj"):
-        m = trimesh.load_mesh(file_path)
-    else:
-        raise ValueError("Invalid File-Type {}.".format(file_path.split(".")[-1]))
-
+    m = mesh
+    
+    device = torch.device('cuda')
+    
     camera_poses = []
     for idx in range(num):
         render_cameras = get_render_cameras()
         cam_mv = render_cameras
-        camera_poses.append(cam_mv[:3, :])
-
-        device = torch.device('cuda')
-        m.vertices -= m.center_mass
+        camera_poses.append(cam_mv[:3, :])        
+        
         vert = torch.Tensor([m.vertices]).to(device)
         face = torch.Tensor([m.faces]).to(device)
 
@@ -120,6 +117,7 @@ def main():
     val_files = []
     test_files = []
     failed_files = []
+    obj_with_no_mass = []
     args = parse()
     setup_dir(args.src, args.dest)
 
@@ -141,7 +139,7 @@ def main():
             for file in walk_dir(args.src)
             if file.endswith(".obj")
         ]
-
+    
     else:
         raise ValueError("No valid source file type.")
 
@@ -150,6 +148,20 @@ def main():
         out_folder = os.path.join(args.dest, file).split('.')[0]
         file_id = os.path.join(os.path.split(path)[-1], file.replace(".obj", ""))
 
+        m = trimesh.load_mesh(file_path)
+        try:
+            m.vertices -= m.center_mass
+        except:
+            obj_with_no_mass.append(file_path)
+            print("Without mass: ", file_path)
+            raise Exception
+
+        if not os.path.exists(out_folder):
+            os.makedirs(out_folder)
+
+        # transform(file_path, outfile, args.rot, args.ele, args.qual, i)
+        transform(model, m, out_folder, args.res, 32, obj_with_no_mass)
+        
         if file_id in train:
             train_files.append(os.path.abspath(out_folder))
         elif file_id in val:
@@ -157,17 +169,16 @@ def main():
         elif file_id in test:
             test_files.append(os.path.abspath(out_folder))
 
-        if not os.path.exists(out_folder):
-            os.makedirs(out_folder)
-
-        # transform(file_path, outfile, args.rot, args.ele, args.qual, i)
-        transform(model, file_path, out_folder, args.res, 32)
-
-        print(f"Progress: {(i+1) / len(objfiles) * 100}")
+        if i%1000 == 0:
+            print(f"File: {file_path}")
+            print(f"Progress: {i}/{len(objfiles)} = {(i+1) / len(objfiles) * 100}")
 
     file_path_dict = {"good_objs": train_files, "val_objs": val_files, "test_objs": test_files, "failed_objs": failed_files}
     with open(os.path.join(args.dest, "valid_paths.json"), "w") as f:
         json.dump(file_path_dict, f)
+        
+    with open(os.path.join(args.dest, "no_mass.json"), "w") as f:
+        json.dump(obj_with_no_mass, f)
 
 
 if __name__ == '__main__':
