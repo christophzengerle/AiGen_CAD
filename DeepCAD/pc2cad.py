@@ -25,22 +25,19 @@ def main():
         # train
         agent.train(train_loader, val_loader, test_loader)
 
-    elif cfg.exec == "test":
+    elif cfg.exec == "eval":
         agent.load_ckpt()
         # create dataloader
         test_loader = get_dataloader("test", cfg)
 
-        if cfg.mode == "test":
-            agent.test(test_loader)
-
-        elif cfg.mode == "acc":
-            agent.test_model_acc(test_loader)
+        if cfg.mode == "acc":
+            agent.eval_model_acc(test_loader)
 
         elif cfg.mode == "cd":
-            agent.test_model_chamfer_dist(test_loader)
+            agent.eval_model_chamfer_dist(test_loader)
 
         elif cfg.mode == "gen":
-            agent.test_cov_mmd_jsd(test_loader)
+            agent.eval_model_cov_mmd_jsd(test_loader)
 
         else:
             raise ValueError(

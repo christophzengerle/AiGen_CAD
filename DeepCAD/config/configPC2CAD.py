@@ -91,6 +91,7 @@ class ConfigPC2CAD(object):
         self.val_frequency = 5
 
         self.expSourcePNG = True
+        self.faulty_cad_models_path = "data/faulty_cad_models.json"
 
     def parse(self):
         parser = argparse.ArgumentParser()
@@ -98,18 +99,18 @@ class ConfigPC2CAD(object):
             "--exec",
             "-e",
             type=str,
-            choices=["train", "test", "inf"],
+            choices=["train", "eval", "inf"],
             default="test",
-            help="different execution modes for Pc-Encoder: train - Trains on Train and Eval dataset, test - Test on Test dataset, Inf - Inference on own data",
+            help="different execution modes for Pc-Encoder: train - Trains on Train and Eval dataset, eval - Evaluate on Test dataset, Inf - Inference on own data",
         )
         parser.add_argument(
             "--mode",
             "-m",
             type=str,
             dest="mode",
-            choices=["test", "acc", "cd", "gen"],
+            choices=["acc", "cd", "gen"],
             default="acc",
-            help="choose different testing modes: test - test model, acc - test model accuracy, cd - test chamfer distance, gen - test cov, mmd, jsd",
+            help="choose different testing modes: acc - test model accuracy, cd - test chamfer distance, gen - test cov, mmd, jsd",
         )
         parser.add_argument(
             "--proj_dir",
@@ -162,8 +163,8 @@ class ConfigPC2CAD(object):
             help="continue training from checkpoint",
         )
         parser.add_argument(
-            "--load_pce_ae_ckpt",
             "--load_modular_ckpt",
+            "--load_pce_ae_ckpt",
             "--modular_ckpt",
             dest="load_modular_ckpt",
             action="store_true",

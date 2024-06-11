@@ -55,13 +55,15 @@ class TrainerPC2CAD(BaseTrainer):
     def set_optimizer(self, cfg):
         """set optimizer and lr scheduler used in training"""
         self.optimizer = torch.optim.Adam(
-            self.net.parameters(), cfg.lr
+            self.net.parameters(),
+            cfg.lr,
             # , betas=(config.beta1, 0.9))
-        )  
+        )
         self.scheduler = torch.optim.lr_scheduler.StepLR(
-            self.optimizer, cfg.lr_step_size)
-       
-       # self.scheduler = GradualWarmupScheduler(self.optimizer, 1.0, cfg.warmup_step)
+            self.optimizer, cfg.lr_step_size
+        )
+
+    # self.scheduler = GradualWarmupScheduler(self.optimizer, 1.0, cfg.warmup_step)
 
     def logits2vec(self, outputs, refill_pad=True, to_numpy=True):
         """network outputs (logits) to final CAD vector"""
@@ -186,7 +188,7 @@ class TrainerPC2CAD(BaseTrainer):
 
                 pred = self.forward(points)
                 batch_out_vec = self.logits2vec(pred)
-                
+
                 loss = self.criterion(pred, codes)
             test_losses["losses_cmd"].append(loss["loss_cmd"].item())
             test_losses["losses_args"].append(loss["loss_args"].item())
@@ -251,7 +253,7 @@ class TrainerPC2CAD(BaseTrainer):
             global_step=self.clock.epoch,
         )
 
-    def test_model_acc(self, test_loader):
+    def eval_model_acc(self, test_loader):
         TOLERANCE = ACC_TOLERANCE
         print("********** Calculating Accuracy-Metrics **********")
         self.net.eval()
@@ -384,7 +386,7 @@ class TrainerPC2CAD(BaseTrainer):
             for l in res:
                 print(l, end="")
 
-    def test_model_chamfer_dist(self, test_loader):
+    def eval_model_chamfer_dist(self, test_loader):
         print("********** Calculating Chamfer-Distance **********")
         self.net.eval()
         # PROCESS_PARALLEL = True if self.cfg.num_workers > 1 else False
@@ -492,7 +494,7 @@ class TrainerPC2CAD(BaseTrainer):
                 file=fp,
             )
 
-    def test_cov_mmd_jsd(self, test_loader):
+    def eval_model_cov_mmd_jsd(self, test_loader):
         print("********** Calculating COV - MMD - JSD **********")
         self.net.eval()
         save_dir = os.path.join(
@@ -824,7 +826,9 @@ class TrainerPC2CAD(BaseTrainer):
             else:
                 self.net.pc_enc.load_state_dict(pcEnc_checkpoint["model_state_dict"])
 
-            print("Checkpoints for pretrained AutoEncoder & PointCloud-Encoder loaded successfully.")
+            print(
+                "Checkpoints for pretrained AutoEncoder & PointCloud-Encoder loaded successfully."
+            )
 
         else:
             load_path = os.path.join(self.model_dir, "{}.pth".format(self.cfg.ckpt))
