@@ -6,7 +6,6 @@ WORKDIR /usr/app/src
 
 ENV BUILD_WITH_CUDA True
 ENV CUDA_HOME /usr/local/cuda/
-ENV DISPLAY 192.168.178.29:0.0 
 
 
 # Enable 32bit Packages

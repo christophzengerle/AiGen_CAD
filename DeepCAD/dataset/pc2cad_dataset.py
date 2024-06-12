@@ -19,8 +19,26 @@ class ShapeCodesDataset(Dataset):
         self.path = config.split_path
         self.max_total_len = config.max_total_len
 
-        with open(self.path, "r") as fp:
-            self.all_data = json.load(fp)[phase]
+        # with open(self.path, "r") as fp:
+        #     self.all_data = json.load(fp)[phase]
+
+        # load all files for phase and remove faulty cad models from the dataset
+        with open(self.path, "r") as data, open(
+            config.faulty_cad_models_path, "r"
+        ) as faulty:
+            all_data_raw = json.load(data)[phase]
+
+            # load list of faulty cad models to exclude from the dataset
+            faulty_cad_models = json.load(faulty)
+            if (
+                len(faulty_cad_models[0].split("/")) > 2
+                and faulty_cad_models[0].split(".")[1] == "obj"
+            ):
+                faulty_cad_models = [
+                    "/".join(x.split("/")[2:]).split(".")[0] for x in faulty_cad_models
+                ]
+
+            self.all_data = [x for x in all_data_raw if x not in faulty_cad_models]
 
         self.noise = noise
         self.noiseAmount = config.noiseAmount
