@@ -1,13 +1,11 @@
 # get the development image from nvidia cuda 12.1
-FROM nvidia/cuda:11.8.0-runtime-ubuntu20.04
-
-# LABEL name="instantmesh" maintainer="instantmesh"
-
-# # Add a volume for downloaded models
-# VOLUME /workspace/models
+FROM pytorch/pytorch:2.2.2-cuda11.8-cudnn8-devel
 
 # create workspace folder and set it as working directory
 WORKDIR /usr/app/src
+
+# Enable 32bit Packages
+RUN dpkg --add-architecture i386
 
 # Set the timezone
 ENV DEBIAN_FRONTEND=noninteractive
@@ -15,6 +13,30 @@ RUN apt-get update && \
     apt-get install -y tzdata && \
     ln -fs /usr/share/zoneinfo/America/Chicago /etc/localtime && \
     dpkg-reconfigure --frontend noninteractive tzdata
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    python3.10 \
+    git \
+    gcc g++ \
+    libglib2.0-0 libsm6 libxext6 libxrender-dev \
+    libglu1 libglu1-mesa:i386 libxcursor-dev \
+    libxft2 libxft2:i386 libxinerama-dev \
+    openssh-client \
+    xvfb xserver-xephyr \
+    less
+
+   # Install dependencies for building custom C++ ops
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    libboost-python-dev \
+    ninja-build
 
 # update package lists and install git, wget, vim, libegl1-mesa-dev, and libglib2.0-0
 RUN apt-get update && \
@@ -46,18 +68,22 @@ RUN pip install https://github.com/vllm-project/vllm/releases/download/v0.2.2/vl
 RUN pip install triton
 
 # change the working directory to the repository
-WORKDIR /usr/app/src/instantmesh
-
-# other dependencies
-COPY ../requirements.txt ./
+WORKDIR /usr/app/src/InstantMesh
+COPY . /usr/app/src/InstantMesh
+COPY InstantMesh/requirements.txt ./
 RUN pip install -r requirements.txt
 
-COPY . /usr/app/src/instantmesh
+WORKDIR /usr/app/src/DeepCAD
+COPY . /usr/app/src/DeepCAD
+COPY DeepCAD/requirements.txt ./
+RUN pip install -r requirements.txt
+
+WORKDIR /usr/app/src
+copy app.py ./
 
 EXPOSE 7860
 ENV GRADIO_SERVER_NAME="0.0.0.0"
 
-
 # Run the command when the container starts
 # CMD ["python", "app.py"]
-ENTRYPOINT [ "python", "app.py", "--server_name", "0.0.0.0", "--server_port", "7860" ]
+# ENTRYPOINT [ "python", "app.py", "--server_name", "0.0.0.0", "--server_port", "7860" ]

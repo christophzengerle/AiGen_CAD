@@ -30,14 +30,47 @@ services:
 #              # device_ids: ["0", "1"] # binds to GPU 0 and 1
 #              count: all
 #              capabilities: [gpu]
-  instantmesh:
-    build: ./InstantMesh
-    container_name: instantmesh
+
+#  instantmesh_cu11:
+#    build: ./InstantMesh
+#    container_name: instantmesh_cu11
+#    volumes:
+#      - ./InstantMesh:/usr/app/src/instantmesh
+#
+#      # Cluster bindings
+#      - ./utils/data:/usr/app/src/instantmesh/data
+#
+#      # local Windows bindings (Christoph)
+#      # - C:/ArtificialIntelligence/DeepCAD/data:/usr/app/src/DeepCAD/data
+#      # - C:/ArtificialIntelligence/DeepCAD/proj_log:/usr/app/src/DeepCAD/proj_log
+#
+#    # network_mode: "host"
+#    ports:
+#      - "8082:22" # SSH
+#      - "8083:6006" # Tensorboard
+#      - "8084:8888" # Jupyter
+#      - "7860:7860"
+#
+#    command: tail -F anything #to keep Container running
+#    ipc: host
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#            - driver: nvidia
+#              # device_ids: ["0", "1"] # binds to GPU 0 and 1
+#              count: all
+#              capabilities: [ gpu ]
+
+  pipeline:
+    container_name: pipeline
+    build: .
     volumes:
-      - ./InstantMesh:/usr/app/src/instantmesh
+      - ./InstantMesh:/usr/app/src/InstantMesh
+      - ./DeepCAD:/usr/app/src/DeepCAD
 
       # Cluster bindings
-      - ./utils/data:/usr/app/src/instantmesh/data
+      - ./utils/data:/usr/app/src/data
 
       # local Windows bindings (Christoph)
       # - C:/ArtificialIntelligence/DeepCAD/data:/usr/app/src/DeepCAD/data
@@ -48,6 +81,7 @@ services:
       - "8082:22" # SSH
       - "8083:6006" # Tensorboard
       - "8084:8888" # Jupyter
+      - "7860:7860"
 
     command: tail -F anything #to keep Container running
     ipc: host
@@ -58,5 +92,5 @@ services:
             - driver: nvidia
               # device_ids: ["0", "1"] # binds to GPU 0 and 1
               count: all
-              capabilities: [gpu]
+              capabilities: [ gpu ]
 

@@ -1,1 +1,1 @@
-{"good_objs": ["usr/app/src/instantmesh/data/png_files/00000447", "usr/app/src/instantmesh/data/png_files/00000123", "usr/app/src/instantmesh/data/png_files/00000007"], "val_objs": [], "test_objs": [], "failed_objs": []}
+{"good_objs": ["00000447", "00000123", "00000007"], "val_objs": [], "test_objs": [], "failed_objs": []}

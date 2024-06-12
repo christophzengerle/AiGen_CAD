@@ -100,7 +100,10 @@ def transform(model, mesh, out_folder, res, num, obj_with_no_mass):
         tex_pos_np = tex_pos_np - np.min(tex_pos_np)
         tex_pos_np = (tex_pos_np / np.max(tex_pos_np) * 255).astype(int)
 
-        cv2.imwrite(os.path.join(out_folder, '%03d.png' % idx), normal_np)
+        sketch = cv2.Canny(normal_np.astype(np.uint8), 100, 200)
+        sketch = (255-sketch)
+        
+        cv2.imwrite(os.path.join(out_folder, '%03d.png' % idx), sketch)
         cv2.imwrite(os.path.join(out_folder, '%03d_depth.png' % idx), depth_np)
         cv2.imwrite(os.path.join(out_folder, '%03d_normal.png' % idx), normal_np)
 
@@ -154,7 +157,7 @@ def main():
         except:
             obj_with_no_mass.append(file_path)
             print("Without mass: ", file_path)
-            raise Exception
+            continue
 
         if not os.path.exists(out_folder):
             os.makedirs(out_folder)
