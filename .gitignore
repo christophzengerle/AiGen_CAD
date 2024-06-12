@@ -6,3 +6,4 @@ nohup.out
 /InstantMesh/logs/
 utils/data/
 *.ckpt
+InstantMesh/logs/
