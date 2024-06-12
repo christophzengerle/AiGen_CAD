@@ -21,9 +21,9 @@ import os
 #         --expSTEP --expPNG --expGIF -g 0 \
 #          --z_path proj_log/pce/pcEncNoNoise/results/pcEncodings/ckpt_epoch20_num4096/00195139_2024-05-01-23-49-26/00195139.h5"
 
+
          
-         
-         
+
 # cmd = "nohup python pc2cad.py --exec train --exp_name pc2cad_contDiffNums --batch_size 175 \
 #     --nr_epochs 100 --noise --n_points 4096 -g 1 \
 #           --continue --load_modular_ckpt --pce_exp_name pcEncoder --pce_ckpt latest \
