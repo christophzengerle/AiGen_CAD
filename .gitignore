@@ -4,3 +4,5 @@ __pycache__/
 # ignore nohup-file
 nohup.out
 /InstantMesh/logs/
+utils/data/
+*.ckpt
