@@ -46,7 +46,7 @@ RUN pip install -r requirements.txt
 
 # COPY . /usr/app/src/instantmesh
 
-ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:2048
+ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:1024
 
 # Run the command when the container starts
 # CMD ["python", "app.py"]

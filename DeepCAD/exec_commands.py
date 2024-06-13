@@ -24,8 +24,8 @@ import os
 
          
 
-cmd = "nohup python pc2cad.py --exec train --exp_name pc2cad_final_8192 --batch_size 590 \
-    --nr_epochs 1000 --noise --n_points 8192 -g 1 &"
+# cmd = "nohup python pc2cad.py --exec train --exp_name pc2cad_final_8192 --batch_size 590 \
+#     --nr_epochs 1000 --noise --n_points 8192 -g 1 &"
         #   --continue --load_modular_ckpt --pce_exp_name pcEncoder --pce_ckpt latest \
         #  --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000 &"
 
@@ -41,6 +41,6 @@ cmd = "nohup python pc2cad.py --exec train --exp_name pc2cad_final_8192 --batch_
 
 
 
-# cmd = "tensorboard --logdir proj_log/pc2cad/pc2cad_contDiffNums/log --host 0.0.0.0"
+cmd = "tensorboard --logdir proj_log/pc2cad/pc2cad_final_8192/log --host 0.0.0.0"
 
 os.system(cmd)
