@@ -264,6 +264,8 @@ class TrainerPC2CAD(BaseTrainer):
             global_step=self.clock.epoch,
         )
         
+        # print("args_acc" + str(all_cmd_comp) + "line" + str(line_acc) +  "arc" + str(arc_acc) +  "circle" + str(circle_acc) +  "plane" + str(sket_plane_acc) +  "trans" + str(sket_trans_acc) +  "extent" + str(extent_one_acc) )
+
     def eval_model_acc(self, test_loader):
         print("********** Calculating Accuracy-Metrics **********")
         self.net.eval()

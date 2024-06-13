@@ -31,8 +31,8 @@ def main():
         test_loader = get_dataloader("test", cfg)
 
         if cfg.mode == "acc":
-            # agent.eval_model_acc(test_loader)
-            agent.test(test_loader)
+            agent.eval_model_acc(test_loader)
+            # agent.test(test_loader)
 
         elif cfg.mode == "cd":
             agent.eval_model_chamfer_dist(test_loader)
