@@ -91,7 +91,8 @@ class ConfigPC2CAD(object):
         self.val_frequency = 5
 
         self.expSourcePNG = True
-        self.faulty_cad_models_path = "data/faulty_cad_models.json"
+        
+        self.faulty_cad_models_path = "dataset/faulty_cad_models.json"
 
     def parse(self):
         parser = argparse.ArgumentParser()

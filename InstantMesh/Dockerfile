@@ -38,13 +38,15 @@ RUN pip install xformers==0.0.22.post7
 RUN pip install triton
 
 # change the working directory to the repository
-WORKDIR /usr/app/src/instantmesh
+WORKDIR /usr/app/src/InstantMesh
 
 # other dependencies
 COPY ../requirements.txt ./
 RUN pip install -r requirements.txt
 
-COPY . /usr/app/src/instantmesh
+COPY . /usr/app/src/InstantMesh
+
+ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:2048
 
 # Run the command when the container starts
 # CMD ["python", "app.py"]

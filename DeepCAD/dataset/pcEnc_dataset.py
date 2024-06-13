@@ -17,11 +17,38 @@ class ShapeCodesDataset(Dataset):
         self.pc_root = config.pc_root
         self.path = config.split_path
 
-        with open(self.path, "r") as fp:
-            self.all_data = json.load(fp)[phase]
+        # with open(self.path, "r") as fp:
+        #     self.all_data = json.load(fp)[phase]
+        
+                
+        # with h5py.File(self.z_path, "r") as fp:
+        #     self.zs = fp["{}_zs".format(phase)][:]
+        
 
-        with h5py.File(self.z_path, "r") as fp:
-            self.zs = fp["{}_zs".format(phase)][:]
+        # load all files for phase and remove faulty cad models from the dataset
+        with open(self.path, "r") as json_data, h5py.File(self.z_path, "r") as vec_data,  open(
+            config.faulty_cad_models_path, "r"
+        ) as faulty:
+            json_data_raw = json.load(json_data)[phase]
+            vec_data_raw = vec_data["{}_zs".format(phase)][:]
+
+            # load list of faulty cad models to exclude from the dataset
+            faulty_cad_models = json.load(faulty)
+            if (
+                len(faulty_cad_models[0].split("/")) > 2
+                and faulty_cad_models[0].split(".")[1] == "obj"
+            ):
+                faulty_cad_models = [
+                    "/".join(x.split("/")[2:]).split(".")[0] for x in faulty_cad_models
+                ]
+
+                faulty_cad_models_indices = np.where(np.in1d(json_data_raw, faulty_cad_models))[0]
+                
+                       
+            self.all_data = [x for x in json_data_raw if x not in faulty_cad_models]
+            self.zs = [x for idx, x in enumerate(vec_data_raw) if idx not in faulty_cad_models_indices]
+            
+            
 
         self.noise = noise
         self.noiseAmount = config.noiseAmount

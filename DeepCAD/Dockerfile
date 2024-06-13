@@ -41,9 +41,11 @@ RUN apt-get update && \
 WORKDIR /usr/app/src/DeepCAD
 
 # Install Python dependencies
-COPY requirements.txt ./
+# COPY ./DeepCAD/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 RUN rm -rf requirements.txt
+
+# COPY faulty_cad_models.json ./data/faulty_cad_models.json
 
 # Install PythonOCC
 RUN conda install -n base conda-libmamba-solver -y

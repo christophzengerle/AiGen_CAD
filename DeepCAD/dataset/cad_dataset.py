@@ -23,8 +23,28 @@ class CADDataset(Dataset):
         self.phase = phase
         self.aug = config.augment
         self.path = os.path.join(config.data_root, "train_val_test_split.json")
-        with open(self.path, "r") as fp:
-            self.all_data = json.load(fp)[phase]
+
+            
+        # with open(self.path, "r") as fp:
+        #     self.all_data = json.load(fp)[phase]
+
+        # load all files for phase and remove faulty cad models from the dataset
+        with open(self.path, "r") as data, open(
+            config.faulty_cad_models_path, "r"
+        ) as faulty:
+            all_data_raw = json.load(data)[phase]
+
+            # load list of faulty cad models to exclude from the dataset
+            faulty_cad_models = json.load(faulty)
+            if (
+                len(faulty_cad_models[0].split("/")) > 2
+                and faulty_cad_models[0].split(".")[1] == "obj"
+            ):
+                faulty_cad_models = [
+                    "/".join(x.split("/")[2:]).split(".")[0] for x in faulty_cad_models
+                ]
+
+            self.all_data = [x for x in all_data_raw if x not in faulty_cad_models]
 
         self.max_n_loops = config.max_n_loops          # Number of paths (N_P)
         self.max_n_curves = config.max_n_curves            # Number of commands (N_C)

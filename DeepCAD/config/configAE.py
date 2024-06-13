@@ -74,6 +74,8 @@ class ConfigAE(object):
         self.n_checkBrep_retries = 5 # num retries to create valid CAD model
 
         self.loss_weights = {"loss_cmd_weight": 1.0, "loss_args_weight": 2.0}
+        
+        self.faulty_cad_models_path = "dataset/faulty_cad_models.json"
 
     def set_pc_decoder_configuration(self, pc_config):
         # encoded point clouds (z-values)
