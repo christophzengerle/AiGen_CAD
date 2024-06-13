@@ -41,7 +41,7 @@ RUN apt-get update && \
 WORKDIR /usr/app/src/DeepCAD
 
 # Install Python dependencies
-# COPY ./DeepCAD/requirements.txt ./
+COPY ./requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 RUN rm -rf requirements.txt
 

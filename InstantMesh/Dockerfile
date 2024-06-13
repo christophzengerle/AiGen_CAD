@@ -38,13 +38,13 @@ RUN pip install xformers==0.0.22.post7
 RUN pip install triton
 
 # change the working directory to the repository
-WORKDIR /usr/app/src/InstantMesh
+WORKDIR /usr/app/src/instantmesh
 
 # other dependencies
-COPY ../requirements.txt ./
+COPY ./requirements.txt ./
 RUN pip install -r requirements.txt
 
-COPY . /usr/app/src/InstantMesh
+# COPY . /usr/app/src/instantmesh
 
 ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:2048
 

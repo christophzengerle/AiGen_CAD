@@ -1,8 +1,6 @@
 services:
  deepcad:
-   build: 
-    context: ./DeepCAD
-    dockerfile: ./DeepCAD/Dockerfile
+   build: ./DeepCAD
    image: chriszengerle/aigen_deepcad:0.1
    container_name: deepcad
    volumes:
@@ -40,11 +38,12 @@ services:
    image: chriszengerle/aigen_instantmesh:0.1
    container_name: instantmesh
    volumes:
-     - ./InstantMesh:/usr/app/src/InstantMesh
+     - ./InstantMesh:/usr/app/src/instantmesh
 
      # Cluster bindings
-     - ./utils/data:/usr/app/src/InstantMesh/data
-     - ./utils/models/InstantMesh:/usr/app/src/InstantMesh/ckpts
+     - ../utils/data:/usr/app/src/instantmesh/data
+     - ../instantmesh_ckpts:/usr/app/src/instantmesh/ckpts
+     # - ../utils/models/InstantMesh:/usr/app/src/InstantMesh/ckpts
 
    # network_mode: "host"
    ports:

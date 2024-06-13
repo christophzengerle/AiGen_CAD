@@ -44,7 +44,8 @@ class ConfigPC2CAD(object):
             and args.cont is not True
             and os.path.exists(self.exp_dir)
         ):
-            response = input("Experiment log/model already exists, overwrite? (y/n) ")
+            response = "y"
+            # response = input("Experiment log/model already exists, overwrite? (y/n) ")
             if response != "y":
                 exit()
             shutil.rmtree(self.exp_dir)
@@ -56,10 +57,10 @@ class ConfigPC2CAD(object):
     def set_configuration(self):
         # Pc-Encoder
         self.lr = 1e-3  # initial LR
-        self.lr_step_size = 25  # Nr Epochs after wich LR will be decresed
+        self.lr_step_size = 100  # Nr Epochs after wich LR will be decresed
         # self.beta1 = 0.5
         # self.grad_clip = None
-        self.noiseAmount = 0.025
+        self.noiseAmount = 0.02
 
         # Autoencoder
         self.args_dim = ARGS_DIM  # 256
@@ -87,7 +88,7 @@ class ConfigPC2CAD(object):
         self.loss_weights = {"loss_cmd_weight": 1.0, "loss_args_weight": 2.0}
 
         # General Settings
-        self.save_frequency = 20
+        self.save_frequency = 50
         self.val_frequency = 5
 
         self.expSourcePNG = True
