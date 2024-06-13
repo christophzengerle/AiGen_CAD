@@ -88,7 +88,7 @@ class ConfigPC2CAD(object):
         self.loss_weights = {"loss_cmd_weight": 1.0, "loss_args_weight": 2.0}
 
         # General Settings
-        self.save_frequency = 50
+        self.save_frequency = 1
         self.val_frequency = 5
 
         self.expSourcePNG = True

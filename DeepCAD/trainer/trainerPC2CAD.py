@@ -207,15 +207,26 @@ class TrainerPC2CAD(BaseTrainer):
             out_cmd = batch_out_vec[:, :, 0]
             out_args = batch_out_vec[:, :, 1:]
 
-            cmd_acc = (out_cmd == gt_commands).astype(np.int32)
+            mask = (out_cmd == gt_commands)
+            cmd_acc = mask.astype(np.int32)
             all_cmd_comp.append(np.mean(cmd_acc))
 
-            ext_pos = np.where(gt_commands == EXT_IDX)
-            line_pos = np.where(gt_commands == LINE_IDX)
-            arc_pos = np.where(gt_commands == ARC_IDX)
-            circle_pos = np.where(gt_commands == CIRCLE_IDX)
 
-            args_comp = (gt_args == out_args).astype(np.int32)
+            corr_gt_cmd = gt_commands[mask]
+            ext_pos = np.where(corr_gt_cmd == EXT_IDX)
+            line_pos = np.where(corr_gt_cmd == LINE_IDX)
+            arc_pos = np.where(corr_gt_cmd == ARC_IDX)
+            circle_pos = np.where(corr_gt_cmd == CIRCLE_IDX)
+
+
+            gt_args = gt_args[mask]
+            out_args = out_args[mask]
+
+            args_comp = (np.abs(gt_args == out_args) < ACC_TOLERANCE).astype(np.int32)
+            args_comp[ext_pos][:, -N_ARGS_EXT:] = (gt_args[ext_pos][:, -N_ARGS_EXT:] == out_args[ext_pos][:, -N_ARGS_EXT:]).astype(np.int32)
+            args_comp[arc_pos][:, :4] = (gt_args[arc_pos][:, :4] == out_args[arc_pos][:, :4]).astype(np.int32)
+            
+                
             all_ext_args_comp.append(args_comp[ext_pos][:, -N_ARGS_EXT:])
             all_line_args_comp.append(args_comp[line_pos][:, :2])
             all_arc_args_comp.append(args_comp[arc_pos][:, :4])
@@ -252,9 +263,8 @@ class TrainerPC2CAD(BaseTrainer):
             },
             global_step=self.clock.epoch,
         )
-
+        
     def eval_model_acc(self, test_loader):
-        TOLERANCE = ACC_TOLERANCE
         print("********** Calculating Accuracy-Metrics **********")
         self.net.eval()
         save_dir = os.path.join(
@@ -314,7 +324,7 @@ class TrainerPC2CAD(BaseTrainer):
                         out_cmd[i][j] == gt_cmd[i][j]
                     ):  # NOTE: only account param acc for correct cmd
                         tole_acc = (
-                            np.abs(out_param[i][j] - gt_param[i][j]) < TOLERANCE
+                            np.abs(out_param[i][j] - gt_param[i][j]) < ACC_TOLERANCE
                         ).astype(np.int32)
                         # filter param that do not need tolerance (i.e. requires strictly equal)
                         if cmd == EXT_IDX:
@@ -356,7 +366,7 @@ class TrainerPC2CAD(BaseTrainer):
 
         save_path = os.path.join(save_dir, "test_acc_stats.txt")
         fp = open(save_path, "w")
-        print("Tolerance: ", TOLERANCE, file=fp)
+        print("Tolerance: ", ACC_TOLERANCE, file=fp)
         # overall accuracy (averaged over all data)
         avg_cmd_acc = np.mean(avg_cmd_acc)
         print("avg command acc (ACC_cmd):", avg_cmd_acc, file=fp)
