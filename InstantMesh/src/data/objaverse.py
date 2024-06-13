@@ -111,9 +111,11 @@ class ObjaverseData(Dataset):
         replace background pixel with random color in rendering
         '''
         pil_img = Image.open(path)
-
         image = np.asarray(pil_img, dtype=np.float32) / 255.
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2RGBA)
+        
         alpha = image[:, :, 3:]
+        # alpha = image[:, :, 2:]
         image = image[:, :, :3] * alpha + color * (1 - alpha)
 
         image = torch.from_numpy(image).permute(2, 0, 1).contiguous().float()
@@ -146,6 +148,7 @@ class ObjaverseData(Dataset):
                     depth = cv2.imread(os.path.join(input_image_path, '%03d_depth.png' % idx), cv2.IMREAD_UNCHANGED) / 255.0 * self.depth_scale
                     depth = torch.from_numpy(depth).unsqueeze(0)
                     pose = input_cameras[idx]
+                    pose = pose.squeeze()[:3, :]
                     pose = np.concatenate([pose, np.array([[0, 0, 0, 1]])], axis=0)
                     image_list.append(image)
                     alpha_list.append(alpha)
@@ -160,6 +163,7 @@ class ObjaverseData(Dataset):
                     depth = cv2.imread(os.path.join(target_image_path, '%03d_depth.png' % idx), cv2.IMREAD_UNCHANGED) / 255.0 * self.depth_scale
                     depth = torch.from_numpy(depth).unsqueeze(0)
                     pose = target_cameras[idx]
+                    pose = pose.squeeze()[:3, :]
                     pose = np.concatenate([pose, np.array([[0, 0, 0, 1]])], axis=0)
 
                     image_list.append(image)
