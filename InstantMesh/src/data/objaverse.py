@@ -251,10 +251,18 @@ class ValidationData(Dataset):
         self.input_image_size = input_image_size
         self.fov = fov
 
-        self.paths = sorted(os.listdir(self.root_dir))
+        meta_fname = "render/valid_paths.json"
+
+        with open(os.path.join(root_dir, meta_fname)) as f:
+            filtered_dict = json.load(f)
+
+        paths = filtered_dict['val_objs']
+        self.paths = paths
+
+        # self.paths = sorted(os.listdir(self.root_dir))
         print('============= length of dataset %d =============' % len(self.paths))
 
-        cam_distance = 4.0
+        cam_distance = 0.2
         azimuths = np.array([30, 90, 150, 210, 270, 330])
         elevations = np.array([20, -10, 20, -10, 20, -10])
         azimuths = np.deg2rad(azimuths)
@@ -286,6 +294,7 @@ class ValidationData(Dataset):
         pil_img = pil_img.resize((self.input_image_size, self.input_image_size), resample=Image.BICUBIC)
 
         image = np.asarray(pil_img, dtype=np.float32) / 255.
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2RGBA)
         if image.shape[-1] == 4:
             alpha = image[:, :, 3:]
             image = image[:, :, :3] * alpha + color * (1 - alpha)
@@ -298,7 +307,7 @@ class ValidationData(Dataset):
     
     def __getitem__(self, index):
         # load data
-        input_image_path = os.path.join(self.root_dir, self.paths[index])
+        input_image_path = os.path.join(self.root_dir, "render", self.paths[index])
 
         '''background color, default: white'''
         bkg_color = [1.0, 1.0, 1.0]
