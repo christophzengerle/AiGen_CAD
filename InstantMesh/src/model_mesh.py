@@ -323,3 +323,9 @@ class MVRecon(pl.LightningModule):
         scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, 100000, eta_min=0)
 
         return {'optimizer': optimizer, 'lr_scheduler': scheduler}
+
+    def on_validation_start(self) -> None:
+        torch.cuda.empty_cache()
+
+    def on_train_start(self) -> None:
+        torch.cuda.empty_cache()
