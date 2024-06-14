@@ -260,12 +260,9 @@ class ValidationData(Dataset):
 
         print('============= length of val dataset %d =============' % len(paths))
 
-        paths = random.sample(paths, 4000)
-
         self.paths = paths
 
         # self.paths = sorted(os.listdir(self.root_dir))
-        print('============= length of sampled val dataset %d =============' % len(self.paths))
 
         cam_distance = 0.2
         azimuths = np.array([30, 90, 150, 210, 270, 330])
