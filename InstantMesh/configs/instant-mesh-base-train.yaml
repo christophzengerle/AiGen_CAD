@@ -65,3 +65,4 @@ lightning:
     num_sanity_val_steps: 0
     accumulate_grad_batches: 1
     check_val_every_n_epoch: null   # if not set this, validation does not run
+    limit_val_batches: 0.1

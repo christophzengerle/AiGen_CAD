@@ -101,7 +101,7 @@ class ObjaverseData(Dataset):
         self.depth_scale = 6.0
             
         total_objects = len(self.paths)
-        print('============= length of dataset %d =============' % len(self.paths))
+        print('============= length of train dataset %d =============' % len(self.paths))
 
     def __len__(self):
         return len(self.paths)
@@ -257,10 +257,15 @@ class ValidationData(Dataset):
             filtered_dict = json.load(f)
 
         paths = filtered_dict['val_objs']
+
+        print('============= length of val dataset %d =============' % len(paths))
+
+        paths = random.sample(paths, 4000)
+
         self.paths = paths
 
         # self.paths = sorted(os.listdir(self.root_dir))
-        print('============= length of dataset %d =============' % len(self.paths))
+        print('============= length of sampled val dataset %d =============' % len(self.paths))
 
         cam_distance = 0.2
         azimuths = np.array([30, 90, 150, 210, 270, 330])
