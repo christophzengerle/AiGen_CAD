@@ -6,14 +6,14 @@ omegaconf
 torchmetrics
 webdataset
 accelerate
-tensorboard
+tensorboard==2.16.2
 PyMCubes
-trimesh
+trimesh==4.3.1
 rembg
 transformers==4.34.1
 diffusers==0.20.2
 bitsandbytes
 imageio[ffmpeg]
 xatlas
-plyfile
+plyfile==1.0.3
 nvdiffrast @ git+https://github.com/NVlabs/nvdiffrast/
