@@ -1,7 +1,5 @@
 import argparse
-import multiprocessing
 import os
-import numpy as np
 import sys
 import trimesh
 import cv2

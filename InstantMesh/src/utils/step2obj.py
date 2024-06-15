@@ -33,64 +33,6 @@ def walk_dir(dir):
     return file_list
 
 
-def random_camera_pose(radius=2.0):
-    theta_x = np.random.uniform(0, 2 * np.pi)  # theta is the angle with the z-axis
-    theta_y = np.random.uniform(0, 2 * np.pi)
-    theta_z = np.random.uniform(0, 2 * np.pi)
-
-    rot_z = np.array([
-        [np.cos(theta_z), -np.sin(theta_z), 0, 0],
-        [np.sin(theta_z), np.cos(theta_z), 0, 0],
-        [0, 0, 1, 0],
-        [0, 0, 0, 1]
-    ])
-
-    rot_x = np.array([
-        [1, 0, 0, 0],
-        [0, np.cos(theta_x), -np.sin(theta_x), 0],
-        [0, np.sin(theta_x), np.cos(theta_x), 0],
-        [0, 0, 0, 1]
-    ])
-
-    rot_y = np.array([
-        [np.cos(theta_y), 0, np.sin(theta_y), 0],
-        [0, 1, 0, 0],
-        [-np.sin(theta_y), 0, np.cos(theta_y), 0],
-        [0, 0, 0, 1]
-    ])
-
-    pose = np.array([
-        [0.0, -np.sqrt(2) / 2, np.sqrt(2) / 2, 0],
-        [1.0, 0.0, 0.0, 0],
-        [0.0, np.sqrt(2) / 2, np.sqrt(2) / 2, 0],
-        [0.0, 0.0, 0.0, 1.0]
-    ])
-
-    pose2 = np.array([
-        [1, 0, 0, 0],
-        [0, 1.0, 0.0, 0],
-        [0, 0, 1.0, 2],
-        [0.0, 0.0, 0.0, 1.0],
-    ])
-    pose = np.dot(pose, pose2)
-    pose = np.dot(rot_x, pose)
-    pose = np.dot(rot_y, pose)
-    pose = np.dot(rot_z, pose)
-
-    return pose
-
-
-class CustomShaderCache():
-    def __init__(self):
-        self.program = None
-
-    def get_program(self, vertex_shader, fragment_shader, geometry_shader=None, defines=None):
-        if self.program is None:
-            self.program = pyrender.shader_program.ShaderProgram("src/shaders/mesh.vert", "src/shaders/mesh.frag",
-                                                                 defines=defines)
-        return self.program
-
-
 def transform(file_path, outfile):
     # print('filepath', file_path)
     if file_path.endswith(".ply"):
@@ -151,7 +93,6 @@ def main():
             p.join()
 
         print(f"Progress: {(i + 1) / len(objfiles) * 100}")
-
 
 
 if __name__ == '__main__':
