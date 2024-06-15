@@ -3,6 +3,7 @@ import imageio
 import numpy as np
 import torch
 import rembg
+import datetime
 from PIL import Image
 from torchvision.transforms import v2
 from pytorch_lightning import seed_everything
@@ -10,6 +11,8 @@ from omegaconf import OmegaConf
 from einops import rearrange, repeat
 from tqdm import tqdm
 from diffusers import DiffusionPipeline, EulerAncestralDiscreteScheduler
+
+from DeepCAD.endpoint import endpoint
 
 from InstantMesh.src.utils.train_util import instantiate_from_config
 from InstantMesh.src.utils.camera_util import (
@@ -19,11 +22,14 @@ from InstantMesh.src.utils.camera_util import (
 )
 from InstantMesh.src.utils.mesh_util import save_obj, save_glb
 from InstantMesh.src.utils.infer_util import remove_background, resize_foreground, images_to_video
+from InstantMesh.src.utils import step2obj
 
 import tempfile
 from huggingface_hub import hf_hub_download
 import sysconfig
 import trimesh
+
+OUTPUT_FOLDER = "data/pipeline_results/"
 
 print(sysconfig.get_paths()['include'])
 
@@ -39,8 +45,8 @@ model_cache_dir = './ckpts/'
 os.makedirs(model_cache_dir, exist_ok=True)
 
 
-def instant_dummy(images):
-    path = "data/obj_files/0000/00000007.obj"
+def instant_dummy(images, output_path):
+    path = os.path.join(output_path, "instant")
     return path
 
 
@@ -52,7 +58,8 @@ def obj2pc(obj_path):
 
 
 def generate_deepcad(pc_path):
-    return "data/obj_files/0000/00000069.obj"
+    step_path = endpoint(pc_path)
+    step2obj.transform(step_path, "instant_output.step")
 
 def get_render_cameras(batch_size=1, M=120, radius=2.5, elevation=10.0, is_flexicubes=False):
     """
@@ -144,12 +151,16 @@ def check_input_image(input_image):
 
 
 def preprocess(input_image, do_remove_background):
+    output_path = os.path.join(OUTPUT_FOLDER, str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
     rembg_session = rembg.new_session() if do_remove_background else None
     if do_remove_background:
         input_image = remove_background(input_image, rembg_session)
         input_image = resize_foreground(input_image, 0.85)
 
-    return input_image
+    return input_image, output_path
 
 
 def generate_mvs(input_image, sample_steps, sample_seed):
@@ -346,26 +357,27 @@ with gr.Blocks() as demo:
     gr.Markdown(_CITE_)
     mv_images = gr.State()
     point_cloud = gr.State()
+    output_path = gr.State()
 
     submit.click(fn=check_input_image, inputs=[input_image]).success(
         fn=preprocess,
         inputs=[input_image, do_remove_background],
-        outputs=[processed_image],
+        outputs=[processed_image, output_path],
     ).success(
         fn=generate_mvs,
         inputs=[processed_image, sample_steps, sample_seed],
         outputs=[mv_images, mv_show_images],
     ).success(
         fn=instant_dummy,
-        inputs=[mv_images],
+        inputs=[mv_images, output_path],
         outputs=[output_model_obj]
     ).success(
         fn=obj2pc,
-        inputs=[output_model_obj],
+        inputs=[output_model_obj, output_path],
         outputs=[point_cloud]
     ).success(
         fn=generate_deepcad,
-        inputs=[point_cloud],
+        inputs=[point_cloud, output_path],
         outputs=[output_cad]
     )
 

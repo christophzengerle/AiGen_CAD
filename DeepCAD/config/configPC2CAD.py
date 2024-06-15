@@ -146,7 +146,7 @@ class ConfigPC2CAD(object):
         parser.add_argument(
             "--exp_name",
             type=str,
-            required=True,
+            required=False,
             default="pcEncoder",
             help="name of this experiment",
         )
