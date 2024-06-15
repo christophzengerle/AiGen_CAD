@@ -11,6 +11,8 @@ from omegaconf import OmegaConf
 from einops import rearrange, repeat
 from tqdm import tqdm
 from diffusers import DiffusionPipeline, EulerAncestralDiscreteScheduler
+import sys
+sys.path.append("./DeepCAD")
 
 from DeepCAD.endpoint import endpoint
 
@@ -50,16 +52,17 @@ def instant_dummy(images, output_path):
     return path
 
 
-def obj2pc(obj_path):
+def obj2pc(obj_path, out_path):
     m = trimesh.load_mesh(obj_path)
-    path = "data/temp.ply"
-    m.export("data/temp.ply")
+    path = os.path.join(out_path, "instantMesh.ply")
+    m.export(path, file_type='ply')
     return path
 
 
 def generate_deepcad(pc_path):
     step_path = endpoint(pc_path)
-    step2obj.transform(step_path, "instant_output.step")
+    obj_path = step2obj.transform(step_path, "deepCAD")
+    return obj_path
 
 def get_render_cameras(batch_size=1, M=120, radius=2.5, elevation=10.0, is_flexicubes=False):
     """
@@ -208,7 +211,7 @@ def make_mesh(mesh_fpath, planes):
     return mesh_fpath, mesh_glb_fpath
 
 
-def make3d(images):
+def make3d(images, out_path):
     images = np.asarray(images, dtype=np.float32) / 255.0
     images = torch.from_numpy(images).permute(2, 0, 1).contiguous().float()  # (3, 960, 640)
     images = rearrange(images, 'c (n h) (m w) -> (n m) c h w', n=3, m=2)  # (6, 3, 320, 320)
@@ -220,7 +223,7 @@ def make3d(images):
     images = images.unsqueeze(0).to(device1)
     images = v2.functional.resize(images, (320, 320), interpolation=3, antialias=True).clamp(0, 1)
 
-    mesh_fpath = tempfile.NamedTemporaryFile(suffix=f".obj", delete=False).name
+    mesh_fpath = os.path.join(out_path, "instantMesh.obj")
     print(mesh_fpath)
     mesh_basename = os.path.basename(mesh_fpath).split('.')[0]
     mesh_dirname = os.path.dirname(mesh_fpath)
@@ -368,7 +371,7 @@ with gr.Blocks() as demo:
         inputs=[processed_image, sample_steps, sample_seed],
         outputs=[mv_images, mv_show_images],
     ).success(
-        fn=instant_dummy,
+        fn=make3d,
         inputs=[mv_images, output_path],
         outputs=[output_model_obj]
     ).success(

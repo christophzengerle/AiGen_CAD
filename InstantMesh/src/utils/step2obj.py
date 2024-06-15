@@ -4,7 +4,6 @@ import os
 import numpy as np
 import sys
 import trimesh
-import pyrender
 
 sys.path.append("../../../src")
 
@@ -53,11 +52,10 @@ def transform(file_path, outfile):
             )
         )
 
-    obj = m.export(file_type='obj')
-
-    with open(outfile + ".obj", "w") as f:
-        f.write(obj)
-
+    outfile = outfile + ".obj"
+    m.export(outfile, file_type='obj')
+    
+    return outfile
 
 def main():
     args = parse()

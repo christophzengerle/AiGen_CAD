@@ -1,8 +1,8 @@
 # get the development image from nvidia cuda 12.1
-FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-devel
+FROM pytorch/pytorch:2.2.2-cuda11.8-cudnn8-devel
 
 ENV BUILD_WITH_CUDA True
-ENV CUDA_HOME /usr/local/cuda/
+ENV CUDA_HOME=/usr/local/cuda/
 
 # create workspace folder and set it as working directory
 WORKDIR /usr/app/src
@@ -23,7 +23,7 @@ RUN apt-get install -y --no-install-recommends \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     python3.10 \
-    git \
+    git wget libegl1-mesa-dev unzip \
     gcc g++ \
     libglib2.0-0 libsm6 libxext6 libxrender-dev \
     libglu1 libglu1-mesa:i386 libxcursor-dev \
@@ -37,42 +37,11 @@ RUN apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
     libboost-python-dev \
-    ninja-build \
-    git wget vim libegl1-mesa-dev libglib2.0-0 unzip
+    ninja-build 
 
-
-
-# install conda
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
-    chmod +x Miniconda3-latest-Linux-x86_64.sh && \
-    ./Miniconda3-latest-Linux-x86_64.sh -b -p /usr/app/src/miniconda3 && \
-    rm Miniconda3-latest-Linux-x86_64.sh
-
-# update PATH environment variable
-ENV PATH="/usr/app/src/miniconda3/bin:${PATH}"
-
-# initialize conda
-RUN conda init bash
-
-# create and activate conda environment
-RUN conda create -n instantmesh python=3.10 && echo "source activate instantmesh" > ~/.bashrc
-ENV PATH /usr/app/src/miniconda3/envs/instantmesh/bin:$PATH
-
-RUN conda install Ninja
-RUN conda install cuda -c nvidia/label/cuda-11.8.0 -y
-
-# RUN pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 --index-url https://download.pytorch.org/whl/cu118
-RUN pip install https://github.com/vllm-project/vllm/releases/download/v0.2.2/vllm-0.2.2+cu118-cp310-cp310-manylinux1_x86_64.whl --extra-index-url https://download.pytorch.org/whl/cu118RUN pip install xformers==0.0.22.post7
-RUN pip install triton
-
-# change the working directory to the repository
-WORKDIR /usr/app/src/InstantMesh
-COPY . /usr/app/src/InstantMesh
-COPY InstantMesh/requirements.txt ./
-RUN pip install -r requirements.txt
 
 WORKDIR /usr/app/src/DeepCAD
-COPY . /usr/app/src/DeepCAD
+COPY ./DeepCAD /usr/app/src/DeepCAD
 COPY DeepCAD/requirements.txt ./
 RUN pip install -r requirements.txt
 
@@ -86,12 +55,47 @@ RUN conda install -c conda-forge pythonocc-core=7.7.2 --solver=libmamba -y
 # Install PointNet2 ops
 RUN pip install "git+https://github.com/erikwijmans/Pointnet2_PyTorch#egg=pointnet2_ops&subdirectory=pointnet2_ops_lib"
 
+    
+
+
+
+# install conda
+# RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+#     chmod +x Miniconda3-latest-Linux-x86_64.sh && \
+#     ./Miniconda3-latest-Linux-x86_64.sh -b -p /usr/app/src/miniconda3 && \
+#     rm Miniconda3-latest-Linux-x86_64.sh
+
+# # update PATH environment variable
+# ENV PATH="/usr/app/src/miniconda3/bin:${PATH}"
+
+# # initialize conda
+# RUN conda init bash
+
+# create and activate conda environment
+# RUN conda create -n instantmesh python=3.10 && echo "source activate instantmesh" > ~/.bashrc
+# ENV PATH /usr/app/src/miniconda3/envs/instantmesh/bin:$PATH
+
+# RUN conda install Ninja
+# RUN conda install cuda -c nvidia/label/cuda-11.8.0 -y
+
+RUN pip install torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2 xformers --index-url https://download.pytorch.org/whl/cu118
+# RUN pip install https://github.com/vllm-project/vllm/releases/download/v0.5.0/vllm-0.5.0+cu118-cp310-cp310-manylinux1_x86_64.whl --extra-index-url https://download.pytorch.org/whl/cu118
+# RUN pip install xformers==0.0.22.post7
+RUN pip install triton
+
+# change the working directory to the repository
+WORKDIR /usr/app/src/InstantMesh
+COPY ./InstantMesh /usr/app/src/InstantMesh
+COPY InstantMesh/requirements.txt ./
+RUN pip install -r requirements.txt
+
+
 
 WORKDIR /usr/app/src
 # COPY app.py ./
 
 # EXPOSE 7860
-ENV GRADIO_SERVER_NAME="0.0.0.0"
+ENV GRADIO_SERVER_NAME=0.0.0.0
 
 ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:1024
 

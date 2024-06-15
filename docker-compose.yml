@@ -33,40 +33,41 @@ services:
 
 
 
-  instantmesh:
-   build: ./InstantMesh
-   image: chriszengerle/aigen_instantmesh:0.1
-   container_name: instantmesh
-   volumes:
-     - ./InstantMesh:/usr/app/src/instantmesh
+  # instantmesh:
+  #  build: ./InstantMesh
+  #  image: chriszengerle/aigen_instantmesh:0.1
+  #  container_name: instantmesh
+  #  volumes:
+  #    - ./InstantMesh:/usr/app/src/instantmesh
 
-     # Cluster bindings
-     - ../utils/data:/usr/app/src/instantmesh/data
-     - ../instantmesh_ckpts:/usr/app/src/instantmesh/ckpts
-     # - ../utils/models/InstantMesh:/usr/app/src/InstantMesh/ckpts
+  #    # Cluster bindings
+  #    - ../utils/data:/usr/app/src/instantmesh/data
+  #    - ../instantmesh_ckpts:/usr/app/src/instantmesh/ckpts
+  #    # - ../utils/models/InstantMesh:/usr/app/src/InstantMesh/ckpts
 
-   # network_mode: "host"
-   ports:
-     - "8085:22" # SSH
-     - "8086:6006" # Tensorboard
-     - "8087:8888" # Jupyter
-     - "7860:7860" # Gradio
+  #  # network_mode: "host"
+  #  ports:
+  #    - "8085:22" # SSH
+  #    - "8086:6006" # Tensorboard
+  #    - "8087:8888" # Jupyter
+  #    - "7860:7860" # Gradio
 
-   command: tail -F anything #to keep Container running
-   ipc: host
-   deploy:
-     resources:
-       reservations:
-         devices:
-           - driver: nvidia
-             # device_ids: ["0", "1"] # binds to GPU 0 and 1
-             count: all
-             capabilities: [ gpu ]
+  #  command: tail -F anything #to keep Container running
+  #  ipc: host
+  #  deploy:
+  #    resources:
+  #      reservations:
+  #        devices:
+  #          - driver: nvidia
+  #            # device_ids: ["0", "1"] # binds to GPU 0 and 1
+  #            count: all
+  #            capabilities: [ gpu ]
 
 
   pipeline:
     container_name: pipeline
     build: .
+    image: chriszengerle/aigen_pipeline:0.1
     volumes:
       - ./InstantMesh:/usr/app/src/InstantMesh
       - ./DeepCAD:/usr/app/src/DeepCAD
@@ -80,10 +81,11 @@ services:
       - ../AiGen_CAD:/usr/app/src  
 
     ports:
-      - "8082:22" # SSH
+      - "8088:22" # SSH
       - "7860:7860" # Gradio
 
     ipc: host
+    command: tail -F anything #to keep Container running
     deploy:
       resources:
         reservations:

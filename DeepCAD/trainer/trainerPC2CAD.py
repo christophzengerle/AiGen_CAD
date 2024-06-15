@@ -599,18 +599,11 @@ class TrainerPC2CAD(BaseTrainer):
         else:
             raise ValueError("Invalid path")
 
-        out_dir = os.path.join(
-            self.cfg.exp_dir,
-            "results/pc2cad/",
-            self.cfg.ckpt,
-            save_name
-            + "_"
-            + str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")),
-        )
+
 
         if self.cfg.output is not None:
             if os.path.isfile(self.cfg.output):
-                out_dir = os.path.split(self.cfg.output)[0]
+                out_dir = os.dirname(self.cfg.output)
             elif os.path.isdir(self.cfg.output):
                 out_dir = self.cfg.output
             else:
@@ -619,6 +612,14 @@ class TrainerPC2CAD(BaseTrainer):
                     out_dir = self.cfg.output
                 except Exception as e:
                     print("Output-path is invalid. Using default path.")
+                    
+        out_dir = os.path.join(
+            self.cfg.output,
+            self.cfg.ckpt,
+            save_name
+            + "_"
+            + str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")),
+        )
 
         save_dir = out_dir
         if not os.path.exists(save_dir):

@@ -12,18 +12,20 @@ class ConfigPC2CAD(object):
         self.set_configuration()
         _, args = self.parse()
 
-        # set as attributes
-        print("----Pc-Experiment Configuration-----")
-        for k, v in args.__dict__.items():
-            print("{0:20}".format(k), v)
-            self.__setattr__(k, v)
-
         self.pc_root = args.pc_root
         self.split_path = args.split_path
         self.exp_dir = os.path.join(args.proj_dir, "pc2cad", args.exp_name)
         self.log_dir = os.path.join(self.exp_dir, "log")
         self.model_dir = os.path.join(self.exp_dir, "model")
+        if not args.output:
+            args.output = os.path.join(self.exp_dir, "result")
         self.gpu_ids = args.gpu_ids
+        
+        # set as attributes
+        print("----Pc-Experiment Configuration-----")
+        for k, v in args.__dict__.items():
+            print("{0:20}".format(k), v)
+            self.__setattr__(k, v)
 
         if args.gpu_ids is not None:
             os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_ids)
