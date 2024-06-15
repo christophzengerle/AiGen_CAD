@@ -1,5 +1,8 @@
 # get the development image from nvidia cuda 12.1
-FROM pytorch/pytorch:2.2.2-cuda11.8-cudnn8-devel
+FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-devel
+
+ENV BUILD_WITH_CUDA True
+ENV CUDA_HOME /usr/local/cuda/
 
 # create workspace folder and set it as working directory
 WORKDIR /usr/app/src
@@ -14,8 +17,7 @@ RUN apt-get update && \
     ln -fs /usr/share/zoneinfo/America/Chicago /etc/localtime && \
     dpkg-reconfigure --frontend noninteractive tzdata
 
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+RUN apt-get install -y --no-install-recommends \
     software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
@@ -31,16 +33,14 @@ RUN apt-get update && \
     less
 
    # Install dependencies for building custom C++ ops
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+RUN apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
     libboost-python-dev \
-    ninja-build
+    ninja-build \
+    git wget vim libegl1-mesa-dev libglib2.0-0 unzip
 
-# update package lists and install git, wget, vim, libegl1-mesa-dev, and libglib2.0-0
-RUN apt-get update && \
-    apt-get install -y build-essential git wget vim libegl1-mesa-dev libglib2.0-0 unzip
+
 
 # install conda
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
@@ -61,9 +61,7 @@ ENV PATH /usr/app/src/miniconda3/envs/instantmesh/bin:$PATH
 RUN conda install Ninja
 RUN conda install cuda -c nvidia/label/cuda-11.8.0 -y
 
-RUN pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 --index-url https://download.pytorch.org/whl/cu118
-RUN export VLLM_VERSION=0.4.0
-RUN export PYTHON_VERSION=310
+# RUN pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 --index-url https://download.pytorch.org/whl/cu118
 RUN pip install https://github.com/vllm-project/vllm/releases/download/v0.2.2/vllm-0.2.2+cu118-cp310-cp310-manylinux1_x86_64.whl --extra-index-url https://download.pytorch.org/whl/cu118RUN pip install xformers==0.0.22.post7
 RUN pip install triton
 
@@ -78,11 +76,24 @@ COPY . /usr/app/src/DeepCAD
 COPY DeepCAD/requirements.txt ./
 RUN pip install -r requirements.txt
 
-WORKDIR /usr/app/src
-copy app.py ./
+# COPY faulty_cad_models.json ./data/faulty_cad_models.json
 
-EXPOSE 7860
+# Install PythonOCC
+RUN conda install -n base conda-libmamba-solver -y
+# RUN conda config --set solver libmamba
+RUN conda install -c conda-forge pythonocc-core=7.7.2 --solver=libmamba -y
+
+# Install PointNet2 ops
+RUN pip install "git+https://github.com/erikwijmans/Pointnet2_PyTorch#egg=pointnet2_ops&subdirectory=pointnet2_ops_lib"
+
+
+WORKDIR /usr/app/src
+# COPY app.py ./
+
+# EXPOSE 7860
 ENV GRADIO_SERVER_NAME="0.0.0.0"
+
+ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:1024
 
 # Run the command when the container starts
 # CMD ["python", "app.py"]

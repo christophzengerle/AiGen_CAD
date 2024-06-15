@@ -1,39 +1,39 @@
 services:
- deepcad:
-   build: ./DeepCAD
-   image: chriszengerle/aigen_deepcad:0.1
-   container_name: deepcad
-   volumes:
-     - ./DeepCAD:/usr/app/src/DeepCAD
+#  deepcad:
+#    build: ./DeepCAD
+#    image: chriszengerle/aigen_deepcad:0.1
+#    container_name: deepcad
+#    volumes:
+#      - ./DeepCAD:/usr/app/src/DeepCAD
 
-     # Cluster bindings
-     - ../utils/models/DeepCAD:/usr/app/src/DeepCAD/proj_log
-     - ../utils/data:/usr/app/src/DeepCAD/data
+#      # Cluster bindings
+#      - ../utils/models/DeepCAD:/usr/app/src/DeepCAD/proj_log
+#      - ../utils/data:/usr/app/src/DeepCAD/data
 
-     # local Windows bindings (Christoph)
-     # - C:/ArtificialIntelligence/DeepCAD/data:/usr/app/src/DeepCAD/data
-     # - C:/ArtificialIntelligence/DeepCAD/proj_log:/usr/app/src/DeepCAD/proj_log
+#      # local Windows bindings (Christoph)
+#      # - C:/ArtificialIntelligence/DeepCAD/data:/usr/app/src/DeepCAD/data
+#      # - C:/ArtificialIntelligence/DeepCAD/proj_log:/usr/app/src/DeepCAD/proj_log
 
-   # network_mode: "host"
-   ports:
-     - "8082:22" # SSH
-     - "8083:6006" # Tensorboard
-     - "8084:8888" # Jupyter
+#    # network_mode: "host"
+#    ports:
+#      - "8082:22" # SSH
+#      - "8083:6006" # Tensorboard
+#      - "8084:8888" # Jupyter
 
-   command: tail -F anything #to keep Container running
-   ipc: host
-   deploy:
-     resources:
-       reservations:
-         devices:
-           - driver: nvidia
-             # device_ids: ["0", "1"] # binds to GPU 0 and 1
-             count: all
-             capabilities: [gpu]
+#    command: tail -F anything #to keep Container running
+#    ipc: host
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#            - driver: nvidia
+#              # device_ids: ["0", "1"] # binds to GPU 0 and 1
+#              count: all
+#              capabilities: [gpu]
 
 
 
- instantmesh:
+  instantmesh:
    build: ./InstantMesh
    image: chriszengerle/aigen_instantmesh:0.1
    container_name: instantmesh
@@ -64,36 +64,32 @@ services:
              capabilities: [ gpu ]
 
 
+  pipeline:
+    container_name: pipeline
+    build: .
+    volumes:
+      - ./InstantMesh:/usr/app/src/InstantMesh
+      - ./DeepCAD:/usr/app/src/DeepCAD
 
-  # pipeline:
-  #   container_name: pipeline
-  #   build: .
-  #   volumes:
-  #     - ./InstantMesh:/usr/app/src/InstantMesh
-  #     - ./DeepCAD:/usr/app/src/DeepCAD
+      # Cluster bindings
+      - ../instantmesh_ckpts:/usr/app/src/instantmesh/ckpts
+      # - ../utils/models/InstantMesh:/usr/app/src/InstantMesh/ckpts
 
-  #     # Cluster bindings
-  #     - ./utils/data:/usr/app/src/data
+      - ../utils/models/DeepCAD:/usr/app/src/DeepCAD/proj_log
 
-  #     # local Windows bindings (Christoph)
-  #     # - C:/ArtificialIntelligence/DeepCAD/data:/usr/app/src/DeepCAD/data
-  #     # - C:/ArtificialIntelligence/DeepCAD/proj_log:/usr/app/src/DeepCAD/proj_log
+      - ../AiGen_CAD:/usr/app/src  
 
-  #   # network_mode: "host"
-  #   ports:
-  #     - "8082:22" # SSH
-  #     - "8083:6006" # Tensorboard
-  #     - "8084:8888" # Jupyter
-  #     - "7860:7860"
+    ports:
+      - "8082:22" # SSH
+      - "7860:7860" # Gradio
 
-  #   command: tail -F anything #to keep Container running
-  #   ipc: host
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             # device_ids: ["0", "1"] # binds to GPU 0 and 1
-  #             count: all
-  #             capabilities: [ gpu ]
+    ipc: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["1"] # binds to GPU 0 and 1
+              # count: all
+              capabilities: [ gpu ]
 

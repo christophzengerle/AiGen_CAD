@@ -765,6 +765,8 @@ class TrainerPC2CAD(BaseTrainer):
 
         print("********* Prediction of CAD-Model from PointCloud Completed ***********")
         print(f"********** {valid_preds} / {len(file_list)} succeeded ***********")
+        
+        return step_save_path
 
     def save_ckpt(self, name=None):
         """save checkpoint during training for future restore"""

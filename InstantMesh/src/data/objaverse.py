@@ -264,7 +264,7 @@ class ValidationData(Dataset):
 
         # self.paths = sorted(os.listdir(self.root_dir))
 
-        cam_distance = 0.2
+        cam_distance = 4.0
         azimuths = np.array([30, 90, 150, 210, 270, 330])
         elevations = np.array([20, -10, 20, -10, 20, -10])
         azimuths = np.deg2rad(azimuths)
