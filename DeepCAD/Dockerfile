@@ -42,7 +42,7 @@ WORKDIR /usr/app/src/DeepCAD
 
 # Install Python dependencies
 COPY ./requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 RUN rm -rf requirements.txt
 
 # COPY faulty_cad_models.json ./data/faulty_cad_models.json
@@ -54,3 +54,5 @@ RUN conda install -c conda-forge pythonocc-core=7.7.2 --solver=libmamba -y
 
 # Install PointNet2 ops
 RUN pip install "git+https://github.com/erikwijmans/Pointnet2_PyTorch#egg=pointnet2_ops&subdirectory=pointnet2_ops_lib"
+
+CMD ["python", "app_access_point.py"]

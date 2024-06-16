@@ -1,5 +1,5 @@
 model_config:
-  target: InstantMesh.src.models.lrm_mesh.InstantMesh
+  target: src.models.lrm_mesh.InstantMesh
   params:
     encoder_feat_dim: 768
     encoder_freeze: false
