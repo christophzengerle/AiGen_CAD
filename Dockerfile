@@ -1,8 +1,9 @@
 # get the development image from nvidia cuda 12.1
-FROM pytorch/pytorch:2.2.2-cuda11.8-cudnn8-devel
+FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-devel
 
-ENV BUILD_WITH_CUDA True
-ENV CUDA_HOME=/usr/local/cuda/
+ENV BUILD_WITH_CUDA=True
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH=$CUDA_HOME/bin:$PATH
 
 # create workspace folder and set it as working directory
 WORKDIR /usr/app/src
@@ -10,20 +11,14 @@ WORKDIR /usr/app/src
 # Enable 32bit Packages
 RUN dpkg --add-architecture i386
 
-# Set the timezone
-ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
-    apt-get install -y tzdata && \
-    ln -fs /usr/share/zoneinfo/America/Chicago /etc/localtime && \
-    dpkg-reconfigure --frontend noninteractive tzdata
-
-RUN apt-get install -y --no-install-recommends \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     python3.10 \
-    git wget libegl1-mesa-dev unzip \
+    git \
     gcc g++ \
     libglib2.0-0 libsm6 libxext6 libxrender-dev \
     libglu1 libglu1-mesa:i386 libxcursor-dev \
@@ -32,12 +27,14 @@ RUN apt-get install -y --no-install-recommends \
     xvfb xserver-xephyr \
     less
 
-   # Install dependencies for building custom C++ ops
-RUN apt-get install -y --no-install-recommends \
+    
+# Install dependencies for building custom C++ ops
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
     libboost-python-dev \
-    ninja-build 
+    ninja-build
 
 
 WORKDIR /usr/app/src/DeepCAD
@@ -51,6 +48,7 @@ RUN pip install -r requirements.txt
 RUN conda install -n base conda-libmamba-solver -y
 # RUN conda config --set solver libmamba
 RUN conda install -c conda-forge pythonocc-core=7.7.2 --solver=libmamba -y
+
 
 # Install PointNet2 ops
 RUN pip install "git+https://github.com/erikwijmans/Pointnet2_PyTorch#egg=pointnet2_ops&subdirectory=pointnet2_ops_lib"
@@ -78,9 +76,28 @@ RUN pip install "git+https://github.com/erikwijmans/Pointnet2_PyTorch#egg=pointn
 # RUN conda install Ninja
 # RUN conda install cuda -c nvidia/label/cuda-11.8.0 -y
 
-RUN pip install torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2 xformers --index-url https://download.pytorch.org/whl/cu118
-# RUN pip install https://github.com/vllm-project/vllm/releases/download/v0.5.0/vllm-0.5.0+cu118-cp310-cp310-manylinux1_x86_64.whl --extra-index-url https://download.pytorch.org/whl/cu118
-# RUN pip install xformers==0.0.22.post7
+
+WORKDIR /usr/app/src
+
+# Set the timezone
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+    apt-get install -y tzdata && \
+    ln -fs /usr/share/zoneinfo/America/Chicago /etc/localtime && \ 
+    dpkg-reconfigure --frontend noninteractive tzdata
+
+# update package lists and install git, wget, vim, libegl1-mesa-dev, and libglib2.0-0
+RUN apt-get update && \
+    apt-get install -y build-essential git wget vim libegl1-mesa-dev libglib2.0-0 unzip
+
+
+
+RUN pip install "git+https://github.com/NVlabs/nvdiffrast/"
+
+# RUN pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 xformers --index-url https://download.pytorch.org/whl/cu118
+# RUN pip install torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2 xformers --index-url https://download.pytorch.org/whl/cu118
+RUN pip install https://github.com/vllm-project/vllm/releases/download/v0.2.6/vllm-0.2.6+cu118-cp310-cp310-manylinux1_x86_64.whl
+RUN pip install xformers==0.0.22.post4 --index-url https://download.pytorch.org/whl/cu118
 RUN pip install triton
 
 # change the working directory to the repository

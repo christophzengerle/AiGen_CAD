@@ -67,21 +67,23 @@ services:
   pipeline:
     container_name: pipeline
     build: .
-    image: chriszengerle/aigen_pipeline:0.1
+    image: chriszengerle/aigen_cad:0.1
+    env_file: "AiGen_CAD.env"
     volumes:
-      - ./InstantMesh:/usr/app/src/InstantMesh
-      - ./DeepCAD:/usr/app/src/DeepCAD
+    #TODO: COPY Folder in Dockerfile and remove Volume bindings
+      # - ./InstantMesh:/usr/app/src/InstantMesh
+      # - ./DeepCAD:/usr/app/src/DeepCAD
 
       # Cluster bindings
-      - ../instantmesh_ckpts:/usr/app/src/instantmesh/ckpts
+      - ../instantmesh_ckpts:/usr/app/src/InstantMesh/ckpts
       # - ../utils/models/InstantMesh:/usr/app/src/InstantMesh/ckpts
-
       - ../utils/models/DeepCAD:/usr/app/src/DeepCAD/proj_log
 
       - ../AiGen_CAD:/usr/app/src  
 
     ports:
       - "8088:22" # SSH
+      - "8089:6006" # Tensorboard
       - "7860:7860" # Gradio
 
     ipc: host

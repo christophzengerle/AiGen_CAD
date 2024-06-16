@@ -1,11 +1,11 @@
 # Using PyTorch image as the base
 FROM pytorch/pytorch:2.2.2-cuda11.8-cudnn8-devel
 
+ENV BUILD_WITH_CUDA=True
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH=$CUDA_HOME/bin:$PATH
+
 WORKDIR /usr/app/src
-
-
-ENV BUILD_WITH_CUDA True
-ENV CUDA_HOME /usr/local/cuda/
 
 
 # Enable 32bit Packages

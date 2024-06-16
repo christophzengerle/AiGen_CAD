@@ -1,10 +1,7 @@
-import sys
-
 from config import ConfigAE
 from dataset.cad_dataset import get_dataloader
 from trainer import TrainerAE
 
-sys.path.append("..")
 from utils import cycle
 
 

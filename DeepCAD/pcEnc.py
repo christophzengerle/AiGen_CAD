@@ -1,10 +1,7 @@
-import sys
-
 from config.configPCEncoder import ConfigPCEncoder
 from dataset.pcEnc_dataset import get_dataloader
 from trainer.trainerPCEncoder import TrainerPCEncoder
 
-sys.path.append("..")
 from cad2cad import decode_pc_zs
 from utils import cycle
 

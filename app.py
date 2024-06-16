@@ -1,4 +1,10 @@
 import os
+import sys
+sys.path.append("./DeepCAD")
+sys.path.append("./InstantMesh")
+
+from DeepCAD.config.configPC2CAD import ConfigPC2CAD
+from DeepCAD.trainer.trainerPC2CAD import TrainerPC2CAD
 import imageio
 import numpy as np
 import torch
@@ -11,10 +17,8 @@ from omegaconf import OmegaConf
 from einops import rearrange, repeat
 from tqdm import tqdm
 from diffusers import DiffusionPipeline, EulerAncestralDiscreteScheduler
-import sys
-sys.path.append("./DeepCAD")
 
-from DeepCAD.endpoint import endpoint
+from DeepCAD.app_access_point import generate_deepcad
 
 from InstantMesh.src.utils.train_util import instantiate_from_config
 from InstantMesh.src.utils.camera_util import (
@@ -31,6 +35,7 @@ from huggingface_hub import hf_hub_download
 import sysconfig
 import trimesh
 
+#TODO
 OUTPUT_FOLDER = "data/pipeline_results/"
 
 print(sysconfig.get_paths()['include'])
@@ -43,8 +48,9 @@ else:
     device1 = device0
 
 # Define the cache directory for model files
-model_cache_dir = './ckpts/'
-os.makedirs(model_cache_dir, exist_ok=True)
+instantmesh_cache_dir = './InstantMesh/ckpts/'
+os.makedirs(instantmesh_cache_dir, exist_ok=True)
+
 
 
 def instant_dummy(images, output_path):
@@ -59,8 +65,8 @@ def obj2pc(obj_path, out_path):
     return path
 
 
-def generate_deepcad(pc_path):
-    step_path = endpoint(pc_path)
+def generate_cad(pc_path, output_path):
+    step_path = generate_deepcad(agent, pc_path, output_path)
     obj_path = step2obj.transform(step_path, "deepCAD")
     return obj_path
 
@@ -100,7 +106,7 @@ def images_to_video(images, output_path, fps=30):
 
 seed_everything(0)
 
-config_path = 'InstantMesh/configs/instant-mesh-large.yaml'
+config_path = './InstantMesh/configs/instant-mesh-large.yaml'
 config = OmegaConf.load(config_path)
 config_name = os.path.basename(config_path).replace('.yaml', '')
 model_config = config.model_config
@@ -116,7 +122,7 @@ pipeline = DiffusionPipeline.from_pretrained(
     "sudo-ai/zero123plus-v1.2",
     custom_pipeline=os.path.join("InstantMesh", "zero123plus"),
     torch_dtype=torch.float16,
-    cache_dir=model_cache_dir
+    cache_dir=instantmesh_cache_dir
 )
 print("test")
 pipeline.scheduler = EulerAncestralDiscreteScheduler.from_config(
@@ -125,7 +131,7 @@ pipeline.scheduler = EulerAncestralDiscreteScheduler.from_config(
 
 # load custom white-background UNet
 unet_ckpt_path = hf_hub_download(repo_id="TencentARC/InstantMesh", filename="diffusion_pytorch_model.bin",
-                                 repo_type="model", cache_dir=model_cache_dir)
+                                 repo_type="model", cache_dir=instantmesh_cache_dir)
 state_dict = torch.load(unet_ckpt_path, map_location='cpu')
 pipeline.unet.load_state_dict(state_dict, strict=True)
 
@@ -134,7 +140,7 @@ pipeline = pipeline.to(device0)
 # load reconstruction model
 print('Loading reconstruction model ...')
 model_ckpt_path = hf_hub_download(repo_id="TencentARC/InstantMesh", filename="instant_mesh_large.ckpt",
-                                  repo_type="model", cache_dir=model_cache_dir)
+                                  repo_type="model", cache_dir=instantmesh_cache_dir)
 model = instantiate_from_config(model_config)
 state_dict = torch.load(model_ckpt_path, map_location='cpu')['state_dict']
 state_dict = {k[14:]: v for k, v in state_dict.items() if k.startswith('lrm_generator.') and 'source_camera' not in k}
@@ -144,6 +150,17 @@ model = model.to(device1)
 if IS_FLEXICUBES:
     model.init_flexicubes_geometry(device1, fovy=30.0)
 model = model.eval()
+
+
+print('Loading DeepCAD-Model...')
+DEEPCAD_EXPERIMENT_NAME = "pc2cad_8192"
+DEEPCAD_MODEL_CKPT = "latest"
+
+cfg = ConfigPC2CAD()
+cfg.model_dir = os.path.join(cfg.proj_dir, f"pc2cad/{DEEPCAD_EXPERIMENT_NAME}/model")
+cfg.ckpt = DEEPCAD_MODEL_CKPT
+agent = TrainerPC2CAD(cfg)
+agent.load_ckpt()
 
 print('Loading Finished!')
 
@@ -264,7 +281,8 @@ def make3d(images, out_path):
 
     mesh_fpath, mesh_glb_fpath = make_mesh(mesh_fpath, planes)
 
-    return video_fpath, mesh_fpath, mesh_glb_fpath
+    # return video_fpath, mesh_fpath, mesh_glb_fpath
+    return mesh_fpath
 
 
 import gradio as gr
@@ -379,7 +397,7 @@ with gr.Blocks() as demo:
         inputs=[output_model_obj, output_path],
         outputs=[point_cloud]
     ).success(
-        fn=generate_deepcad,
+        fn=generate_cad,
         inputs=[point_cloud, output_path],
         outputs=[output_cad]
     )
