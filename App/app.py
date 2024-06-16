@@ -169,7 +169,7 @@ with gr.Blocks() as demo:
             with gr.Row(variant="panel"):
                 gr.Examples(
                     examples=[
-                        os.path.join("InstantMesh", "examples", img_name) for img_name in sorted(os.listdir(os.path.join("InstantMesh", "examples")))
+                        os.path.join("examples", img_name) for img_name in sorted(os.listdir(os.path.join("InstantMesh", "examples")))
                     ],
                     inputs=[input_image],
                     label="Examples",

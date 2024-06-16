@@ -72,7 +72,6 @@ pipeline = DiffusionPipeline.from_pretrained(
     torch_dtype=torch.float16,
     cache_dir=instantmesh_cache_dir
 )
-print("test")
 pipeline.scheduler = EulerAncestralDiscreteScheduler.from_config(
     pipeline.scheduler.config, timestep_spacing='trailing'
 )
