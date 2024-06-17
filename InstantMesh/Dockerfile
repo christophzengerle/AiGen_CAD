@@ -77,4 +77,4 @@ ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:1024
 # Run the command when the container starts
 # CMD ["python", "app.py"]
 
-CMD ["python", "app_access_point.py"]
+# CMD ["python", "app_access_point.py"]

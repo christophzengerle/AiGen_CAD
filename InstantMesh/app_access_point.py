@@ -153,7 +153,6 @@ def generate_mvs():
         generator=generator,
     ).images[0]
 
-    print(z123_image)
     show_image = np.asarray(z123_image, dtype=np.uint8)
     show_image = torch.from_numpy(show_image)  # (960, 640, 3)
     show_image = rearrange(show_image, '(n h) (m w) c -> (n m) h w c', n=3, m=2)
@@ -187,11 +186,10 @@ def make3d():
     # images, out_path
     data = request.json
     
-    images_data = data['images']
+    image_data = data['images']
     out_path = data['out_path']
     
-    images = [Image.open(io.BytesIO(base64.b64decode(img))) for img in images_data]    
-    
+    images = Image.open(io.BytesIO(base64.b64decode(image_data))) 
     
     images = np.asarray(images, dtype=np.float32) / 255.0
     images = torch.from_numpy(images).permute(2, 0, 1).contiguous().float()  # (3, 960, 640)
@@ -205,7 +203,6 @@ def make3d():
     images = v2.functional.resize(images, (320, 320), interpolation=3, antialias=True).clamp(0, 1)
 
     mesh_fpath = os.path.join(out_path, "instantMesh.obj")
-    print(mesh_fpath)
     mesh_basename = os.path.basename(mesh_fpath).split('.')[0]
     mesh_dirname = os.path.dirname(mesh_fpath)
     video_fpath = os.path.join(mesh_dirname, f"{mesh_basename}.mp4")
@@ -258,7 +255,6 @@ def obj2pc():
     data = request.json
     obj_path = data['obj_path']
     out_path = data['out_path']
-    print(obj_path, out_path)
     m = trimesh.load_mesh(obj_path)
     path = os.path.join(out_path, "instantMesh.ply")
     m.export(path, file_type='ply')

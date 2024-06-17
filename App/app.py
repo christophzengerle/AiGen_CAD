@@ -16,7 +16,8 @@ DEEP_CAD_URL = 'http://deepcad:5002/'
 
 
 #TODO
-OUTPUT_FOLDER = "data/pipeline_results/"
+# OUTPUT_FOLDER = "data/pipeline_results/"
+OUTPUT_FOLDER = "results/"
 
 # def instant_dummy(input_images, out_path):
 #     return "data/obj_files/00000007.obj", "data/obj_files/00000007.obj"
@@ -79,21 +80,19 @@ def generate_mvs(input_image, sample_steps, sample_seed, out_path):
     return processed_z123_image, processed_show_image
 
 
-def make3d(images, out_path):
-    images_data = []
-    for image in images:
-        buffered = io.BytesIO()
-        image.save(buffered, format="PNG")
-        images_data.append(base64.b64encode(buffered.getvalue()).decode('utf-8'))
+def make3d(image, out_path):
+    buffered = io.BytesIO()
+    image.save(buffered, format="PNG")
+    image_data = base64.b64encode(buffered.getvalue()).decode('utf-8')
         
     data = {
-        'images' : images_data,
+        'images' : image_data,
         'out_path' : out_path     
     }
     response = requests.post(INSTANT_MESH_URL + "/Generate3D", json=data)
     response_data = response.json()
     mesh_fpath = response_data['mesh_fpath']
-    return mesh_fpath
+    return mesh_fpath, mesh_fpath
 
 
 def obj2pc(obj_path, out_path):
@@ -104,7 +103,7 @@ def obj2pc(obj_path, out_path):
     response = requests.post(INSTANT_MESH_URL + "/Object2PointCloud", json=data)
     response_data = response.json()
     path = response_data['path']
-    return path, path
+    return path
 
 
 def generate_cad(pc_path, out_path):
@@ -114,6 +113,7 @@ def generate_cad(pc_path, out_path):
     }
     response = requests.post(DEEP_CAD_URL + "/GenerateCAD", json=data)
     response_data = response.json()
+    print(response_data)
     STEP_path = response_data['STEP_path']
     
     data = {

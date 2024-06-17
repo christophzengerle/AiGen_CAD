@@ -9,6 +9,7 @@ services:
      # Cluster bindings
      - ../utils/models/DeepCAD:/usr/app/src/DeepCAD/proj_log
      - ../utils/data:/usr/app/src/DeepCAD/data
+     - ../app_results/:/usr/app/src/DeepCAD/results
 
      # local Windows bindings (Christoph)
      # - C:/ArtificialIntelligence/DeepCAD/data:/usr/app/src/DeepCAD/data
@@ -21,7 +22,7 @@ services:
      - "8083:6006" # Tensorboard
      - "8084:8888" # Jupyter
 
-   # command: tail -F anything #to keep Container running
+   command: tail -F anything #to keep Container running
    ipc: host
    deploy:
      resources:
@@ -51,6 +52,7 @@ services:
      - ../utils/data:/usr/app/src/InstantMesh/data
      - ../instantmesh_ckpts:/usr/app/src/InstantMesh/ckpts
      # - ../utils/models/InstantMesh:/usr/app/src/InstantMesh/ckpts
+     - ../app_results/:/usr/app/src/InstantMesh/results
 
    # network_mode: "host"
    ports:
@@ -63,7 +65,7 @@ services:
   #     deepcad:
   #       condition: service_healthy
 
-   # command: tail -F anything #to keep Container running
+   command: tail -F anything #to keep Container running
    ipc: host
    deploy:
      resources:
@@ -90,6 +92,7 @@ services:
     volumes:
       - ./App:/usr/app/src/App 
       - ../utils/data:/usr/app/src/App/data
+      - ../app_results/:/usr/app/src/App/results
 
     ports:
       - "8088:22" # SSH<
@@ -102,7 +105,7 @@ services:
       #   condition: service_healthy
 
     ipc: host
-    # command: tail -F anything #to keep Container running
+    command: tail -F anything #to keep Container running
     deploy:
       resources:
         reservations:
