@@ -119,8 +119,10 @@ def preprocess():
     if do_remove_background:
         input_image = remove_background(input_image, rembg_session)
         input_image = resize_foreground(input_image, 0.85)
-        
-    encoded_image = base64.b64decode(input_image).decode('utf-8')
+
+    buffered = io.BytesIO()
+    input_image.save(buffered, format="PNG")
+    encoded_image = base64.b64encode(buffered.getvalue()).decode('utf-8')
     
     response = {
         'image' : encoded_image
@@ -151,6 +153,7 @@ def generate_mvs():
         generator=generator,
     ).images[0]
 
+    print(z123_image)
     show_image = np.asarray(z123_image, dtype=np.uint8)
     show_image = torch.from_numpy(show_image)  # (960, 640, 3)
     show_image = rearrange(show_image, '(n h) (m w) c -> (n m) h w c', n=3, m=2)
@@ -160,19 +163,19 @@ def generate_mvs():
     processed_z123_images_data = []
     processed_show_images_data = []
     
-    for image in z123_image:
-        buffered = io.BytesIO()
-        image.save(buffered, format="PNG")
-        processed_z123_images_data.append(base64.b64encode(buffered.getvalue()).decode('utf-8'))
+
+    buffered = io.BytesIO()
+    z123_image.save(buffered, format="PNG")
+    processed_z123_image = base64.b64encode(buffered.getvalue()).decode('utf-8')
         
-    for image in show_image:
-        buffered = io.BytesIO()
-        image.save(buffered, format="PNG")
-        processed_show_images_data.append(base64.b64encode(buffered.getvalue()).decode('utf-8'))
+
+    buffered = io.BytesIO()
+    show_image.save(buffered, format="PNG")
+    processed_show_image = base64.b64encode(buffered.getvalue()).decode('utf-8')
     
     response = {
-        'z123_image' : processed_z123_images_data,
-        'show_image' : processed_show_images_data
+        'z123_image': processed_z123_image,
+        'show_image': processed_show_image
     }
     
     return jsonify(response)
@@ -255,6 +258,7 @@ def obj2pc():
     data = request.json
     obj_path = data['obj_path']
     out_path = data['out_path']
+    print(obj_path, out_path)
     m = trimesh.load_mesh(obj_path)
     path = os.path.join(out_path, "instantMesh.ply")
     m.export(path, file_type='ply')

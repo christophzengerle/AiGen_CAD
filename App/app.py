@@ -17,16 +17,28 @@ DEEP_CAD_URL = 'http://deepcad:5002/'
 
 #TODO
 OUTPUT_FOLDER = "data/pipeline_results/"
-output_path = os.path.join(OUTPUT_FOLDER, str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
+
+# def instant_dummy(input_images, out_path):
+#     return "data/obj_files/00000007.obj", "data/obj_files/00000007.obj"
+#
+#
+# def deep_dummy(pc, out_path):
+#     return "data/obj_files/00000007.obj", "data/obj_files/00000007.obj"
 
 
 def check_input_image(input_image):
     if input_image is None:
         raise gr.Error("No image uploaded!")
-    
-    # if not os.path.exists(output_path):
-    #     os.makedirs(output_path)
-    
+
+
+def setup_dir(custom_path, save_only_last):
+    folder = "aigen_cad_output" if save_only_last else str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
+    output_path = os.path.join(OUTPUT_FOLDER, folder) if not custom_path else os.path.join(custom_path, folder)
+
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+    return output_path
+
     
 def preprocess(input_image, do_remove_background):
     buffered = io.BytesIO()
@@ -46,8 +58,7 @@ def preprocess(input_image, do_remove_background):
     return processed_image
     
 
-
-def generate_mvs(input_image, sample_steps, sample_seed):
+def generate_mvs(input_image, sample_steps, sample_seed, out_path):
     buffered = io.BytesIO()
     input_image.save(buffered, format="PNG")
     img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
@@ -59,9 +70,11 @@ def generate_mvs(input_image, sample_steps, sample_seed):
     }
     response = requests.post(INSTANT_MESH_URL + "/GenerateMultiViews", json=data)
     response_data = response.json()
-    
-    processed_z123_image = [Image.open(io.BytesIO(base64.b64decode(img))) for img in response_data['z123_image']]
-    processed_show_image = [Image.open(io.BytesIO(base64.b64decode(img))) for img in response_data['show_image']]
+
+    processed_z123_image = Image.open(io.BytesIO(base64.b64decode(response_data['z123_image'])))
+    processed_show_image = Image.open(io.BytesIO(base64.b64decode(response_data['show_image'])))
+
+    processed_z123_image.save(os.path.join(out_path, "generated_multiview_show.png"))
     
     return processed_z123_image, processed_show_image
 
@@ -82,6 +95,7 @@ def make3d(images, out_path):
     mesh_fpath = response_data['mesh_fpath']
     return mesh_fpath
 
+
 def obj2pc(obj_path, out_path):
     data = {
         'obj_path' : obj_path,
@@ -90,13 +104,13 @@ def obj2pc(obj_path, out_path):
     response = requests.post(INSTANT_MESH_URL + "/Object2PointCloud", json=data)
     response_data = response.json()
     path = response_data['path']
-    return path
+    return path, path
 
 
-def generate_cad(pc_path, output_path):
+def generate_cad(pc_path, out_path):
     data = {
         'pc_path' : pc_path,
-        'output_path' : output_path     
+        'output_path' : out_path
     }
     response = requests.post(DEEP_CAD_URL + "/GenerateCAD", json=data)
     response_data = response.json()
@@ -109,9 +123,12 @@ def generate_cad(pc_path, output_path):
     response = requests.post(INSTANT_MESH_URL + "/STEP2Object", json=data)
     response_data = response.json()
     obj_path = response_data['obj_path']
-    return obj_path
+    return obj_path, STEP_path
 
 
+def provide_files(*args):
+    file_list = [file for file in args]
+    return file_list
 
 
 #############################################################################################
@@ -150,6 +167,12 @@ with gr.Blocks() as demo:
                 )
             with gr.Row():
                 with gr.Group():
+                    save_only_last = gr.Checkbox(
+                        label="save only last output", value=False
+                    )
+                    custom_path = gr.Textbox(
+                        label="save path"
+                    )
                     do_remove_background = gr.Checkbox(
                         label="Remove Background", value=True
                     )
@@ -195,7 +218,7 @@ with gr.Blocks() as demo:
                 #     )
 
             with gr.Row():
-                output_model_obj = gr.Model3D(
+                output_gradio_obj = gr.Model3D(
                     label="InstantMesh output",
                     # width=768,
                     interactive=False
@@ -207,24 +230,39 @@ with gr.Blocks() as demo:
                     interactive=False
                 )
 
+            with gr.Row():
+                output_files = gr.Files(
+                    label="Generated Files",
+                    interactive=False
+                )
+
+
     gr.Markdown(_CITE_)
     mv_images = gr.State()
     point_cloud = gr.State()
     output_path = gr.State()
+    output_step = gr.State()
+    output_model_obj = gr.State()
 
-    submit.click(fn=check_input_image, inputs=[input_image]
+    submit.click(
+        fn=check_input_image,
+        inputs=[input_image]
+    ).success(
+        fn=setup_dir,
+        inputs=[custom_path, save_only_last],
+        outputs=[output_path]
     ).success(
         fn=preprocess,
         inputs=[input_image, do_remove_background],
         outputs=[processed_image],
     ).success(
         fn=generate_mvs,
-        inputs=[processed_image, sample_steps, sample_seed],
+        inputs=[processed_image, sample_steps, sample_seed, output_path],
         outputs=[mv_images, mv_show_images],
     ).success(
         fn=make3d,
         inputs=[mv_images, output_path],
-        outputs=[output_model_obj]
+        outputs=[output_gradio_obj, output_model_obj]
     ).success(
         fn=obj2pc,
         inputs=[output_model_obj, output_path],
@@ -232,7 +270,11 @@ with gr.Blocks() as demo:
     ).success(
         fn=generate_cad,
         inputs=[point_cloud, output_path],
-        outputs=[output_cad]
+        outputs=[output_cad, output_step]
+    ).success(
+        fn=provide_files,
+        inputs=[output_model_obj, point_cloud, output_step],
+        outputs=[output_files]
     )
 
 demo.queue(max_size=10)
