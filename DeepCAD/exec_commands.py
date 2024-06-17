@@ -30,12 +30,12 @@ import os
         #  --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000 &"
 
 
-# cmd = "python pc2cad.py --exec inf --pc_root evaluation/eval_testimages/point_e \
-#     --exp_name pc2cad_8192 --ckpt latest --n_points 4096 --expSTEP --expPNG --expGIF -g 0"
+cmd = "python pc2cad.py --exec inf --pc_root evaluation/eval_testimages/instantMesh.ply \
+    --exp_name pc2cad_8192 --ckpt latest --n_points 8192 --expSTEP --expPNG --expGIF -g 0 --output ./results"
 
 
-cmd = "python pc2cad.py --exec eval --mode cd --num_worker 8  \
-        --exp_name pc2cad_8192 --ckpt latest --n_points 8192 -g 1 "
+# cmd = "python pc2cad.py --exec eval --mode cd --num_worker 8  \
+#         --exp_name pc2cad_8192 --ckpt latest --n_points 8192 -g 1 "
 #         --load_modular_ckpt --pce_exp_name pcEncRandNoise100New --pce_ckpt latest \
 #         --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000"
 

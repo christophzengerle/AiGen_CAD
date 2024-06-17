@@ -633,6 +633,11 @@ class TrainerPC2CAD(BaseTrainer):
                 with torch.no_grad():
                     # retrieve Data
                     pc = read_ply(pc_path)
+                    sample_idx = random.sample(
+                        list(range(pc.shape[0])),
+                        self.cfg.n_points if self.cfg.n_points < pc.shape[0] else pc.shape[0],
+                    )
+                    pc = pc[sample_idx]
                     try:
                         sample_idx = random.sample(
                             list(range(pc.shape[0])),
@@ -656,6 +661,7 @@ class TrainerPC2CAD(BaseTrainer):
                     out_vec = batch_out_vec.squeeze(0)
                     out_vec = trim_vec_EOS(out_vec)
 
+                print(out_vec)
                 if len(out_vec) > 0:
                     # save generated z
                     file_name = pc_path.split("/")[-1].split(".")[0]
@@ -722,6 +728,7 @@ class TrainerPC2CAD(BaseTrainer):
                         fp.create_dataset("out_vec", data=out_vec, dtype=np.int32)
 
                     step_save_path = save_path + "_dec.step"
+                    print(step_save_path)
                     if self.cfg.expSTEP:
                         try:
                             create_step_file(out_shape, step_save_path)

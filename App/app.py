@@ -100,7 +100,7 @@ def obj2pc(obj_path, out_path):
         'obj_path' : obj_path,
         'out_path' : out_path     
     }
-    response = requests.post(INSTANT_MESH_URL + "/Object2PointCloud", json=data)
+    response = requests.post(DEEP_CAD_URL + "/Object2PointCloud", json=data)
     response_data = response.json()
     path = response_data['path']
     return path
@@ -112,22 +112,26 @@ def generate_cad(pc_path, out_path):
         'output_path' : out_path
     }
     response = requests.post(DEEP_CAD_URL + "/GenerateCAD", json=data)
-    response_data = response.json()
-    print(response_data)
-    STEP_path = response_data['STEP_path']
+    if response.status_code != 400:
+        print(response.json())
+        response_data = response.json()
+        STEP_path = response_data['STEP_path']
     
-    data = {
-        'step_path' : STEP_path,
-        'out_path' : "deepCAD"     
-    }
-    response = requests.post(INSTANT_MESH_URL + "/STEP2Object", json=data)
-    response_data = response.json()
-    obj_path = response_data['obj_path']
-    return obj_path, STEP_path
+        data = {
+            'step_path' : STEP_path,
+            'out_path' : out_path     
+        }
+        response = requests.post(DEEP_CAD_URL + "/STEP2Object", json=data)
+        response_data = response.json()
+        obj_path = response_data['obj_path']
+        return obj_path, STEP_path
+    
+    else:
+        return None, None
 
 
 def provide_files(*args):
-    file_list = [file for file in args]
+    file_list = [file for file in args if file]
     return file_list
 
 

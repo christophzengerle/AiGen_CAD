@@ -9,6 +9,7 @@ def read_ply(path):
         y = np.array(plydata["vertex"]["y"])
         z = np.array(plydata["vertex"]["z"])
         vertex = np.stack([x, y, z], axis=1)
+        print(vertex.shape)
         return vertex
 
 

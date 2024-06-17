@@ -249,36 +249,6 @@ def make3d():
     return jsonify(response)
 
 
-@app.route('/Object2PointCloud', methods=['POST'])
-def obj2pc():
-    # obj_path, out_path
-    data = request.json
-    obj_path = data['obj_path']
-    out_path = data['out_path']
-    m = trimesh.load_mesh(obj_path)
-    path = os.path.join(out_path, "instantMesh.ply")
-    m.export(path, file_type='ply')
-    response = {
-        'path' : path
-    }
-    
-    return jsonify(response)
-
-
-@app.route('/STEP2Object', methods=['POST'])
-def step2Obj():
-    # obj_path, out_path
-    data = request.json
-    step_path = data['step_path']
-    out_path = data['out_path']
-    obj_path = step2obj.transform(step_path, "deepCAD")
-    response = {
-        'obj_path' : obj_path
-    }
-    
-    return jsonify(response)
-
-
 
 
 

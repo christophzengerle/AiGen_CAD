@@ -32,7 +32,7 @@ data:
       target: src.data.objaverse.ObjaverseData
       params:
         root_dir: data/
-        meta_fname: render/valid_paths.json
+        meta_fname: render/valid_paths_copy.json
         input_image_dir: render
         target_image_dir: render
         input_view_num: 6
