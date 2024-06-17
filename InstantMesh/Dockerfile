@@ -72,9 +72,6 @@ RUN rm -rf requirements.txt
 
 # COPY . /usr/app/src/instantmesh
 
-# EXPOSE 7860
-# ENV GRADIO_SERVER_NAME=0.0.0.0
-
 ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:1024
 
 # Run the command when the container starts

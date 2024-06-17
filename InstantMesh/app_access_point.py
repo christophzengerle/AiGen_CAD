@@ -29,9 +29,13 @@ import trimesh
 
 import base64
 import io
-from flask import Flask, request, jsonify
+from flask import Flask, request, make_response, jsonify
 
 app = Flask(__name__)
+
+@app.route('/',methods=['GET','POST'])
+def init():
+    return make_response("InstantMesh running...", 200)
 
 ###############################################################################
 # Configuration.

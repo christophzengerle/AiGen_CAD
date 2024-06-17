@@ -1,68 +1,85 @@
 services:
-#  deepcad:
-#    build: ./DeepCAD
-#    image: chriszengerle/aigen_deepcad:0.1
-#    container_name: deepcad
-#    volumes:
-#      - ./DeepCAD:/usr/app/src/DeepCAD
+ deepcad:
+   build: ./DeepCAD
+   image: chriszengerle/aigen_deepcad:0.1
+   container_name: deepcad
+   volumes:
+     - ./DeepCAD:/usr/app/src/DeepCAD
 
-#      # Cluster bindings
-#      - ../utils/models/DeepCAD:/usr/app/src/DeepCAD/proj_log
-#      - ../utils/data:/usr/app/src/DeepCAD/data
+     # Cluster bindings
+     - ../utils/models/DeepCAD:/usr/app/src/DeepCAD/proj_log
+     - ../utils/data:/usr/app/src/DeepCAD/data
 
-#      # local Windows bindings (Christoph)
-#      # - C:/ArtificialIntelligence/DeepCAD/data:/usr/app/src/DeepCAD/data
-#      # - C:/ArtificialIntelligence/DeepCAD/proj_log:/usr/app/src/DeepCAD/proj_log
+     # local Windows bindings (Christoph)
+     # - C:/ArtificialIntelligence/DeepCAD/data:/usr/app/src/DeepCAD/data
+     # - C:/ArtificialIntelligence/DeepCAD/proj_log:/usr/app/src/DeepCAD/proj_log
 
-#    # network_mode: "host"
-#    ports:
-#      - "5002:5002"
-#      - "8082:22" # SSH
-#      - "8083:6006" # Tensorboard
-#      - "8084:8888" # Jupyter
+   # network_mode: "host"
+   ports:
+     - "5002:5002"
+     - "8082:22" # SSH
+     - "8083:6006" # Tensorboard
+     - "8084:8888" # Jupyter
 
-#    # command: tail -F anything #to keep Container running
-#    ipc: host
-#    deploy:
-#      resources:
-#        reservations:
-#          devices:
-#            - driver: nvidia
-#              device_ids: ["0"] # binds to GPU 0 and 1
-#              # count: all
-#              capabilities: [gpu]
+   # command: tail -F anything #to keep Container running
+   ipc: host
+   deploy:
+     resources:
+       reservations:
+         devices:
+           - driver: nvidia
+             device_ids: ["0"] # binds to GPU 0 and 1
+             # count: all
+             capabilities: [gpu]
+  #  healthcheck:
+  #     test: curl --fail http://localhost:5002/ || exit 1
+  #     interval: 3s
+  #     retries: 10
+  #     start_period: 10s
+  #     timeout: 10s
 
 
 
-#  instantmesh:
-#    build: ./InstantMesh
-#    image: chriszengerle/aigen_instantmesh:0.1
-#    container_name: instantmesh
-#    volumes:
-#      - ./InstantMesh:/usr/app/src/InstantMesh
+ instantmesh:
+   build: ./InstantMesh
+   image: chriszengerle/aigen_instantmesh:0.1
+   container_name: instantmesh
+   volumes:
+     - ./InstantMesh:/usr/app/src/InstantMesh
 
-#      # Cluster bindings
-#      - ../utils/data:/usr/app/src/InstantMesh/data
-#      - ../instantmesh_ckpts:/usr/app/src/InstantMesh/ckpts
-#      # - ../utils/models/InstantMesh:/usr/app/src/InstantMesh/ckpts
+     # Cluster bindings
+     - ../utils/data:/usr/app/src/InstantMesh/data
+     - ../instantmesh_ckpts:/usr/app/src/InstantMesh/ckpts
+     # - ../utils/models/InstantMesh:/usr/app/src/InstantMesh/ckpts
 
-#    # network_mode: "host"
-#    ports:
-#      - "8085:22" # SSH
-#      - "8086:6006" # Tensorboard
-#      - "8087:8888" # Jupyter
-#      - "5001:5001" # Gradio
+   # network_mode: "host"
+   ports:
+     - "8085:22" # SSH
+     - "8086:6006" # Tensorboard
+     - "8087:8888" # Jupyter
+     - "5001:5001" # Gradio
 
-#    # command: tail -F anything #to keep Container running
-#    ipc: host
-#    deploy:
-#      resources:
-#        reservations:
-#          devices:
-#            - driver: nvidia
-#              device_ids: ["1"] # binds to GPU 0 and 1
-#              # count: all
-#              capabilities: [ gpu ]
+  #  depends_on:
+  #     deepcad:
+  #       condition: service_healthy
+
+   # command: tail -F anything #to keep Container running
+   ipc: host
+   deploy:
+     resources:
+       reservations:
+         devices:
+           - driver: nvidia
+             device_ids: ["1"] # binds to GPU 0 and 1
+             # count: all
+             capabilities: [ gpu ]
+
+  #  healthcheck:
+  #     test: curl --fail http://localhost:5001/ || exit 1
+  #     interval: 5s
+  #     retries: 10
+  #     start_period: 50s
+  #     timeout: 10s
 
 
  app:
@@ -78,9 +95,11 @@ services:
       - "8088:22" # SSH<
       - "7860:7860" # Gradio
 
-    depends_on:
-      - deepcad
-      - instantmesh
+    # depends_on:
+      # deepcad:
+      #   condition: service_healthy
+      # instantmesh:
+      #   condition: service_healthy
 
     ipc: host
     # command: tail -F anything #to keep Container running
@@ -92,4 +111,6 @@ services:
               # device_ids: ["1"] # binds to GPU 0 and 1
               count: all
               capabilities: [ gpu ]
+
+
 

@@ -24,8 +24,8 @@ def check_input_image(input_image):
     if input_image is None:
         raise gr.Error("No image uploaded!")
     
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
+    # if not os.path.exists(output_path):
+    #     os.makedirs(output_path)
     
     
 def preprocess(input_image, do_remove_background):
@@ -169,7 +169,7 @@ with gr.Blocks() as demo:
             with gr.Row(variant="panel"):
                 gr.Examples(
                     examples=[
-                        os.path.join("examples", img_name) for img_name in sorted(os.listdir(os.path.join("InstantMesh", "examples")))
+                        os.path.join("examples", img_name) for img_name in sorted(os.listdir("examples"))
                     ],
                     inputs=[input_image],
                     label="Examples",
@@ -237,4 +237,4 @@ with gr.Blocks() as demo:
 
 demo.queue(max_size=10)
 # demo.launch(server_name="0.0.0.0", server_port=7860)
-demo.launch()
+demo.launch(share=True)

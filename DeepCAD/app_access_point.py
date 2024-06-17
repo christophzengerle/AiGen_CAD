@@ -1,8 +1,9 @@
 import os
+
 from config.configPC2CAD import ConfigPC2CAD
 from trainer.trainerPC2CAD import TrainerPC2CAD
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, make_response, jsonify
 
 app = Flask(__name__)
 
@@ -17,8 +18,9 @@ agent.load_ckpt()
 print('Loading Finished!')
 
 
-
-
+@app.route('/',methods=['GET','POST'])
+def init():
+    return make_response("DeepCAD running...", 200)
 
 @app.route('/GenerateCAD', methods=['POST'])
 def deepcad_pc2cad():
