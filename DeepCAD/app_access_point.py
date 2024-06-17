@@ -10,13 +10,16 @@ app = Flask(__name__)
 print('Loading DeepCAD-Model...')
 DEEPCAD_EXPERIMENT_NAME = "pc2cad_Exp"
 DEEPCAD_MODEL_CKPT = "latest"
+LOAD_MODULAR_CKPT = True
 POINTCLOUD_N_POINTS = 4096
+
+
 
 cfg = ConfigPC2CAD()
 cfg.model_dir = os.path.join(cfg.proj_dir, f"pc2cad/{DEEPCAD_EXPERIMENT_NAME}/model")
 cfg.ckpt = DEEPCAD_MODEL_CKPT
 cfg.n_points = POINTCLOUD_N_POINTS
-cfg.load_modular_ckpt = True
+cfg.load_modular_ckpt = LOAD_MODULAR_CKPT
 cfg.pce_exp_name = 'pcEncoder'
 cfg.pce_ckpt = "latest"
 cfg.ae_exp_name = "pretrained"
