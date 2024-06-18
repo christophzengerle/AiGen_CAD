@@ -15,7 +15,8 @@ from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakePrism
 from OCC.Core.GC import GC_MakeArcOfCircle
 from OCC.Core.gp import gp_Ax2, gp_Ax3, gp_Circ, gp_Dir, gp_Lin, gp_Pln, gp_Pnt, gp_Vec
 from OCC.Core.ShapeExtend import ShapeExtend_WireData
-from OCC.Core.ShapeFix import ShapeFix_Face, ShapeFix_Wire
+from OCC.Core.ShapeFix import ShapeFix_Face, ShapeFix_Shape, ShapeFix_Wire
+from OCC.Core.TopTools import TopTools_ListOfShape
 from OCC.Extend.DataExchange import write_stl_file
 from trimesh.sample import sample_surface
 
@@ -28,21 +29,11 @@ def vec2CADsolid(vec, is_numerical=True, n=256):
     cad = CADSequence.from_vector(vec, is_numerical=is_numerical, n=256)
     cad = create_CAD(cad)
     return cad
-    
-    # try:
-    #     cad = CADSequence.from_vector(vec, is_numerical=is_numerical, n=256)
-    # except Exception as e:
-    #     raise ValueError("Error in CAD sequence creation: {}".format(e))
-    # cad = create_CAD(cad)
-    # return cad
-    
-    
-
 
 
 def create_CAD(cad_seq: CADSequence):
     """create a 3D CAD model from CADSequence. Only support extrude with boolean operation."""
-    # print('cad-seq:')
+    # print("cad-seq:")
     # print(cad_seq)
     body = create_by_extrude(cad_seq.seq[0])
     for extrude_op in cad_seq.seq[1:]:
@@ -51,6 +42,16 @@ def create_CAD(cad_seq: CADSequence):
             "NewBodyFeatureOperation"
         ) or extrude_op.operation == EXTRUDE_OPERATIONS.index("JoinFeatureOperation"):
             body = BRepAlgoAPI_Fuse(body, new_body).Shape()
+            # f2 = BRepAlgoAPI_Fuse()
+            # L1 = TopTools_ListOfShape()
+            # L1.Append(body)
+            # L2 = TopTools_ListOfShape()
+            # L2.Append(new_body)
+            # f2.SetArguments(L1)
+            # f2.SetTools(L2)
+            # f2.SetFuzzyValue(0.01)
+            # f2.Build()
+            # body = f2.Shape()
         elif extrude_op.operation == EXTRUDE_OPERATIONS.index("CutFeatureOperation"):
             body = BRepAlgoAPI_Cut(body, new_body).Shape()
         elif extrude_op.operation == EXTRUDE_OPERATIONS.index(
@@ -71,11 +72,6 @@ def create_by_extrude(extrude_op: Extrude):
     sketch_plane.origin = extrude_op.sketch_pos
 
     face = create_profile_face(profile, sketch_plane)
-    fix_face = ShapeFix_Face(face)
-    fix_face.Perform()
-    fix_face.FixIntersectingWires()
-    fix_face.FixAddNaturalBound()
-    face = fix_face.Face()
 
     normal = gp_Dir(*extrude_op.sketch_plane.normal)
     ext_vec = gp_Vec(normal).Multiplied(extrude_op.extent_one)
@@ -97,15 +93,22 @@ def create_profile_face(profile: Profile, sketch_plane: CoordSystem):
     x_axis = gp_Dir(*sketch_plane.x_axis)
     gp_face = gp_Pln(gp_Ax3(origin, normal, x_axis))
 
-    print(profile.children)
     all_loops = [create_loop_3d(loop, sketch_plane) for loop in profile.children]
-    topo_face = BRepBuilderAPI_MakeFace(gp_face, all_loops[0])
+    topo_face = BRepBuilderAPI_MakeFace(gp_face, all_loops[0] if all_loops else None)
     for loop in all_loops[1:]:
         if not loop.IsNull():
             topo_face.Add(loop.Reversed())
-    return topo_face.Face()
+    topo_face = topo_face.Face()
 
+    fix_face = ShapeFix_Face(topo_face)
+    fix_face.Perform()
+    # fix_face.FixMissingSeam()
+    fix_face.FixAddNaturalBound()
+    fix_face.FixOrientation()
+    fix_face.FixIntersectingWires()
+    fix_face.FixPeriodicDegenerated()
 
+    return fix_face.Face()
 
 
 # def create_loop_3d(loop: Loop, sketch_plane: CoordSystem):
@@ -131,9 +134,19 @@ def create_loop_3d(loop: Loop, sketch_plane: CoordSystem):
     fix_wire = ShapeFix_Wire()
     fix_wire.Load(topo_wire)
 
-    fix_wire.Perform()
     fix_wire.FixReorder()
     fix_wire.FixConnected()
+    fix_wire.FixClosed()
+    fix_wire.FixGaps2d()
+    fix_wire.FixGaps3d()
+    fix_wire.FixEdgeCurves()
+    fix_wire.FixDegenerated()
+    fix_wire.FixSelfIntersection()
+    fix_wire.FixLacking()
+    fix_wire.FixNotchedEdges()
+    fix_wire.FixConnected()
+
+    fix_wire.Perform()
     # print(fix_wire.NbEdges())
 
     return fix_wire.WireAPIMake()

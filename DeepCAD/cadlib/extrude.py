@@ -203,10 +203,10 @@ class Extrude(object):
     @staticmethod
     def from_vector(vec, is_numerical=False, n=256):
         """vector representation: commands [SOL, ..., SOL, ..., EXT]"""
-        print(vec[0][0], vec[-1][0])
-        print(SOL_IDX, EXT_IDX)
-        print(vec[0][0] == SOL_IDX and vec[-1][0] == EXT_IDX)
-        
+        # print(vec[0][0], vec[-1][0])
+        # print(SOL_IDX, EXT_IDX)
+        # print(vec[0][0] == SOL_IDX and vec[-1][0] == EXT_IDX)
+
         assert vec[0][0] == SOL_IDX and vec[-1][0] == EXT_IDX
         profile_vec = np.concatenate([vec[:-1], EOS_VEC[np.newaxis]])
         profile = Profile.from_vector(profile_vec, is_numerical=is_numerical)
@@ -366,22 +366,24 @@ class CADSequence(object):
         commands = vec[:, 0]
         ext_ops = np.where(commands == EXT_IDX)[0].tolist()
         sol_ops = np.where(commands == SOL_IDX)[0].tolist()
-        print(sol_ops)
-        print(ext_ops)
 
         indices = []
         last_ext = -1
         last_sol = -1
         for i in range(len(ext_ops)):
             for k in range(len(sol_ops)):
-                if(sol_ops[k] < ext_ops[i] and sol_ops[k] > last_ext and sol_ops[k] > last_sol):
+                if (
+                    sol_ops[k] < ext_ops[i]
+                    and sol_ops[k] > last_ext
+                    and sol_ops[k] > last_sol
+                ):
                     indices.append((sol_ops[k], ext_ops[i]))
                     last_ext = ext_ops[i]
-                    sol_ops = sol_ops[k+1:]
+                    sol_ops = sol_ops[k + 1 :]
                     break
 
-        print(indices)  # Ausgabe: [(0, 9), (10, 14), (15, 19)]
-        
+        # print(indices)  # Ausgabe: [(0, 9), (10, 14), (15, 19)]
+
         if not ext_ops:
             raise ValueError(
                 "Creation of CAD-Solid failed.\nInvalid CAD sequence - No valid extrusion operation found."
@@ -394,14 +396,12 @@ class CADSequence(object):
         #     ext_seq.append(
         #         Extrude.from_vector(vec[start + 1 : end + 1], is_numerical, n)
         #     )
-        
+
         ext_seq = []
         for i in range(len(indices)):
             start, end = indices[i][0], indices[i][1]
-            ext_seq.append(
-                Extrude.from_vector(vec[start : end + 1], is_numerical, n)
-            )
-        
+            ext_seq.append(Extrude.from_vector(vec[start : end + 1], is_numerical, n))
+
         cad_seq = CADSequence(ext_seq)
         return cad_seq
 

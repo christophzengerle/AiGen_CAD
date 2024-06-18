@@ -56,13 +56,9 @@ ACC_TOLERANCE = 1
 
 
 def trim_vec_EOS(out_vec):
-    print(out_vec.shape)
     out_command = out_vec[:, 0]
     if out_command.tolist().count(EOS_IDX) == 0:
         return out_vec
-    print(out_command.tolist().count(EOS_IDX))
     seq_len = out_command.tolist().index(EOS_IDX)
-    print(out_vec[seq_len:])
     out_vec = out_vec[:seq_len]
-    print(out_vec.shape)
     return out_vec

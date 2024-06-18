@@ -1,114 +1,90 @@
 services:
- deepcad:
-   build: ./DeepCAD
-   image: chriszengerle/aigen_deepcad:0.1
-   container_name: deepcad
-   env_file: "AiGen_CAD.env"
-   volumes:
-     - ./DeepCAD:/usr/app/src/DeepCAD
-
-     # Cluster bindings
-     - ../utils/models/DeepCAD:/usr/app/src/DeepCAD/proj_log
-     - ../utils/data:/usr/app/src/DeepCAD/data
-     - ../utils/results:/usr/app/src/DeepCAD/results
-
-   ports:
-     - "8082:22" # SSH
-     - "8083:6006" # Tensorboard
-     # - "8084:8888" # Jupyter
-     - "8092:8092" # Flask
-
-   command: tail -F anything #to keep Container running
-   ipc: host
-   deploy:
-     resources:
-       reservations:
-         devices:
-           - driver: nvidia
-             # device_ids: ["0"] # binds to GPU 0 and 1
-             count: all
-             capabilities: [gpu]
-  #  healthcheck:
-  #     test: curl --fail http://localhost:8092/ || exit 1
-  #     interval: 3s
-  #     retries: 10
-  #     start_period: 10s
-  #     timeout: 10s
-
-
-
- instantmesh:
-   build: ./InstantMesh
-   image: chriszengerle/aigen_instantmesh:0.1
-   container_name: instantmesh
-   env_file: "AiGen_CAD.env"
-   volumes:
-     - ./InstantMesh:/usr/app/src/InstantMesh
-
-     # Cluster bindings
-     - ../utils/data:/usr/app/src/InstantMesh/data
-     - ../utils/models/InstantMesh:/usr/app/src/InstantMesh/ckpts
-     - ../utils/results:/usr/app/src/InstantMesh/results
-
-   ports:
-     - "8085:22" # SSH
-     - "8086:6006" # Tensorboard
-     # - "8087:8888" # Jupyter
-     - "8091:8091" # Flask
-
-  #  depends_on:
-  #     deepcad:
-  #       condition: service_healthy
-
-   command: tail -F anything #to keep Container running
-   ipc: host
-   deploy:
-     resources:
-       reservations:
-         devices:
-           - driver: nvidia
-             # device_ids: ["1"] # binds to GPU 0 and 1
-             count: all
-             capabilities: [ gpu ]
-
-  #  healthcheck:
-  #     test: curl --fail http://localhost:8091/ || exit 1
-  #     interval: 5s
-  #     retries: 10
-  #     start_period: 50s
-  #     timeout: 10s
-
-
- app:
-    build: ./App
-    image: chriszengerle/aigen_app:0.1
-    container_name: app
+  deepcad:
+    build: ./DeepCAD
+    image: chriszengerle/aigen_deepcad:0.1
+    container_name: deepcad
     env_file: "AiGen_CAD.env"
     volumes:
-      - ./App:/usr/app/src/App 
-      - ../utils/data:/usr/app/src/App/data
-      - ../utils/results:/usr/app/src/App/results
+      - ./DeepCAD:/usr/app/src/DeepCAD
+
+      # Cluster bindings
+      #  - ../utils/models/DeepCAD:/usr/app/src/DeepCAD/proj_log
+      #  - ../utils/data:/usr/app/src/DeepCAD/data
+      #  - ../utils/results:/usr/app/src/DeepCAD/results
+
+      # local Windows bindings (Christoph)
+      - C:/ArtificialIntelligence/DeepCAD/data:/usr/app/src/DeepCAD/data
+      - C:/ArtificialIntelligence/DeepCAD/proj_log:/usr/app/src/DeepCAD/proj_log
+      - C:/ArtificialIntelligence/DeepCAD/results:/usr/app/src/DeepCAD/results
 
     ports:
-      - "8088:22" # SSH<
-      - "7860:7860" # Gradio
+      - "8082:22" # SSH
+      - "8083:6006" # Tensorboard
+      # - "8084:8888" # Jupyter
+      - "8092:8092" # Flask
 
-    # depends_on:
-      # deepcad:
-      #   condition: service_healthy
-      # instantmesh:
-      #   condition: service_healthy
-
-    ipc: host
     command: tail -F anything #to keep Container running
+    ipc: host
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              # device_ids: ["1"] # binds to GPU 0 and 1
+              # device_ids: ["0"] # binds to GPU 0 and 1
               count: all
-              capabilities: [ gpu ]
+              capabilities: [gpu]
+#  instantmesh:
+#    build: ./InstantMesh
+#    image: chriszengerle/aigen_instantmesh:0.1
+#    container_name: instantmesh
+#    env_file: "AiGen_CAD.env"
+#    volumes:
+#      - ./InstantMesh:/usr/app/src/InstantMesh
 
+#      # Cluster bindings
+#      - ../utils/data:/usr/app/src/InstantMesh/data
+#      - ../utils/models/InstantMesh:/usr/app/src/InstantMesh/ckpts
+#      - ../utils/results:/usr/app/src/InstantMesh/results
 
+#    ports:
+#      - "8085:22" # SSH
+#      - "8086:6006" # Tensorboard
+#      # - "8087:8888" # Jupyter
+#      - "8091:8091" # Flask
+
+#    command: tail -F anything #to keep Container running
+#    ipc: host
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#            - driver: nvidia
+#              # device_ids: ["1"] # binds to GPU 0 and 1
+#              count: all
+#              capabilities: [ gpu ]
+
+#  app:
+#     build: ./App
+#     image: chriszengerle/aigen_app:0.1
+#     container_name: app
+#     env_file: "AiGen_CAD.env"
+#     volumes:
+#       - ./App:/usr/app/src/App
+#       - ../utils/data:/usr/app/src/App/data
+#       - ../utils/results:/usr/app/src/App/results
+
+#     ports:
+#       - "8088:22" # SSH<
+#       - "7860:7860" # Gradio
+
+#     ipc: host
+#     command: tail -F anything #to keep Container running
+#     deploy:
+#       resources:
+#         reservations:
+#           devices:
+#             - driver: nvidia
+#               # device_ids: ["1"] # binds to GPU 0 and 1
+#               count: all
+#               capabilities: [ gpu ]
 

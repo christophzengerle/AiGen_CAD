@@ -14,6 +14,7 @@ from joblib import Parallel, delayed
 from OCC.Core.BRepCheck import BRepCheck_Analyzer
 from tqdm import tqdm
 from utils.step_utils import create_step_file, step_file_exists
+from utils.vec_utils import fix_pred_vecs
 
 from .loss import CADLoss
 
@@ -207,10 +208,9 @@ class TrainerPC2CAD(BaseTrainer):
             out_cmd = batch_out_vec[:, :, 0]
             out_args = batch_out_vec[:, :, 1:]
 
-            mask = (out_cmd == gt_commands)
+            mask = out_cmd == gt_commands
             cmd_acc = mask.astype(np.int32)
             all_cmd_comp.append(np.mean(cmd_acc))
-
 
             corr_gt_cmd = gt_commands[mask]
             ext_pos = np.where(corr_gt_cmd == EXT_IDX)
@@ -218,15 +218,17 @@ class TrainerPC2CAD(BaseTrainer):
             arc_pos = np.where(corr_gt_cmd == ARC_IDX)
             circle_pos = np.where(corr_gt_cmd == CIRCLE_IDX)
 
-
             gt_args = gt_args[mask]
             out_args = out_args[mask]
 
             args_comp = (np.abs(gt_args == out_args) < ACC_TOLERANCE).astype(np.int32)
-            args_comp[ext_pos][:, -N_ARGS_EXT:] = (gt_args[ext_pos][:, -N_ARGS_EXT:] == out_args[ext_pos][:, -N_ARGS_EXT:]).astype(np.int32)
-            args_comp[arc_pos][:, :4] = (gt_args[arc_pos][:, :4] == out_args[arc_pos][:, :4]).astype(np.int32)
-            
-                
+            args_comp[ext_pos][:, -N_ARGS_EXT:] = (
+                gt_args[ext_pos][:, -N_ARGS_EXT:] == out_args[ext_pos][:, -N_ARGS_EXT:]
+            ).astype(np.int32)
+            args_comp[arc_pos][:, :4] = (
+                gt_args[arc_pos][:, :4] == out_args[arc_pos][:, :4]
+            ).astype(np.int32)
+
             all_ext_args_comp.append(args_comp[ext_pos][:, -N_ARGS_EXT:])
             all_line_args_comp.append(args_comp[line_pos][:, :2])
             all_arc_args_comp.append(args_comp[arc_pos][:, :4])
@@ -263,7 +265,7 @@ class TrainerPC2CAD(BaseTrainer):
             },
             global_step=self.clock.epoch,
         )
-        
+
         # print("args_acc" + str(all_cmd_comp) + "line" + str(line_acc) +  "arc" + str(arc_acc) +  "circle" + str(circle_acc) +  "plane" + str(sket_plane_acc) +  "trans" + str(sket_trans_acc) +  "extent" + str(extent_one_acc) )
 
     def eval_model_acc(self, test_loader):
@@ -612,11 +614,10 @@ class TrainerPC2CAD(BaseTrainer):
                 except Exception as e:
                     out_dir = os.path.join(self.cfg.exp_dir, "result")
                     print(f"Output-path is invalid. Using default path: {out_dir}")
-                    
-                    
+
         else:
             out_dir = os.path.join(self.cfg.exp_dir, "result")
-                    
+
         save_dir = os.path.join(
             out_dir,
             save_name
@@ -627,17 +628,25 @@ class TrainerPC2CAD(BaseTrainer):
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
+        step_save_path = None
         print(f"File-List: {file_list}")
         if len(file_list) > 0:
             valid_preds = 0
             pbar = tqdm(file_list)
             for i, pc_path in enumerate(pbar):
+                print(
+                    f"\n***************** Processing File {pc_path} *****************\n"
+                )
                 with torch.no_grad():
                     # retrieve Data
                     pc = read_ply(pc_path)
                     sample_idx = random.sample(
                         list(range(pc.shape[0])),
-                        self.cfg.n_points if self.cfg.n_points < pc.shape[0] else pc.shape[0],
+                        (
+                            self.cfg.n_points
+                            if self.cfg.n_points < pc.shape[0]
+                            else pc.shape[0]
+                        ),
                     )
                     pc = pc[sample_idx]
                     try:
@@ -658,18 +667,13 @@ class TrainerPC2CAD(BaseTrainer):
                     pc = pc[sample_idx]
                     pc = torch.tensor(pc, dtype=torch.float32).unsqueeze(0).cuda()
 
-                    pred = self.forward(pc)
-                    batch_out_vec = self.logits2vec(pred)
-                    out_vec = batch_out_vec.squeeze(0)
-                    out_vec = trim_vec_EOS(out_vec)
-                    
+                    out_vec = self.predict(pc)
 
-                print(out_vec)
                 if len(out_vec) > 0:
                     # save generated z
                     file_name = pc_path.split("/")[-1].split(".")[0]
                     save_path = os.path.join(save_dir, f"{file_name}")
-                    print(f'******** saving files to {save_dir} *************')   
+                    print(f"******** saving files to {save_dir} *************")
                     if self.cfg.expSourcePNG:
                         transform(
                             pc_path,
@@ -684,52 +688,42 @@ class TrainerPC2CAD(BaseTrainer):
                     # check generated CAD-Shape and save it
                     out_shape = None
                     is_valid_BRep = False
-                    
-                    import faulthandler
-                    faulthandler.enable()
-                    out_shape = vec2CADsolid(out_vec)
-                    is_valid_BRep = True
-                    valid_preds += 1
+                    try:
+                        out_shape = vec2CADsolid(out_vec)
+                        analyzer = BRepCheck_Analyzer(out_shape)
+                        if analyzer.IsValid():
+                            is_valid_BRep = True
+                            valid_preds += 1
+                        else:
+                            raise Exception("invalid BRep-Model detected.")
 
-                        
-                        
-                    # try:
-                    #     import faulthandler
-                    #     faulthandler.enable()
-                    #     out_shape = vec2CADsolid(out_vec)
-                    #     is_valid_BRep = True
-                    #     valid_preds += 1
-                    # except Exception as e:
-                    #     print(str(e))
-                    
+                    except Exception as e:
+                        print(str(e))
 
-                        # # check generated CAD-Shape
-                        # # if invalid -> generate again
-                        # for cnt_retries in range(1, self.cfg.n_checkBrep_retries + 1):
-                        #     print(
-                        #         f"Trying to create a new CAD-Solid. Attempt {cnt_retries}/{self.cfg.n_checkBrep_retries}"
-                        #     )
+                        # check generated CAD-Shape
+                        # if invalid -> generate again
+                        for cnt_retries in range(1, self.cfg.n_checkBrep_retries + 1):
+                            print(
+                                f"Trying to create a new CAD-Solid. Attempt {cnt_retries}/{self.cfg.n_checkBrep_retries}"
+                            )
 
-                        #     new_batch_output = self.forward(pc)
-                        #     out_batch_vec = self.logits2vec(new_batch_output)
-                        #     out_vec = out_batch_vec.squeeze(0)
-                        #     out_vec = trim_vec_EOS(out_vec)
+                            out_vec = self.predict(pc)
 
-                        #     try:
-                        #         out_shape = vec2CADsolid(out_vec)
-                        #         analyzer = BRepCheck_Analyzer(out_shape)
-                        #         if analyzer.IsValid():
-                        #             print("Valid BRep-Model detected.")
-                        #             is_valid_BRep = True
-                        #             valid_preds += 1
-                        #             break
-                        #         else:
-                        #             print("invalid BRep-Model detected.")
-                        #             continue
+                            try:
+                                out_shape = vec2CADsolid(out_vec)
+                                analyzer = BRepCheck_Analyzer(out_shape)
+                                if analyzer.IsValid():
+                                    print("Valid BRep-Model detected.")
+                                    is_valid_BRep = True
+                                    valid_preds += 1
+                                    break
+                                else:
+                                    print("invalid BRep-Model detected.")
+                                    continue
 
-                        #     except Exception as e:
-                        #         print(str(e))
-                        #         continue
+                            except Exception as e:
+                                print(str(e))
+                                continue
 
                     if not is_valid_BRep:
                         print("Could not create valid BRep-Model!")
@@ -784,8 +778,17 @@ class TrainerPC2CAD(BaseTrainer):
 
         print("********* Prediction of CAD-Model from PointCloud Completed ***********")
         print(f"********** {valid_preds} / {len(file_list)} succeeded ***********")
-        
-        return step_save_path
+
+        if step_save_path:
+            return step_save_path
+
+    def predict(self, pc_path):
+        new_batch_output = self.forward(pc_path)
+        out_batch_vec = self.logits2vec(new_batch_output)
+        out_vec = out_batch_vec.squeeze(0)
+        out_vec = trim_vec_EOS(out_vec)
+        out_vec = fix_pred_vecs(out_vec)
+        return out_vec
 
     def save_ckpt(self, name=None):
         """save checkpoint during training for future restore"""
