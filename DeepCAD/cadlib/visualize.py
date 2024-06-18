@@ -25,12 +25,19 @@ from .sketch import Loop, Profile
 
 
 def vec2CADsolid(vec, is_numerical=True, n=256):
-    try:
-        cad = CADSequence.from_vector(vec, is_numerical=is_numerical, n=256)
-    except Exception as e:
-        raise ValueError("Error in CAD sequence creation: {}".format(e))
+    cad = CADSequence.from_vector(vec, is_numerical=is_numerical, n=256)
     cad = create_CAD(cad)
     return cad
+    
+    # try:
+    #     cad = CADSequence.from_vector(vec, is_numerical=is_numerical, n=256)
+    # except Exception as e:
+    #     raise ValueError("Error in CAD sequence creation: {}".format(e))
+    # cad = create_CAD(cad)
+    # return cad
+    
+    
+
 
 
 def create_CAD(cad_seq: CADSequence):
@@ -90,6 +97,7 @@ def create_profile_face(profile: Profile, sketch_plane: CoordSystem):
     x_axis = gp_Dir(*sketch_plane.x_axis)
     gp_face = gp_Pln(gp_Ax3(origin, normal, x_axis))
 
+    print(profile.children)
     all_loops = [create_loop_3d(loop, sketch_plane) for loop in profile.children]
     topo_face = BRepBuilderAPI_MakeFace(gp_face, all_loops[0])
     for loop in all_loops[1:]:
@@ -98,12 +106,14 @@ def create_profile_face(profile: Profile, sketch_plane: CoordSystem):
     return topo_face.Face()
 
 
+
+
 # def create_loop_3d(loop: Loop, sketch_plane: CoordSystem):
 #     """create a 3D sketch loop"""
 #     topo_wire = BRepBuilderAPI_MakeWire()
 #     for curve in loop.children:
 #         topo_edge = create_edge_3d(curve, sketch_plane)
-#         if topo_edge == -1:  # omitted
+#         if topo_edge == -1: # omitted
 #             continue
 #         topo_wire.Add(topo_edge)
 #     return topo_wire.Wire()

@@ -1,5 +1,7 @@
 import os
 import trimesh
+import numpy as np
+import random
 from config.configPC2CAD import ConfigPC2CAD
 from trainer.trainerPC2CAD import TrainerPC2CAD
 
@@ -7,11 +9,14 @@ from flask import Flask, request, make_response, jsonify
 
 app = Flask(__name__)
 
+random.seed(0)
+np.random.seed(0)
+
 print('Loading DeepCAD-Model...')
-DEEPCAD_EXPERIMENT_NAME = "pc2cad_Exp"
+DEEPCAD_EXPERIMENT_NAME = "pc2cad_contDiffNums"
 DEEPCAD_MODEL_CKPT = "latest"
-LOAD_MODULAR_CKPT = True
-POINTCLOUD_N_POINTS = 4096
+LOAD_MODULAR_CKPT = False
+POINTCLOUD_N_POINTS = 8096
 
 
 
@@ -43,7 +48,7 @@ def obj2pc():
     obj_path = data['obj_path']
     out_path = data['out_path']
     m = trimesh.load_mesh(obj_path)
-    path = os.path.join(out_path, "instantMesh.ply")
+    path = os.path.join(out_path, "deepCAD.ply")
     pc = trimesh.PointCloud(m.sample(POINTCLOUD_N_POINTS))
     pc.export(path, file_type='ply')
     response = {
@@ -110,4 +115,4 @@ def step2Obj():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5002)
+    app.run(host='0.0.0.0', port=8092)

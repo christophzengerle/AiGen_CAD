@@ -586,42 +586,44 @@ class TrainerPC2CAD(BaseTrainer):
 
     def pc2cad(self):
         self.net.eval()
-        path = self.cfg.pc_root
-        if os.path.isfile(path):
-            if path.endswith(".ply"):
-                file_list = [path]
-                save_name = path.split("/")[-1].split(".")[0]
+        pc_path = os.path.normpath(self.cfg.pc_root)
+        output_path = os.path.normpath(self.cfg.output)
+        if os.path.isfile(pc_path):
+            if pc_path.endswith(".ply"):
+                file_list = [pc_path]
+                save_name = pc_path.split("/")[-1].split(".")[0]
             else:
                 raise ValueError("Invalid file format")
-        elif os.path.isdir(path):
-            file_list = [file for file in walk_dir(path) if file.endswith(".ply")]
-            save_name = os.path.basename(os.path.normpath(path))
+        elif os.path.isdir(pc_path):
+            file_list = [file for file in walk_dir(pc_path) if file.endswith(".ply")]
+            save_name = os.path.basename(os.path.normpath(pc_path))
         else:
             raise ValueError("Invalid path")
 
-
-
-        if self.cfg.output is not None:
-            if os.path.isfile(self.cfg.output):
-                out_dir = os.dirname(self.cfg.output)
-            elif os.path.isdir(self.cfg.output):
-                out_dir = self.cfg.output
+        if output_path:
+            if os.path.isfile(output_path):
+                out_dir = os.dirname(output_path)
+            elif os.path.isdir(output_path):
+                out_dir = output_path
             else:
                 try:
-                    os.makedirs(self.cfg.output)
-                    out_dir = self.cfg.output
+                    os.makedirs(output_path)
+                    out_dir = os.path.dirname(output_path)
                 except Exception as e:
-                    print("Output-path is invalid. Using default path.")
+                    out_dir = os.path.join(self.cfg.exp_dir, "result")
+                    print(f"Output-path is invalid. Using default path: {out_dir}")
                     
-        out_dir = os.path.join(
-            self.cfg.output,
-            self.cfg.ckpt,
+                    
+        else:
+            out_dir = os.path.join(self.cfg.exp_dir, "result")
+                    
+        save_dir = os.path.join(
+            out_dir,
             save_name
             + "_"
             + str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")),
         )
 
-        save_dir = out_dir
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
@@ -660,12 +662,14 @@ class TrainerPC2CAD(BaseTrainer):
                     batch_out_vec = self.logits2vec(pred)
                     out_vec = batch_out_vec.squeeze(0)
                     out_vec = trim_vec_EOS(out_vec)
+                    
 
                 print(out_vec)
                 if len(out_vec) > 0:
                     # save generated z
                     file_name = pc_path.split("/")[-1].split(".")[0]
                     save_path = os.path.join(save_dir, f"{file_name}")
+                    print(f'******** saving files to {save_dir} *************')   
                     if self.cfg.expSourcePNG:
                         transform(
                             pc_path,
@@ -677,47 +681,55 @@ class TrainerPC2CAD(BaseTrainer):
                             make_gif=False,
                         )
 
-                        print(
-                            f'{pc_path.split("/")[-1]} encoded and saved to: {save_path}'
-                        )
-
                     # check generated CAD-Shape and save it
                     out_shape = None
                     is_valid_BRep = False
-                    try:
-                        out_shape = vec2CADsolid(out_vec)
-                        is_valid_BRep = True
-                        valid_preds += 1
-                    except Exception as e:
-                        print(str(e))
+                    
+                    import faulthandler
+                    faulthandler.enable()
+                    out_shape = vec2CADsolid(out_vec)
+                    is_valid_BRep = True
+                    valid_preds += 1
 
-                        # check generated CAD-Shape
-                        # if invalid -> generate again
-                        for cnt_retries in range(1, self.cfg.n_checkBrep_retries + 1):
-                            print(
-                                f"Trying to create a new CAD-Solid. Attempt {cnt_retries}/{self.cfg.n_checkBrep_retries}"
-                            )
+                        
+                        
+                    # try:
+                    #     import faulthandler
+                    #     faulthandler.enable()
+                    #     out_shape = vec2CADsolid(out_vec)
+                    #     is_valid_BRep = True
+                    #     valid_preds += 1
+                    # except Exception as e:
+                    #     print(str(e))
+                    
 
-                            new_batch_output = self.forward(pc)
-                            out_batch_vec = self.logits2vec(new_batch_output)
-                            out_vec = out_batch_vec.squeeze(0)
-                            out_vec = trim_vec_EOS(out_vec)
+                        # # check generated CAD-Shape
+                        # # if invalid -> generate again
+                        # for cnt_retries in range(1, self.cfg.n_checkBrep_retries + 1):
+                        #     print(
+                        #         f"Trying to create a new CAD-Solid. Attempt {cnt_retries}/{self.cfg.n_checkBrep_retries}"
+                        #     )
 
-                            try:
-                                out_shape = vec2CADsolid(out_vec)
-                                analyzer = BRepCheck_Analyzer(out_shape)
-                                if analyzer.IsValid():
-                                    print("Valid BRep-Model detected.")
-                                    is_valid_BRep = True
-                                    valid_preds += 1
-                                    break
-                                else:
-                                    print("invalid BRep-Model detected.")
-                                    continue
+                        #     new_batch_output = self.forward(pc)
+                        #     out_batch_vec = self.logits2vec(new_batch_output)
+                        #     out_vec = out_batch_vec.squeeze(0)
+                        #     out_vec = trim_vec_EOS(out_vec)
 
-                            except Exception as e:
-                                print(str(e))
-                                continue
+                        #     try:
+                        #         out_shape = vec2CADsolid(out_vec)
+                        #         analyzer = BRepCheck_Analyzer(out_shape)
+                        #         if analyzer.IsValid():
+                        #             print("Valid BRep-Model detected.")
+                        #             is_valid_BRep = True
+                        #             valid_preds += 1
+                        #             break
+                        #         else:
+                        #             print("invalid BRep-Model detected.")
+                        #             continue
+
+                        #     except Exception as e:
+                        #         print(str(e))
+                        #         continue
 
                     if not is_valid_BRep:
                         print("Could not create valid BRep-Model!")
@@ -728,7 +740,6 @@ class TrainerPC2CAD(BaseTrainer):
                         fp.create_dataset("out_vec", data=out_vec, dtype=np.int32)
 
                     step_save_path = save_path + "_dec.step"
-                    print(step_save_path)
                     if self.cfg.expSTEP:
                         try:
                             create_step_file(out_shape, step_save_path)

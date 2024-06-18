@@ -94,6 +94,8 @@ def transform(file_path, outfile, rotation, elevation, quality, exp_png=True, ma
         with open(output_path, "wb") as f:
             f.write(png)
             f.close()
+            
+        print(f'created PNG: {output_path}')   
 
     if make_gif:
         images = []
@@ -114,7 +116,7 @@ def transform(file_path, outfile, rotation, elevation, quality, exp_png=True, ma
         output_path = outfile + ".gif"
         imageio.mimsave(output_path, images)
     
-    print(f'******** wrote to {outfile} *************')        
+        print(f'created GIF: {output_path}')        
 
 
 def main():

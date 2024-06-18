@@ -11,20 +11,12 @@ import io
 
 
 # URLs der Backend-Services
-INSTANT_MESH_URL = 'http://instantmesh:5001/'
-DEEP_CAD_URL = 'http://deepcad:5002/'
-
+INSTANT_MESH_URL = 'http://instantmesh:8091/'
+DEEP_CAD_URL = 'http://deepcad:8092/'
 
 #TODO
 # OUTPUT_FOLDER = "data/pipeline_results/"
 OUTPUT_FOLDER = "results/"
-
-# def instant_dummy(input_images, out_path):
-#     return "data/obj_files/00000007.obj", "data/obj_files/00000007.obj"
-#
-#
-# def deep_dummy(pc, out_path):
-#     return "data/obj_files/00000007.obj", "data/obj_files/00000007.obj"
 
 
 def check_input_image(input_image):

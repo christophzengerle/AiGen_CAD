@@ -3,24 +3,20 @@ services:
    build: ./DeepCAD
    image: chriszengerle/aigen_deepcad:0.1
    container_name: deepcad
+   env_file: "AiGen_CAD.env"
    volumes:
      - ./DeepCAD:/usr/app/src/DeepCAD
 
      # Cluster bindings
      - ../utils/models/DeepCAD:/usr/app/src/DeepCAD/proj_log
      - ../utils/data:/usr/app/src/DeepCAD/data
-     - ../app_results/:/usr/app/src/DeepCAD/results
+     - ../utils/results:/usr/app/src/DeepCAD/results
 
-     # local Windows bindings (Christoph)
-     # - C:/ArtificialIntelligence/DeepCAD/data:/usr/app/src/DeepCAD/data
-     # - C:/ArtificialIntelligence/DeepCAD/proj_log:/usr/app/src/DeepCAD/proj_log
-
-   # network_mode: "host"
    ports:
-     - "5002:5002"
      - "8082:22" # SSH
      - "8083:6006" # Tensorboard
-     - "8084:8888" # Jupyter
+     # - "8084:8888" # Jupyter
+     - "8092:8092" # Flask
 
    command: tail -F anything #to keep Container running
    ipc: host
@@ -29,11 +25,11 @@ services:
        reservations:
          devices:
            - driver: nvidia
-             device_ids: ["0"] # binds to GPU 0 and 1
-             # count: all
+             # device_ids: ["0"] # binds to GPU 0 and 1
+             count: all
              capabilities: [gpu]
   #  healthcheck:
-  #     test: curl --fail http://localhost:5002/ || exit 1
+  #     test: curl --fail http://localhost:8092/ || exit 1
   #     interval: 3s
   #     retries: 10
   #     start_period: 10s
@@ -45,21 +41,20 @@ services:
    build: ./InstantMesh
    image: chriszengerle/aigen_instantmesh:0.1
    container_name: instantmesh
+   env_file: "AiGen_CAD.env"
    volumes:
      - ./InstantMesh:/usr/app/src/InstantMesh
 
      # Cluster bindings
      - ../utils/data:/usr/app/src/InstantMesh/data
-     - ../instantmesh_ckpts:/usr/app/src/InstantMesh/ckpts
-     # - ../utils/models/InstantMesh:/usr/app/src/InstantMesh/ckpts
-     - ../app_results/:/usr/app/src/InstantMesh/results
+     - ../utils/models/InstantMesh:/usr/app/src/InstantMesh/ckpts
+     - ../utils/results:/usr/app/src/InstantMesh/results
 
-   # network_mode: "host"
    ports:
      - "8085:22" # SSH
      - "8086:6006" # Tensorboard
-     - "8087:8888" # Jupyter
-     - "5001:5001" # Gradio
+     # - "8087:8888" # Jupyter
+     - "8091:8091" # Flask
 
   #  depends_on:
   #     deepcad:
@@ -72,12 +67,12 @@ services:
        reservations:
          devices:
            - driver: nvidia
-             device_ids: ["1"] # binds to GPU 0 and 1
-             # count: all
+             # device_ids: ["1"] # binds to GPU 0 and 1
+             count: all
              capabilities: [ gpu ]
 
   #  healthcheck:
-  #     test: curl --fail http://localhost:5001/ || exit 1
+  #     test: curl --fail http://localhost:8091/ || exit 1
   #     interval: 5s
   #     retries: 10
   #     start_period: 50s
@@ -85,14 +80,14 @@ services:
 
 
  app:
-    container_name: app
     build: ./App
     image: chriszengerle/aigen_app:0.1
+    container_name: app
     env_file: "AiGen_CAD.env"
     volumes:
       - ./App:/usr/app/src/App 
       - ../utils/data:/usr/app/src/App/data
-      - ../app_results/:/usr/app/src/App/results
+      - ../utils/results:/usr/app/src/App/results
 
     ports:
       - "8088:22" # SSH<

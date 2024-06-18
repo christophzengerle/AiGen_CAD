@@ -17,8 +17,6 @@ class ConfigPC2CAD(object):
         self.exp_dir = os.path.join(args.proj_dir, "pc2cad", args.exp_name)
         self.log_dir = os.path.join(self.exp_dir, "log")
         self.model_dir = os.path.join(self.exp_dir, "model")
-        if not args.output:
-            args.output = os.path.join(self.exp_dir, "result")
         self.gpu_ids = args.gpu_ids
         
         # set as attributes
