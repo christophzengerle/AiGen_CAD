@@ -32,7 +32,6 @@ def convert_vec2pc(vec, data_id, n_points):
         shape = vec2CADsolid(vec)
     except Exception as e:
         print("create_CAD failed", data_id)
-        print(e)
         return None
 
     try:

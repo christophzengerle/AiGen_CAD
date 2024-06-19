@@ -94,21 +94,23 @@ def create_profile_face(profile: Profile, sketch_plane: CoordSystem):
     gp_face = gp_Pln(gp_Ax3(origin, normal, x_axis))
 
     all_loops = [create_loop_3d(loop, sketch_plane) for loop in profile.children]
-    topo_face = BRepBuilderAPI_MakeFace(gp_face, all_loops[0] if all_loops else None)
-    for loop in all_loops[1:]:
-        if not loop.IsNull():
-            topo_face.Add(loop.Reversed())
-    topo_face = topo_face.Face()
+    if all_loops and not all_loops[0].IsNull():
+        topo_face = BRepBuilderAPI_MakeFace(gp_face, all_loops[0])
+        for loop in all_loops[1:]:
+            if not loop.IsNull():
+                topo_face.Add(loop.Reversed())
+        topo_face = topo_face.Face()
 
-    fix_face = ShapeFix_Face(topo_face)
-    fix_face.Perform()
-    # fix_face.FixMissingSeam()
-    fix_face.FixAddNaturalBound()
-    fix_face.FixOrientation()
-    fix_face.FixIntersectingWires()
-    fix_face.FixPeriodicDegenerated()
+        fix_face = ShapeFix_Face(topo_face)
+        fix_face.Perform()
+        # fix_face.FixMissingSeam()
+        fix_face.FixAddNaturalBound()
+        fix_face.FixOrientation()
+        fix_face.FixIntersectingWires()
+        fix_face.FixPeriodicDegenerated()
 
-    return fix_face.Face()
+        return fix_face.Face()
+    return None
 
 
 # def create_loop_3d(loop: Loop, sketch_plane: CoordSystem):

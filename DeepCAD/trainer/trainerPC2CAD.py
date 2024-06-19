@@ -14,7 +14,6 @@ from joblib import Parallel, delayed
 from OCC.Core.BRepCheck import BRepCheck_Analyzer
 from tqdm import tqdm
 from utils.step_utils import create_step_file, step_file_exists
-from utils.vec_utils import fix_pred_vecs
 
 from .loss import CADLoss
 
@@ -409,13 +408,8 @@ class TrainerPC2CAD(BaseTrainer):
         save_dir = os.path.join(
             self.cfg.exp_dir,
             "evaluation/chamfer_dist/",
-            self.cfg.ckpt,
             str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")),
         )
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-
-        save_path = os.path.join(save_dir, "test_cd_stats.txt")
 
         def process_one_cd(out_vec, gt_pc, data_id):
             out_pc = convert_vec2pc(out_vec, data_id, self.cfg.n_points)
@@ -487,7 +481,11 @@ class TrainerPC2CAD(BaseTrainer):
             "med dist:",
             med_dist,
         )
-        with open(save_path, "wr") as fp:
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        save_path = os.path.join(save_dir, "test_cd_stats.txt")
+        with open(save_path, "w+") as fp:
             print("#####" * 10, file=fp)
             print(
                 "total:",
@@ -514,13 +512,8 @@ class TrainerPC2CAD(BaseTrainer):
         save_dir = os.path.join(
             self.cfg.exp_dir,
             "evaluation/chamfer_dist/",
-            self.cfg.ckpt,
             str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")),
         )
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-
-        save_path = os.path.join(save_dir, "test_gen_stats.txt")
 
         n_measures = len(test_loader.dataset)
         result_list = []
@@ -550,7 +543,7 @@ class TrainerPC2CAD(BaseTrainer):
             jsd = jsd_between_point_cloud_sets(gen_pcs, gt_pcs, in_unit_sphere=False)
 
             gen_pcs = torch.tensor(gen_pcs).cuda()
-            ref_pcs = torch.tensor(ref_pcs).cuda()
+            ref_pcs = torch.tensor(gt_pcs).cuda()
             result = compute_cov_mmd(gen_pcs, ref_pcs, batch_size=len(gt_pcs))
             result.update({"JSD": jsd})
 
@@ -572,7 +565,12 @@ class TrainerPC2CAD(BaseTrainer):
         )
         print("average result:")
         print(avg_result)
-        with open(save_path, "wr") as fp:
+
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        save_path = os.path.join(save_dir, "test_gen_stats.txt")
+        with open(save_path, "w+") as fp:
             print("#####" * 10, file=fp)
             print(
                 "total:",
@@ -787,7 +785,6 @@ class TrainerPC2CAD(BaseTrainer):
         out_batch_vec = self.logits2vec(new_batch_output)
         out_vec = out_batch_vec.squeeze(0)
         out_vec = trim_vec_EOS(out_vec)
-        out_vec = fix_pred_vecs(out_vec)
         return out_vec
 
     def save_ckpt(self, name=None):
