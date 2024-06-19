@@ -59,11 +59,11 @@ class TrainerPC2CAD(BaseTrainer):
             cfg.lr,
             # , betas=(config.beta1, 0.9))
         )
-        self.scheduler = torch.optim.lr_scheduler.StepLR(
-            self.optimizer, cfg.lr_step_size
-        )
+        # self.scheduler = torch.optim.lr_scheduler.StepLR(
+        #     self.optimizer, cfg.lr_step_size
+        # )
 
-    # self.scheduler = GradualWarmupScheduler(self.optimizer, 1.0, cfg.warmup_step)
+        self.scheduler = GradualWarmupScheduler(self.optimizer, 1.0, cfg.warmup_step)
 
     def logits2vec(self, outputs, refill_pad=True, to_numpy=True):
         """network outputs (logits) to final CAD vector"""
@@ -777,8 +777,7 @@ class TrainerPC2CAD(BaseTrainer):
         print("********* Prediction of CAD-Model from PointCloud Completed ***********")
         print(f"********** {valid_preds} / {len(file_list)} succeeded ***********")
 
-        if step_save_path:
-            return step_save_path
+        return step_save_path
 
     def predict(self, pc_path):
         new_batch_output = self.forward(pc_path)

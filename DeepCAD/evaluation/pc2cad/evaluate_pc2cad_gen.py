@@ -21,7 +21,7 @@ RECORD_FILE = "../data/train_val_test_split.json"
 
 
 def distChamfer(a, b):
-    x, y = a, b
+    x, y = a.float(), b.float()
     bs, num_points, points_dim = x.size()
     xx = torch.bmm(x, x.transpose(2, 1))
     yy = torch.bmm(y, y.transpose(2, 1))

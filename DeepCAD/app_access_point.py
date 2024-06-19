@@ -81,13 +81,12 @@ def deepcad_pc2cad():
         agent.cfg.output = output_path
     agent.cfg.expPNG = True
     agent.cfg.expSTEP = True
-    try:
-        out_path = agent.pc2cad()
+    
+    out_path = agent.pc2cad()
+    if out_path:
         response = {"STEP_path": out_path}
         return jsonify(response)
-    except:
-        return "DeepCAD could not create CAD-Model", 400
-        # make_response("DeepCAD could not create CAD-Model!", 500)
+    return "DeepCAD could not create CAD-Model", 400
 
 
 @app.route("/STEP2Object", methods=["POST"])

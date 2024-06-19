@@ -105,7 +105,6 @@ def generate_cad(pc_path, out_path):
     }
     response = requests.post(DEEP_CAD_URL + "/GenerateCAD", json=data)
     if response.status_code != 400:
-        print(response.json())
         response_data = response.json()
         STEP_path = response_data['STEP_path']
     
