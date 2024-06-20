@@ -6,6 +6,7 @@ import trimesh
 from config.configPC2CAD import ConfigPC2CAD
 from flask import Flask, jsonify, make_response, request
 from trainer.trainerPC2CAD import TrainerPC2CAD
+from utils.obj_utils import create_mesh_from_step
 
 app = Flask(__name__)
 
@@ -81,7 +82,7 @@ def deepcad_pc2cad():
         agent.cfg.output = output_path
     agent.cfg.expPNG = True
     agent.cfg.expSTEP = True
-    
+
     out_path = agent.pc2cad()
     if out_path:
         response = {"STEP_path": out_path}
@@ -96,20 +97,7 @@ def step2Obj():
     step_path = data["step_path"]
     out_path = data["out_path"]
 
-    m = trimesh.Trimesh(
-        **trimesh.interfaces.gmsh.load_gmsh(
-            file_name=step_path,
-            gmsh_args=[
-                ("Mesh.Algorithm", 1),  # Different algorithm types, check them out
-                (
-                    "Mesh.CharacteristicLengthFromCurvature",
-                    50,
-                ),  # Tuning the smoothness, + smoothness = + time
-                ("General.NumThreads", 10),  # Multithreading capability
-                ("Mesh.MinimumCirclePoints", 32),
-            ],
-        )
-    )
+    m = create_mesh_from_step(step_path)
 
     outfile = os.path.join(out_path, "deepCAD.obj")
     m.export(outfile, file_type="obj")

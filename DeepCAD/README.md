@@ -1,24 +1,26 @@
 # DeepCAD
-This repository provides source code for our paper:
 
-[DeepCAD: A Deep Generative Network for Computer-Aided Design Models](https://arxiv.org/abs/2105.09492)
-
-[Rundi Wu](https://chriswu1997.github.io), [Chang Xiao](http://chang.engineer), [Changxi Zheng](http://www.cs.columbia.edu/~cxz/index.htm)
-
-ICCV 2021 (camera ready version coming soon)
+We propose a Encoder - Decoder Architecture to reconstruct a CAD - Command Sequence from a 3D-Pointcloud.
 
 <p align="center">
-  <img src='teaser.png' width=600>
+  <img src='./.assets/Architecture/architecture_pc2cad.jpg' width=600>
 </p>
 
-We also release the Onshape CAD data parsing scripts here: [onshape-cad-parser](https://github.com/ChrisWu1997/onshape-cad-parser).
+The main problem of our project is to reconstruct a CAD - Command Sequence.
+
+<p align="center">
+  <img src='./.assets/teaser.png' width=600>
+</p>
+
+We therefore used the original DeepCAD - Model proposed by [Rundi Wu](https://chriswu1997.github.io), [Chang Xiao](http://chang.engineer), [Changxi Zheng](http://www.cs.columbia.edu/~cxz/index.htm) in the paper [DeepCAD: A Deep Generative Network for Computer-Aided Design Models](https://arxiv.org/abs/2105.09492) as a starting point, built upon it and adjusted it for our special Use-Case.
+
+Link to the original Repository [DeepCAD](https://github.com/ChrisWu1997/DeepCAD)
 
 ## Prerequisites
 
 - Linux
-- NVIDIA GPU + CUDA CuDNN
-- Python 3.7, PyTorch 1.5+
-
+- NVIDIA GPU + CUDA CuDNN 11.8
+- Python 3.10, PyTorch 2.2.2-cuda11.8
 
 ## Dependencies
 
@@ -31,116 +33,182 @@ $ pip install -r requirements.txt
 Install [pythonocc](https://github.com/tpaviot/pythonocc-core) (OpenCASCADE) by conda:
 
 ```bash
-$ conda install -c conda-forge pythonocc-core=7.5.1
+$ conda install -n base conda-libmamba-solver -y
+$ conda install -c conda-forge pythonocc-core=7.7.2 --solver=libmamba -y
 ```
 
+Install [PointNet++](https://github.com/erikwijmans/Pointnet2_PyTorch) through pip:
+
+```bash
+$ pip install "git+https://github.com/erikwijmans/Pointnet2_PyTorch#egg=pointnet2_ops&subdirectory=pointnet2_ops_lib"
+```
+
+## Docker
+
+Install and run the app via a Dockercontainer:
+
+```bash
+$ docker build -t deepcad .
+```
 
 ## Data
 
-Download data from [here](http://www.cs.columbia.edu/cg/deepcad/data.tar) ([backup](https://drive.google.com/drive/folders/1mSJBZjKC-Z5I7pLPTgb4b5ZP-Y6itvGG?usp=sharing)) and extract them under `data` folder. 
-- `cad_json` contains the original json files that we parsed from Onshape and each file describes a CAD construction sequence. 
+Download data from [kaggle](https://www.kaggle.com/datasets/vitalygladyshev/deepcad) and extract them under `data` folder.
+
+- `cad_json` contains the original json files that we parsed from Onshape and each file describes a CAD construction sequence.
 - `cad_vec` contains our vectorized representation for CAD sequences, which serves for fast data loading. They can also be obtained using `dataset/json2vec.py`.
-TBA.
-- Some evaluation metrics that we use requires ground truth point clouds. Run:
-  ```bash
-  $ cd dataset
-  $ python json2pc.py --only_test
-  ```
-The data we used are parsed from Onshape public documents with links from [ABC dataset](https://archive.nyu.edu/handle/2451/61215). We also release our parsing scripts [here](https://github.com/ChrisWu1997/onshape-cad-parser) for anyone who are interested in parsing their own data.
+- `pc_cad` contains the extracted Pointclouds from the original CAD-Model
+- `train_val_test_split.json` the json - file containing indices used to split the trainingsdata
 
+The data we used are parsed from Onshape public documents with links from [ABC dataset](https://archive.nyu.edu/handle/2451/61215).
+We also provide a list of faulty models in the dataset which are filterd out while loading. You can find this list in `dataset/faulty_cad_models.json`
 
-## Training
-See all hyper-parameters and configurations under `config` folder. To train the autoencoder:
+## Models
 
-```bash
-$ python train.py --exp_name newDeepCAD -g 0
-```
+We provide three different Model classes:
 
-For random generation, further train a latent GAN:
-
-```bash
-# encode all data to latent space
-$ python test.py --exp_name newDeepCAD --mode enc --ckpt 1000 -g 0
-
-# train latent GAN (wgan-gp)
-$ python lgan.py --exp_name newDeepCAD --ae_ckpt 1000 -g 0
-```
-
-The trained models and experment logs will be saved in `proj_log/newDeepCAD/` by default. 
-
-
-
-## Testing and Evaluation
-
-#### __Autoencoding__
-
-  After training the autoencoder, run the model to reconstruct all test data:
-
-  ```bash
-  $ python test.py --exp_name newDeepCAD --mode rec --ckpt 1000 -g 0
-  ```
-  The results will be saved in`proj_log/newDeepCAD/results/test_1000` by default in the format of `h5` (CAD sequence saved in vectorized representation).
-
-  To evaluate the results:
-
-  ```bash
-  $ cd evaluation
-  # for command accuray and parameter accuracy
-  $ python evaluate_ae_acc.py --src ../proj_log/newDeepCAD/results/test_1000
-  # for chamfer distance and invalid ratio
-  $ python evaluate_ae_cd.py --src ../proj_log/newDeepCAD/results/test_1000 --parallel
-  ```
-
-#### __Random Generation__
-
-  After training the latent GAN, run latent GAN and the autoencoder to do random generation:
-
-  ```bash
-  # run latent GAN to generate fake latent vectors
-  $ python lgan.py --exp_name newDeepCAD --ae_ckpt 1000 --ckpt 200000 --test --n_samples 9000 -g 0
-  
-  # run the autoencoder to decode into final CAD sequences
-  $ python test.py --exp_name newDeepCAD --mode dec --ckpt 1000 --z_path proj_log/newDeepCAD/lgan_1000/results/fake_z_ckpt200000_num9000.h5 -g 0
-  ```
-  The results will be saved in`proj_log/newDeepCAD/lgan_1000/results` by default.
-
-  To evaluate the results by COV, MMD and JSD:
-
-  ```bash
-  $ cd evaluation
-  $ sh run_eval_gen.sh ../proj_log/newDeepCAD/lgan_1000/results/fake_z_ckpt200000_num9000_dec 1000 0
-  ```
-  The script `run_eval_gen.sh` combines `collect_gen_pc.py` and `evaluate_gen_torch.py`. 
-  You can also run these two files individually with specified arguments.
-
+- `AutoEncoder` is the pretrained Model available from the original DeepCAD. It takes a CAD - Construction Sequence and reconstructs it.
+- `pcEncoder` based on the [PointNet++](https://github.com/erikwijmans/Pointnet2_PyTorch) Architecture extracts Features from a Pointcloud and encodes it into a latent space.
+- `pc2cad` is our final Model proposed in this project. It combines the prior two Architectures into one coherent model. It takes a Pointcloud as input, encodes it into a latent space and reconstructs a CAD - Command Sequence with the Decoder-Part from the AutoEncoder.
 
 ## Pre-trained models
 
-Download pretrained model from [here](http://www.cs.columbia.edu/cg/deepcad/pretrained.tar) ([backup](https://drive.google.com/file/d/16RzOChCdLM5L1VUSFpgHwqU7JoQOF2Nd/view?usp=sharing)) and extract it under `proj_log`. All testing commands shall be able to excecuted directly, by specifying `--exp_name=pretrained` when needed.
+You can find available pretrained Checkpoints for all three models. Please extract them into thair corresponding folders under `proj_log`
 
+- `AutoEncoder` `proj_log/ae`
+- `pcEncoder` `proj_log/pcEnc`
+- `pc2cad` `proj_log/pc2cad`
 
-## Visualization and Export
-We provide scripts to visualize CAD models and export the results to `.step` files, which can be loaded by almost all modern CAD softwares.
+## Model - Execution
+
+The following explains how to train and evaluate the final `pc2cad` Architecture, as well as generate predictions in Inference. These procedures are the same for the other models and can be adapted 1:1.
+<br>
+The main entrypoint is `pc2cad.py` in the root directory. It orchestrates the different modes you want to run. It can be called via the CLI. At Inferece the model can also be accessed via a REST-API over `accesspoint.py`.
+<br>
+Bevor executing please configure the model hyper-parameters under `config` folder.
+
+### Training
+
+To train the Model with random initial weights:
+
 ```bash
-$ cd utils
-$ python show.py --src {source folder} # visualize with opencascade
-$ python export2step.py --src {source folder} # export to step format
+$ python pc2cad.py --exec train --exp_name pc2cad --nr_epochs 1000 --batch_size 256 --n_points 8096 --noise --num_workers 8 -g 0
 ```
-Script to create CAD modeling sequence in Onshape according to generated outputs: TBA.
+
+- `--exec train` sets the Execution-Type to Training
+- `--exp_name` give the experiment a name
+- `--nr_epochs` number Epochs you want to train
+- `--batch_size` number of samples per batch
+- `--n_points` number of points per input Pointcloud. If the set n_points is lower than the actual number of points, the given n_points will randomly be samples from the input. The files in the Traininsdata provided all consists of 8096 points.
+- `--noise` Boolean: activates a random noise added to the input Pointcloud
+- `--num_workers` number of threads used by dataloader
+- `-g` set visible GPU-index
+
+<br>
+
+You can also load an existing Checkpoint and continue training. Therefore set the following flags:
+
+- `--continue` Boolean: sets the mode to continue training from existing checkpoints
+- `--ckpt` name of the checkpoint to continue from e.g. latest
+
+<br>
+
+Last you can also load pretrained AutoEncoder and pcEncoder - Checkpoints and continue training. Therefore set the following flags:
+
+- `--continue` Boolean: sets the mode to continue training from existing checkpoints
+- `--load_modular_ckpt` Boolean: activates loading of modular pcEncoder and AutoEncoder - Checkpoints
+- `--pce_exp_name` the pcEncoder - Experiment which contains the pretrained models
+- `--pce_ckpt` name of the pcEncoder - checkpoint to continue from e.g. latest
+- `--ae_exp_name` the AutoEncoder - Experiment which contains the pretrained models
+- `--ae_ckpt` name of the AutoEncoder - checkpoint to continue from e.g. latest
+
+<br>
+
+You can set the `validation frequency` and `save frequency` in the `config-file`. These will determine when the model will be evaluated and testen while training.
+<br>
+
+The trained Checkpoints and experment logs will be saved into `proj_log/pc2cad/{exp_name}/`
+<br>
+You can init a tensorboard to visualize the logs with the following command:
+
+```bash
+$ tensorboard --logdir proj_log/pc2cad/{exp_name}/log --host 0.0.0.0
+```
+
+### Evaluation
+
+After training evaluate the model using:
+
+```bash
+$ python pc2cad.py --exec eval --mode acc --exp_name pc2cad --ckpt latest --n_points 8096 --num_worker 8 -g 0
+$ python pc2cad.py --exec eval --mode cd --exp_name pc2cad --ckpt latest --n_points 8096 --num_worker 8 -g 0
+$ python pc2cad.py --exec eval --mode gen --exp_name pc2cad --ckpt latest --n_points 8096 --num_worker 8 -g 0
+```
+
+- `--exec eval` sets the Execution-Type to Evaluation
+- `--exp_name` the name of the experiment to evaluate
+- `--ckpt` the exact Checkpoint to evaluate
+- `--n_points` number of points per input Pointcloud. If the set n_points is lower than the actual number of points, the given n_points will randomly be samples from the input. The files in the Traininsdata provided all consists of 8096 points.
+- `--mode` choose one of the three different evaluation modes.
+- `--mode acc` for command accuray and parameter accuracy.
+- `--mode cd` for chamfer distance.
+- `--mode gen` for evaluation by COV, MMD and JSD.
+
+<br>
+
+If you run the evaluation via the main-skript `pc2cad` it uses the `train-split` from the traininsdata.
+You can also run these files on your own generated data. Therefore use the skripts provided in the `evaluation` folder.
+
+<br>
+
+All the results will be saved to `proj_log/pc2cad/{exp_name}/evaluation`
+
+### Inference
+
+To generate a CAD - Command Sequence from a Pointcloud use following command:
+
+```bash
+$ python pc2cad.py --exec inf --exp_name pc2cad_Exp --ckpt latest --pc_root data/cad_pc/0044/00440420.ply --n_points 8096 --output ./results  --expSTEP --expPNG --expGIF -g 0
+```
+
+- `--exec inf` sets the Execution-Type to Inference
+- `--exp_name` the name of the experiment
+- `--ckpt` the exact Checkpoint to use for the prediction
+- `--pc_root` the input Pointcloud to reconstruct a CAD Sequence from. Can be a directory or exact filename
+- `--n_points` number of points per input Pointcloud. If the set n_points is lower than the actual number of points, the given n_points will randomly be samples from the input. The files in the Traininsdata provided all consists of 8096 points.
+- `--expSTEP` activate automatic conversion from output-vector to .STEP - File
+- `--expPNG` activate automatic export of a PNG-file of the result
+- `--expGIF` activate automatic export of a GIF-file of the result
+- `--expOBJ` activate automatic export of a OBJ-file of the result
+- `-g` GPU-index to use
+
+<br>
+
+By default the results will be saved to `proj_log/pc2cad/{exp_name}/results`. You can set a custom output-path with the `--output` flag.
+
+## Visualization and Export of Results
+
+We provide scripts to visualize CAD models and export the results to `.step` files, which can be loaded by almost all modern CAD softwares, as well as exporting renders of the CAD - Model.
+
+<br>
+
+To visualize the predicted model run:
+
+```bash
+$ python utils/show.py --src {source folder} # visualize with opencascade
+```
+
+You can convert the predicted vector to the correct filetype needed by either specifying the correspoding flags in Inference-Mode or by running the correct standalone skript.
+
+- `utils/seq2step.py` converts the predicted vector to a CAD - Command Sequence to a .STEP file describing the resulting BRep-Model
+- `utils/step2render.py` converts the predicted .STEP file into a Mesh-Object which can be rendered and saved as either PNG, GIF or OBJ - File
+
+There are also a few more skripts which are used for internal filetype conversions but can also be called manually.
+
+- `dataset/json2vec.py` this file converts a CAD - Command Sequence from json format to a vector
+- `dataset/json2pc.py` this file converts a CAD - Command Sequence from json format to a pointcloud
+- `dataset/vec2pc.py` this file converts a CAD - Command Sequence from vectors to a pointcloud
 
 ## Acknowledgement
-We would like to thank and acknowledge referenced codes from [DeepSVG](https://github.com/alexandre01/deepsvg), [latent 3d points](https://github.com/optas/latent_3d_points) and [PointFlow](https://github.com/stevenygd/PointFlow).
 
-## Cite
-
-Please cite our work if you find it useful:
-```
-@InProceedings{Wu_2021_ICCV,
-    author    = {Wu, Rundi and Xiao, Chang and Zheng, Changxi},
-    title     = {DeepCAD: A Deep Generative Network for Computer-Aided Design Models},
-    booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
-    month     = {October},
-    year      = {2021},
-    pages     = {6772-6782}
-}
-```
+We would like to thank and acknowledge referenced codes from [DeepCAD](https://github.com/ChrisWu1997/DeepCAD).

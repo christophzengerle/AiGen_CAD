@@ -68,7 +68,6 @@ class ConfigPC2CAD(object):
 
         self.val_frequency = 1
         self.save_frequency = 50
-        
 
         self.loss_weights = {"loss_cmd_weight": 1.0, "loss_args_weight": 2.0}
 
@@ -260,6 +259,12 @@ class ConfigPC2CAD(object):
             action="store_true",
             default=False,
             help="export gif file for decoded CAD model",
+        )
+        parser.add_argument(
+            "--expOBJ",
+            action="store_true",
+            default=False,
+            help="export mesh file for decoded CAD model as obj file",
         )
         parser.add_argument(
             "-g",

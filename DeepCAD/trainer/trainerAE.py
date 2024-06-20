@@ -16,12 +16,12 @@ from .loss import CADLoss
 from .scheduler import GradualWarmupScheduler
 
 sys.path.append("..")
-from cadlib.macro import trim_vec_EOS
 from cadlib.macro import *
-from model import CADTransformer
+from cadlib.macro import trim_vec_EOS
 from cadlib.visualize import vec2CADsolid
+from model import CADTransformer
 from utils.file_utils import walk_dir
-from utils.step2png import transform
+from utils.step2render import transform
 from utils.step_utils import create_step_file, step_file_exists
 
 

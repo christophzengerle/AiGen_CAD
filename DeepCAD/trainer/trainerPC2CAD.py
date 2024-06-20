@@ -31,7 +31,7 @@ from model.pointcloud2cad import PointCloud2CAD
 from trainer.scheduler import GradualWarmupScheduler
 from utils import read_ply
 from utils.file_utils import walk_dir
-from utils.step2png import transform
+from utils.step2render import transform
 
 from .base import BaseTrainer
 from .trainerAE import TrainerAE
@@ -747,7 +747,7 @@ class TrainerPC2CAD(BaseTrainer):
                             print(str(e.with_traceback))
                             continue
 
-                    if self.cfg.expPNG or self.cfg.expGIF:
+                    if self.cfg.expPNG or self.cfg.expGIF or self.cfg.expOBJ:
                         try:
                             png_path = step_save_path.split(".")[0]
                             if step_file_exists(step_save_path):
@@ -759,6 +759,7 @@ class TrainerPC2CAD(BaseTrainer):
                                     "medium",
                                     exp_png=self.cfg.expPNG,
                                     make_gif=self.cfg.expGIF,
+                                    exp_obj=self.cfg.expOBJ,
                                 )
                                 print(f"Image-Output for {png_path} created.")
                             else:
