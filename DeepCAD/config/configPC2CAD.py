@@ -57,7 +57,8 @@ class ConfigPC2CAD(object):
     def set_configuration(self):
         # Pc-Encoder
         self.lr = 1e-3  # initial LR
-        self.lr_step_size = 100  # Nr Epochs after wich LR will be decresed
+        self.warmup_step = 100  # Nr warmup Epochs, LR will increase from 0 to self.lr 
+        # self.lr_step_size = 100  # Nr Epochs after wich LR will be decresed
         # self.beta1 = 0.5
         # self.grad_clip = None
         self.noiseAmount = 0.02

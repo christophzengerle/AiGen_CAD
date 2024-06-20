@@ -62,8 +62,11 @@ class TrainerPC2CAD(BaseTrainer):
         # self.scheduler = torch.optim.lr_scheduler.StepLR(
         #     self.optimizer, cfg.lr_step_size
         # )
+        
+        # reduce LR by factor of 0.1 if the validation loss does not improve for 10 epochs
+        self.after_warmup_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', factor=0.1, patience=10)
 
-        self.scheduler = GradualWarmupScheduler(self.optimizer, 1.0, cfg.warmup_step)
+        self.scheduler = GradualWarmupScheduler(self.optimizer, 1.0, cfg.warmup_step, self.after_warmup_scheduler)
 
     def logits2vec(self, outputs, refill_pad=True, to_numpy=True):
         """network outputs (logits) to final CAD vector"""
