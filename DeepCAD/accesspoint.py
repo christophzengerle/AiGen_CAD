@@ -28,6 +28,8 @@ EXPORT_SOURCE_PNG = True
 EXPORT_STEP = True
 EXPORT_PNG = True
 
+GPU_IDS = "1"
+
 
 cfg = ConfigPC2CAD()
 cfg.model_dir = os.path.join(cfg.proj_dir, f"pc2cad/{DEEPCAD_EXPERIMENT_NAME}/model")
@@ -42,6 +44,9 @@ cfg.ae_ckpt = "ckpt_epoch1000"
 cfg.expSourcePNG = EXPORT_SOURCE_PNG
 cfg.expSTEP = EXPORT_STEP
 cfg.expPNG = EXPORT_PNG
+
+cfg.gpu_ids = GPU_IDS
+os.environ["CUDA_VISIBLE_DEVICES"] = str(cfg.gpu_ids)
 
 agent = TrainerPC2CAD(cfg)
 print("Loading DeepCAD-Model...")
@@ -63,6 +68,8 @@ def obj2pc():
     m = trimesh.load_mesh(obj_path)
     path = os.path.join(out_path, "deepCAD.ply")
     pc = trimesh.PointCloud(m.sample(POINTCLOUD_N_POINTS))
+    # swap y and z axis
+    pc.vertices[:, [2, 1]] = pc.vertices[:, [1, 2]]
     pc.export(path, file_type="ply")
     response = {"path": path}
 

@@ -1,5 +1,5 @@
 services:
-  deepcad:
+ deepcad:
     build: ./DeepCAD
     image: chriszengerle/aigen_deepcad:0.1
     container_name: deepcad
@@ -59,7 +59,7 @@ services:
 #        reservations:
 #          devices:
 #            - driver: nvidia
-#              device_ids: ["0"] # binds to GPU 0 and 1
+#              device_ids: ["1"] # binds to GPU 0 and 1
 #              # count: all
 #              capabilities: [ gpu ]
 #  app:

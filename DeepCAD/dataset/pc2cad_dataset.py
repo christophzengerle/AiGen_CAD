@@ -60,9 +60,10 @@ class ShapeCodesDataset(Dataset):
             random_noise = True
             if random_noise:
                 if random.choice([True, False]):
+                    pc = pc * (np.random.uniform(
+                        -self.noiseAmount, self.noiseAmount, (1, 3)) + 1)          
                     pc = pc + np.random.uniform(
-                        -self.noiseAmount, self.noiseAmount, (pc.shape[0], 1)
-                    )
+                        -self.noiseAmount/10, self.noiseAmount/10, (pc.shape[0], pc.shape[1]))
             else:
                 pc = pc + np.random.uniform(
                     -self.noiseAmount, self.noiseAmount, (pc.shape[0], 1)

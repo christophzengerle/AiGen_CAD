@@ -8,7 +8,7 @@ from io import BytesIO
 import imageio
 import numpy as np
 import trimesh
-from obj_utils import create_mesh_from_step
+from utils.obj_utils import create_mesh_from_step
 from PIL import Image
 from pyvirtualdisplay import Display
 from trimesh import transformations

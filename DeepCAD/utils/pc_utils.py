@@ -8,8 +8,11 @@ def read_ply(path):
         x = np.array(plydata["vertex"]["x"])
         y = np.array(plydata["vertex"]["y"])
         z = np.array(plydata["vertex"]["z"])
-        vertex = np.stack([x, y, z], axis=1)
-        return vertex
+        pc = np.stack([x, y, z], axis=1)
+        pc = (pc - pc.min())
+        pc = np.divide(pc, pc.max())
+        pc = pc * 2 - 1
+        return pc
 
 
 def write_ply(points, filename, text=False):

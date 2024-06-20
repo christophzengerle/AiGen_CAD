@@ -53,4 +53,4 @@ RUN conda install -c conda-forge pythonocc-core=7.7.2 --solver=libmamba -y
 # Install PointNet2 ops
 RUN pip install "git+https://github.com/erikwijmans/Pointnet2_PyTorch#egg=pointnet2_ops&subdirectory=pointnet2_ops_lib"
 
-CMD ["python", "accesspoint.py"]
+# CMD ["python", "accesspoint.py"]
