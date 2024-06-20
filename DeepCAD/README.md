@@ -78,7 +78,7 @@ We provide three different Model classes:
 You can find available pretrained Checkpoints for all three models. Download [Models](https://drive.google.com/drive/folders/1e9s5W81YH7RgqIV2yr-h61pDEQ6N4Kix?usp=sharing) and extract them into their the `proj_log` folder. Please keep the following scheme.
 
 - `proj_log/ae` AutoEncoder
-- `proj_log/pcEnc` pcEncoder
+- `proj_log/pce` pcEncoder
 - `proj_log/pc2cad` pc2cad
 
 ## Model - Execution
