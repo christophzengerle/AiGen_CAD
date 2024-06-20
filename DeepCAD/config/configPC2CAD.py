@@ -9,7 +9,6 @@ from utils import ensure_dirs
 
 class ConfigPC2CAD(object):
     def __init__(self):
-        self.set_configuration()
         _, args = self.parse()
 
         self.pc_root = args.pc_root
@@ -18,12 +17,16 @@ class ConfigPC2CAD(object):
         self.log_dir = os.path.join(self.exp_dir, "log")
         self.model_dir = os.path.join(self.exp_dir, "model")
         self.gpu_ids = args.gpu_ids
-        
+
         # set as attributes
-        print("----Pc-Experiment Configuration-----")
         for k, v in args.__dict__.items():
-            print("{0:20}".format(k), v)
             self.__setattr__(k, v)
+
+        self.set_configuration()
+
+        print("----Pc-Experiment Configuration-----")
+        for k, v in self.__dict__.items():
+            print("{0:20}".format(k), v)
 
         if args.gpu_ids is not None:
             os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_ids)
@@ -55,13 +58,25 @@ class ConfigPC2CAD(object):
                 json.dump(self.__dict__, f, indent=2)
 
     def set_configuration(self):
-        # Pc-Encoder
+        # Train Settings
         self.lr = 1e-3  # initial LR
-        self.warmup_step = 100  # Nr warmup Epochs, LR will increase from 0 to self.lr 
+        self.warmup_step = 100  # Nr warmup Epochs, LR will increase from 0 to self.lr
         # self.lr_step_size = 100  # Nr Epochs after wich LR will be decresed
         # self.beta1 = 0.5
         # self.grad_clip = None
         self.noiseAmount = 0.02
+
+        self.save_frequency = 50
+        self.val_frequency = 1
+
+        self.loss_weights = {"loss_cmd_weight": 1.0, "loss_args_weight": 2.0}
+
+        # General Settings
+        self.expSourcePNG = True
+
+        self.faulty_cad_models_path = "dataset/faulty_cad_models.json"
+
+        self.n_checkBrep_retries = 5  # num retries to create valid CAD model
 
         # Autoencoder
         self.args_dim = ARGS_DIM  # 256
@@ -83,18 +98,6 @@ class ConfigPC2CAD(object):
 
         self.max_num_groups = 30
         self.max_total_len = MAX_TOTAL_LEN
-
-        self.n_checkBrep_retries = 5  # num retries to create valid CAD model
-
-        self.loss_weights = {"loss_cmd_weight": 1.0, "loss_args_weight": 2.0}
-
-        # General Settings
-        self.save_frequency = 50
-        self.val_frequency = 5
-
-        self.expSourcePNG = True
-        
-        self.faulty_cad_models_path = "dataset/faulty_cad_models.json"
 
     def parse(self):
         parser = argparse.ArgumentParser()

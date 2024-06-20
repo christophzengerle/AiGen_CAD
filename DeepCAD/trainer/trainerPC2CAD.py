@@ -62,11 +62,15 @@ class TrainerPC2CAD(BaseTrainer):
         # self.scheduler = torch.optim.lr_scheduler.StepLR(
         #     self.optimizer, cfg.lr_step_size
         # )
-        
-        # reduce LR by factor of 0.1 if the validation loss does not improve for 10 epochs
-        self.after_warmup_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', factor=0.1, patience=10)
 
-        self.scheduler = GradualWarmupScheduler(self.optimizer, 1.0, cfg.warmup_step, self.after_warmup_scheduler)
+        # reduce LR by factor of 0.1 if the validation loss does not improve for 10 epochs
+        self.after_warmup_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            self.optimizer, mode="min", factor=0.1, patience=10
+        )
+
+        self.scheduler = GradualWarmupScheduler(
+            self.optimizer, 1.0, cfg.warmup_step, self.after_warmup_scheduler
+        )
 
     def logits2vec(self, outputs, refill_pad=True, to_numpy=True):
         """network outputs (logits) to final CAD vector"""
@@ -151,12 +155,13 @@ class TrainerPC2CAD(BaseTrainer):
                     )
 
                 self.record_losses(eval_losses, mode="eval")
+                self.record_and_update_learning_rate(
+                    np.mean(eval_losses["losses_args"])
+                )
 
             if clock.epoch % self.cfg.save_frequency == 0:
                 self.test(test_loader)
                 self.save_ckpt()
-
-            self.record_and_update_learning_rate()
 
             clock.tock()
 
@@ -882,12 +887,12 @@ class TrainerPC2CAD(BaseTrainer):
 
             print("Checkpoint loaded successfully.")
 
-    def record_and_update_learning_rate(self):
+    def record_and_update_learning_rate(self, metric):
         """record and update learning rate"""
         self.train_tb.add_scalar(
             "learning_rate", self.optimizer.param_groups[-1]["lr"], self.clock.epoch
         )
-        self.scheduler.step()
+        self.scheduler.step(metrics=metric)
 
     def record_losses(self, losses, mode="train"):
         """record loss to tensorboard"""

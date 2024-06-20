@@ -1,5 +1,5 @@
 services:
- deepcad:
+  deepcad:
     build: ./DeepCAD
     image: chriszengerle/aigen_deepcad:0.1
     container_name: deepcad
@@ -8,14 +8,14 @@ services:
       - ./DeepCAD:/usr/app/src/DeepCAD
 
       # Cluster bindings
-      - ../utils/models/DeepCAD:/usr/app/src/DeepCAD/proj_log
-      - ../utils/data:/usr/app/src/DeepCAD/data
-      - ../utils/results:/usr/app/src/DeepCAD/results
+      # - ../utils/models/DeepCAD:/usr/app/src/DeepCAD/proj_log
+      # - ../utils/data:/usr/app/src/DeepCAD/data
+      # - ../utils/results:/usr/app/src/DeepCAD/results
 
       # local Windows bindings (Christoph)
-      # - C:/ArtificialIntelligence/DeepCAD/data:/usr/app/src/DeepCAD/data
-      # - C:/ArtificialIntelligence/DeepCAD/proj_log:/usr/app/src/DeepCAD/proj_log
-      # - C:/ArtificialIntelligence/DeepCAD/results:/usr/app/src/DeepCAD/results
+      - C:/ArtificialIntelligence/DeepCAD/data:/usr/app/src/DeepCAD/data
+      - C:/ArtificialIntelligence/DeepCAD/proj_log:/usr/app/src/DeepCAD/proj_log
+      - C:/ArtificialIntelligence/DeepCAD/results:/usr/app/src/DeepCAD/results
 
     ports:
       - "8082:22" # SSH
