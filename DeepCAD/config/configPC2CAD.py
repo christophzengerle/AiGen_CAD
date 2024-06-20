@@ -66,8 +66,9 @@ class ConfigPC2CAD(object):
         # self.grad_clip = None
         self.noiseAmount = 0.02
 
-        self.save_frequency = 50
         self.val_frequency = 1
+        self.save_frequency = 50
+        
 
         self.loss_weights = {"loss_cmd_weight": 1.0, "loss_args_weight": 2.0}
 

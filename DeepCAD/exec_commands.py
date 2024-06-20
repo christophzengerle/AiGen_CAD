@@ -5,8 +5,8 @@ import os
 # less nohup.out  -> view output
 
 
-cmd = "python pc2cad.py --exec train --exp_name pc2cad_ReduceLRscheduler_8096_1000epochs --batch_size 128 \
-    --nr_epochs 1000 --noise --n_points 4096 -g 0"
+# cmd = "nohup python pc2cad.py --exec train --exp_name pc2cad_ReduceLRscheduler_8096_1000epochs --batch_size 590 \
+#     --nr_epochs 1000 --noise --n_points 8096 -g 0 &"
 #   --continue --load_modular_ckpt --pce_exp_name pcEncoder --pce_ckpt latest \
 #  --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000 &"
 
@@ -31,6 +31,6 @@ cmd = "python pc2cad.py --exec train --exp_name pc2cad_ReduceLRscheduler_8096_10
 #         --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000"
 
 
-# cmd = "tensorboard --logdir proj_log/pc2cad/pc2cad_ReduceLRscheduler_8096_1000epochs/log --host 0.0.0.0"
+cmd = "tensorboard --logdir proj_log/pc2cad/pc2cad_ReduceLRscheduler_8096_1000epochs/log --host 0.0.0.0"
 
 os.system(cmd)
