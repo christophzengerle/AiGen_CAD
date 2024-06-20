@@ -1,6 +1,6 @@
 # DeepCAD
 
-We propose a Encoder - Decoder Architecture to reconstruct a CAD - Command Sequence from a 3D-Pointcloud.
+As second part of our AiGen - CAD Architecture we propose a Encoder - Decoder Architecture to reconstruct a CAD - Command Sequence from a 3D-Pointcloud.
 
 <p align="center">
   <img src='./.assets/Architecture/architecture_pc2cad.jpg' width=600>
@@ -45,10 +45,11 @@ $ pip install "git+https://github.com/erikwijmans/Pointnet2_PyTorch#egg=pointnet
 
 ## Docker
 
-Install and run the app via a Dockercontainer:
+Install and run the app inside a Dockercontainer:
 
 ```bash
 $ docker build -t deepcad .
+$ docker exec -it deepcad bash
 ```
 
 ## Data
@@ -61,7 +62,8 @@ Download data from [kaggle](https://www.kaggle.com/datasets/vitalygladyshev/deep
 - `train_val_test_split.json` the json - file containing indices used to split the trainingsdata
 
 The data we used are parsed from Onshape public documents with links from [ABC dataset](https://archive.nyu.edu/handle/2451/61215).
-We also provide a list of faulty models in the dataset which are filterd out while loading. You can find this list in `dataset/faulty_cad_models.json`
+If you want to train only the pcEncoder you need the vectors of the latent space. You can download [cad_all_zs](https://drive.google.com/file/d/1PhhCFhf9JuNi7AfjqV_f1wPLs0Sh7eIe/view?usp=sharing) and extract into the `data` folder.
+We also provide a list of faulty models in the dataset which are getting filterd out while loading. You can find this list in `dataset/faulty_cad_models.json`
 
 ## Models
 
@@ -71,19 +73,19 @@ We provide three different Model classes:
 - `pcEncoder` based on the [PointNet++](https://github.com/erikwijmans/Pointnet2_PyTorch) Architecture extracts Features from a Pointcloud and encodes it into a latent space.
 - `pc2cad` is our final Model proposed in this project. It combines the prior two Architectures into one coherent model. It takes a Pointcloud as input, encodes it into a latent space and reconstructs a CAD - Command Sequence with the Decoder-Part from the AutoEncoder.
 
-## Pre-trained models
+### Pre-trained models
 
-You can find available pretrained Checkpoints for all three models. Please extract them into thair corresponding folders under `proj_log`
+You can find available pretrained Checkpoints for all three models. Download [Models](https://drive.google.com/drive/folders/1e9s5W81YH7RgqIV2yr-h61pDEQ6N4Kix?usp=sharing) and extract them into their the `proj_log` folder. Please keep the following scheme.
 
-- `AutoEncoder` `proj_log/ae`
-- `pcEncoder` `proj_log/pcEnc`
-- `pc2cad` `proj_log/pc2cad`
+- `proj_log/ae` AutoEncoder
+- `proj_log/pcEnc` pcEncoder
+- `proj_log/pc2cad` pc2cad
 
 ## Model - Execution
 
 The following explains how to train and evaluate the final `pc2cad` Architecture, as well as generate predictions in Inference. These procedures are the same for the other models and can be adapted 1:1.
 <br>
-The main entrypoint is `pc2cad.py` in the root directory. It orchestrates the different modes you want to run. It can be called via the CLI. At Inferece the model can also be accessed via a REST-API over `accesspoint.py`.
+The main entrypoint is `pc2cad.py` in the root directory. It orchestrates the different modes you want to run. By default it will be called via the CLI. At Inferece the model can also be accessed via a REST-API provided by `accesspoint.py`.
 <br>
 Bevor executing please configure the model hyper-parameters under `config` folder.
 
