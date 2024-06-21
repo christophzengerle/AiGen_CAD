@@ -65,7 +65,7 @@ class TrainerPC2CAD(BaseTrainer):
 
         # reduce LR by factor of 0.1 if the validation loss does not improve for 10 epochs
         self.after_warmup_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, mode="min", factor=0.1, patience=10
+            self.optimizer, mode="min", factor=0.9, patience=10
         )
 
         self.scheduler = GradualWarmupScheduler(
