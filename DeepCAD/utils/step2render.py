@@ -8,13 +8,11 @@ from io import BytesIO
 import imageio
 import numpy as np
 import trimesh
-from utils.obj_utils import create_mesh_from_step
+from file_utils import walk_dir
+from obj_utils import create_mesh_from_step
 from PIL import Image
 from pyvirtualdisplay import Display
 from trimesh import transformations
-
-sys.path.append("..")
-from utils.file_utils import walk_dir
 
 res = {"high": 1200, "medium": 600, "low": 300}
 
@@ -27,6 +25,7 @@ def parse():
     )
     parser.add_argument("--ele", type=int, default=45, help="camera elevation")
     parser.add_argument("--rot", type=int, default=135, help="camera rotation")
+    parser.add_argument("--png", type=bool, default=False, help="make png")
     parser.add_argument("--gif", type=bool, default=False, help="make gif")
     parser.add_argument(
         "--qual",
@@ -129,27 +128,35 @@ def transform(
 
 def main():
     args = parse()
+    args.png = True
     setup_dir(args.src, args.dest)
 
     if os.path.isfile(args.src):
-        if args.src.endswith(".step"):
-            objfiles = [args.src]
+        objfiles = [args.src]
 
     elif os.path.isdir(args.src):
-        objfiles = [file for file in walk_dir(args.src) if file.endswith(".step")]
+        objfiles = [file for file in walk_dir(args.src)]
 
     else:
         raise ValueError("No valid source file type.")
 
     for i, file_path in enumerate(objfiles):
         path, file = os.path.split(file_path)
-        outfile = os.path.join(args.dest, file).split(".")[0]
+        outfile = os.path.normpath(os.path.join(args.dest, file)).split(".")[0]
 
         # transform(file_path, outfile, args.rot, args.ele, args.qual, i)
 
         p = multiprocessing.Process(
             target=transform,
-            args=(file_path, outfile, args.rot, args.ele, args.qual, True, args.gif),
+            args=(
+                file_path,
+                outfile,
+                args.rot,
+                args.ele,
+                args.qual,
+                args.png,
+                args.gif,
+            ),
         )
         p.start()
         p.join(60)

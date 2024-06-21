@@ -655,27 +655,12 @@ class TrainerPC2CAD(BaseTrainer):
                         ),
                     )
                     pc = pc[sample_idx]
-                    try:
-                        sample_idx = random.sample(
-                            list(range(pc.shape[0])),
-                            (
-                                self.cfg.n_points
-                                if self.cfg.n_points < pc.shape[0]
-                                else pc.shape[0]
-                            ),
-                        )
-                    except ValueError:
-                        print(
-                            f"Point cloud {pc_path.split('/')[-1]} has less than {self.cfg.n_points} points."
-                        )
-                        continue
-
-                    pc = pc[sample_idx]
                     pc = torch.tensor(pc, dtype=torch.float32).unsqueeze(0).cuda()
 
                     out_vec = self.predict(pc)
 
                 if len(out_vec) > 0:
+                    # print(out_vec)
                     # save generated z
                     file_name = pc_path.split("/")[-1].split(".")[0]
                     save_path = os.path.join(save_dir, f"{file_name}")

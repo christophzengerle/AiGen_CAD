@@ -7,6 +7,7 @@ from config.configPC2CAD import ConfigPC2CAD
 from flask import Flask, jsonify, make_response, request
 from trainer.trainerPC2CAD import TrainerPC2CAD
 from utils.obj_utils import create_mesh_from_step
+from utils.pc_utils import write_ply
 
 app = Flask(__name__)
 
@@ -72,9 +73,11 @@ def obj2pc():
     m = trimesh.load_mesh(obj_path)
     path = os.path.join(out_path, "deepCAD.ply")
     pc = trimesh.PointCloud(m.sample(POINTCLOUD_N_POINTS))
+    pc = pc.vertices
     # swap y and z axis
-    pc.vertices[:, [2, 1]] = pc.vertices[:, [1, 2]]
-    pc.export(path, file_type="ply")
+    # pc[:, [2, 1]] = pc[:, [1, 2]]
+    write_ply(pc, path)
+    # pc.export(path, file_type="ply")
     response = {"path": path}
 
     return jsonify(response)

@@ -16,8 +16,8 @@ import os
 # os.system(cmd)
 
 
-# cmd = "python pc2cad.py --exec inf --pc_root evaluation/eval_testimages/source \
-#     --exp_name pc2cad_contDiffNums --ckpt latest --n_points 8096 --expSTEP --expPNG -g 0 --output ./results"
+cmd = "python pc2cad.py --exec inf --pc_root evaluation/eval_testimages/source/newTisch.ply \
+    --exp_name pc2cad_normalization --ckpt ckpt_epoch300_num8096 --n_points 8096 --expSTEP --expPNG -g 0 --output ./results"
 
 
 # COV - JSD
@@ -25,8 +25,8 @@ import os
 #         --exp_name pc2cad_contDiffNums --ckpt latest --n_points 8096 -g 0 --batch_size 32"
 
 
-cmd = "python pc2cad.py --exec eval --mode acc --num_worker 8  \
-        --exp_name pc2cad_ReduceLRscheduler_8096_1000epochs --ckpt ckpt_epoch300_num8096 --n_points 8096 -g 1"
+# cmd = "python pc2cad.py --exec eval --mode acc --num_worker 8  \
+#         --exp_name pc2cad_ReduceLRscheduler_8096_1000epochs --ckpt ckpt_epoch300_num8096 --n_points 8096 -g 1"
 #         --load_modular_ckpt --pce_exp_name pcEncRandNoise100New --pce_ckpt latest \
 #         --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000"
 

@@ -1,6 +1,9 @@
 import random
+import sys
 
 import numpy as np
+
+sys.path.append("./utils")
 from config.configPC2CAD import ConfigPC2CAD
 from dataset.pc2cad_dataset import get_dataloader
 from trainer.trainerPC2CAD import TrainerPC2CAD

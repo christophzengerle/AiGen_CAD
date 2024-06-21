@@ -9,9 +9,7 @@ def read_ply(path):
         y = np.array(plydata["vertex"]["y"])
         z = np.array(plydata["vertex"]["z"])
         pc = np.stack([x, y, z], axis=1)
-        pc = (pc - pc.min())
-        pc = np.divide(pc, pc.max())
-        pc = pc * 2 - 1
+        pc = normalize_pc(pc)
         return pc
 
 
@@ -24,3 +22,10 @@ def write_ply(points, filename, text=False):
     el = PlyElement.describe(vertex, "vertex", comments=["vertices"])
     with open(filename, mode="wb") as f:
         PlyData([el], text=text).write(f)
+
+
+def normalize_pc(pc):
+    pc = pc - pc.min()
+    pc = np.divide(pc, pc.max())
+    pc = pc * 2 - 1
+    return pc
