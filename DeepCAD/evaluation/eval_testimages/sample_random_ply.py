@@ -14,7 +14,7 @@ phase = "validation"
 with open(path, "r") as fp:
     all_data = json.load(fp)[phase]
 
-sample = random.sample(all_data, 100)
+sample = random.sample(all_data, 10)
 
 # sample = ["0000/00000007", "0000/00001271", "0000/00001506", "0000/00001817"]
 
