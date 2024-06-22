@@ -54,10 +54,11 @@ class ShapeCodesDataset(Dataset):
             return self.__getitem__(index + 1)
 
         if self.phase == "train":
+            # read point cloud and apply random rotation and elevation
             m = trimesh.load_mesh(pc_path)
 
-            rotation = random.choice(np.arange(-180, 180, 45))
-            elevation = random.choice(np.arange(-180, 180, 45))
+            rotation = random.choice(np.arange(-90, 90, 45))
+            elevation = random.choice(np.arange(-90, 90, 45))
 
             rotation_matrix = transformations.rotation_matrix(
                 -1 * rotation * math.pi / 180, [0, 0, 1], [0, 0, 0]
@@ -72,7 +73,6 @@ class ShapeCodesDataset(Dataset):
             m.apply_transform(elevation_matrix)
 
             pc = m.vertices
-            pc = normalize_pc(pc)
 
             if self.noise:
                 if random.choice([True, False]):
@@ -85,6 +85,7 @@ class ShapeCodesDataset(Dataset):
                         self.noiseAmount / 10,
                         (pc.shape[0], pc.shape[1]),
                     )
+            pc = normalize_pc(pc)
 
         else:
             pc = read_ply(pc_path)
