@@ -24,9 +24,10 @@ def parse():
         "--dest", type=str, default="png_files", help="destination folder"
     )
     parser.add_argument("--ele", type=int, default=45, help="camera elevation")
-    parser.add_argument("--rot", type=int, default=135, help="camera rotation")
-    parser.add_argument("--png", type=bool, default=False, help="make png")
-    parser.add_argument("--gif", type=bool, default=False, help="make gif")
+    parser.add_argument("--rot", type=int, default=-45, help="camera rotation")
+    parser.add_argument("--png", default=False, action="store_true", help="make png")
+    parser.add_argument("--gif", default=False, action="store_true", help="make gif")
+    parser.add_argument("--obj", default=False, action="store_true", help="make obj")
     parser.add_argument(
         "--qual",
         type=str,
@@ -52,7 +53,7 @@ def transform(
     rotation,
     elevation,
     quality,
-    exp_png=True,
+    exp_png=False,
     make_gif=False,
     exp_obj=False,
 ):
@@ -62,7 +63,7 @@ def transform(
     display = Display(visible=0)
     display.start()
 
-    if file_path.endswith(".ply"):
+    if file_path.endswith(".ply") or file_path.endswith(".obj"):
         mesh = trimesh.load_mesh(file_path)
     elif file_path.endswith(".step"):
         mesh = create_mesh_from_step(file_path)
@@ -71,6 +72,21 @@ def transform(
         raise ValueError("Invalid File-Type {}.".format(file_path.split(".")[-1]))
 
     if exp_png:
+        export_png(mesh, outfile, rotation, elevation, quality)
+
+
+    if make_gif:
+        export_gif(mesh, outfile, rotation, elevation, quality)
+
+
+    if exp_obj:
+        obj_path = export_obj(mesh, outfile)
+        transform(obj_path, outfile, rotation, elevation, quality, exp_png, make_gif, exp_obj = False)
+        
+    return mesh
+
+
+def export_png(mesh, outfile, rotation, elevation, quality):
         scene = mesh.scene()
 
         rotation_matrix = transformations.rotation_matrix(
@@ -94,8 +110,9 @@ def transform(
             f.close()
 
         print(f"created PNG: {output_path}")
-
-    if make_gif:
+        
+        
+def export_gif(mesh, outfile, rotation, elevation, quality):
         images = []
         rotations = np.linspace(0, 330, 12)
         for rotation in rotations:
@@ -120,11 +137,12 @@ def transform(
 
         print(f"created GIF: {output_path}")
 
-    if exp_obj:
+
+def export_obj(mesh, outfile):
         output_path = outfile + ".obj"
         mesh.export(output_path, file_type="obj")
         print(f"created OBJ: {output_path}")
-
+        return output_path
 
 def main():
     args = parse()
@@ -156,6 +174,7 @@ def main():
                 args.qual,
                 args.png,
                 args.gif,
+                args.obj
             ),
         )
         p.start()

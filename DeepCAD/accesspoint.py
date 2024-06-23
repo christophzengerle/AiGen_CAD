@@ -24,8 +24,8 @@ np.random.seed(0)
 # DEEPCAD_EXPERIMENT_NAME = "pc2cad_contDiffNums"
 # DEEPCAD_MODEL_CKPT = "latest"
 
-DEEPCAD_EXPERIMENT_NAME = "pc2cad_Transformations_8096_1000epochs"
-DEEPCAD_MODEL_CKPT = "ckpt_epoch200_num8096"
+DEEPCAD_EXPERIMENT_NAME = "pc2cad_FinalTransform_8096_1000epochs"
+DEEPCAD_MODEL_CKPT = "ckpt_epoch350_num8096"
 
 LOAD_MODULAR_CKPT = False
 
