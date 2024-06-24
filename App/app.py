@@ -153,39 +153,31 @@ with gr.Blocks() as demo:
     gr.Markdown(_HEADER_)
     input_image = gr.State()
     with gr.Row():
-        with gr.Row():
-            sample_seed = gr.Number(value=42, label="Seed Value", precision=0)
-        with gr.Row():
-            sample_steps = gr.Slider(
-                label="Sample Steps",
-                minimum=30,
-                maximum=75,
-                value=75,
-                step=5
-            )
-        with gr.Row():
-            custom_path = gr.Textbox(
-                label="Optional Save Path"
-            )
+        sample_seed = gr.Number(value=42, label="Seed Value", precision=0)
+
+        sample_steps = gr.Slider(
+            label="Sample Steps",
+            minimum=30,
+            maximum=75,
+            value=75,
+            step=5
+        )
+
+        custom_path = gr.Textbox(
+            label="Optional Save Path"
+        )
         with gr.Column():
-            save_only_last = gr.Checkbox(
-                label="Save Only Last Output", value=False
-            )
-            do_remove_background = gr.Checkbox(
-                label="Remove Background", value=True
-            )
+            with gr.Row():
+                save_only_last = gr.Checkbox(
+                    label="Save Only Last Output", value=False
+                )
+            with gr.Row():
+                do_remove_background = gr.Checkbox(
+                    label="Remove Background", value=True
+                )
+
         submit = gr.Button("Generate", elem_id="generate", variant="primary")
 
-    with gr.Row(variant="panel"):
-        gr.Examples(
-            examples=[
-                os.path.join("examples", img_name) for img_name in sorted(os.listdir("examples"))
-            ],
-            inputs=[input_image],
-            label="Examples",
-            examples_per_page=20
-        )
-    print([os.path.join("examples", img_name) for img_name in sorted(os.listdir("examples"))])
     with gr.Row():
         input_image = gr.Image(
             label="Input Image",
@@ -228,6 +220,16 @@ with gr.Blocks() as demo:
         output_files = gr.Files(
             label="Generated Files",
             interactive=False
+        )
+
+    with gr.Row(variant="panel"):
+        gr.Examples(
+            examples=[
+                os.path.join("examples", img_name) for img_name in sorted(os.listdir("examples"))
+            ],
+            inputs=[input_image],
+            label="Examples",
+            examples_per_page=20
         )
 
     gr.Markdown(_CITE_)
