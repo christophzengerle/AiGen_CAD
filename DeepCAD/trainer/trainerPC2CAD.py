@@ -611,26 +611,31 @@ class TrainerPC2CAD(BaseTrainer):
 
         if output_path:
             if os.path.isfile(output_path):
-                out_dir = os.dirname(output_path)
+                save_dir = os.dirname(output_path)
             elif os.path.isdir(output_path):
-                out_dir = output_path
+                save_dir = output_path
             else:
                 try:
                     os.makedirs(output_path)
-                    out_dir = os.path.dirname(output_path)
+                    save_dir = os.path.dirname(output_path)
                 except Exception as e:
                     out_dir = os.path.join(self.cfg.exp_dir, "result")
+                    save_dir = os.path.join(
+                        out_dir,
+                        save_name
+                        + "_"
+                        + str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")),
+                    )
                     print(f"Output-path is invalid. Using default path: {out_dir}")
 
         else:
             out_dir = os.path.join(self.cfg.exp_dir, "result")
-
-        save_dir = os.path.join(
-            out_dir,
-            save_name
-            + "_"
-            + str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")),
-        )
+            save_dir = os.path.join(
+                out_dir,
+                save_name
+                + "_"
+                + str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")),
+            )
 
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)

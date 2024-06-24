@@ -187,7 +187,7 @@ with gr.Blocks() as demo:
             with gr.Row(variant="panel"):
                 gr.Examples(
                     examples=[
-                        os.path.join("examples", img_name) for img_name in sorted(os.listdir("examples"))
+                        os.path.join("examples", img_name) for img_name in sorted(os.listdir("examples")) if os.path.isfile(os.path.join("examples", img_name))
                     ],
                     inputs=[input_image],
                     label="Examples",
