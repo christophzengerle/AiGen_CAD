@@ -67,7 +67,6 @@ def transform(
         mesh = trimesh.load_mesh(file_path)
     elif file_path.endswith(".step"):
         mesh = create_mesh_from_step(file_path)
-
     else:
         raise ValueError("Invalid File-Type {}.".format(file_path.split(".")[-1]))
 
@@ -85,6 +84,7 @@ def transform(
         )
 
         scene.apply_transform(elevation_matrix)
+        scene.camera_transform = scene.camera.look_at(points=mesh.vertices*1.5, center=mesh.center_mass)
 
         png = scene.save_image(resolution=[res[quality], res[quality]], visible=False)
 

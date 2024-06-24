@@ -19,6 +19,17 @@ DEEP_CAD_URL = 'http://deepcad:8092/'
 OUTPUT_FOLDER = "results/"
 
 
+# def deepcad_dummy(pc_path, out_path):
+#     obj_path = "data/00000007.obj"
+#     STEP_path = "data/00000007.step"
+#     return obj_path, STEP_path
+#
+#
+# def instant_dummy(image, out_path):
+#     mesh_fpath = "data/00000007.obj"
+#     return mesh_fpath, mesh_fpath
+
+
 def check_input_image(input_image):
     if input_image is None:
         raise gr.Error("No image uploaded!")
@@ -140,97 +151,84 @@ _CITE_ = r"""
 
 with gr.Blocks() as demo:
     gr.Markdown(_HEADER_)
+    input_image = gr.State()
+    with gr.Row():
+        with gr.Row():
+            sample_seed = gr.Number(value=42, label="Seed Value", precision=0)
+        with gr.Row():
+            sample_steps = gr.Slider(
+                label="Sample Steps",
+                minimum=30,
+                maximum=75,
+                value=75,
+                step=5
+            )
+        with gr.Row():
+            custom_path = gr.Textbox(
+                label="Optional Save Path"
+            )
+        with gr.Column():
+            save_only_last = gr.Checkbox(
+                label="Save Only Last Output", value=False
+            )
+            do_remove_background = gr.Checkbox(
+                label="Remove Background", value=True
+            )
+        submit = gr.Button("Generate", elem_id="generate", variant="primary")
+
     with gr.Row(variant="panel"):
-        with gr.Column():
-            with gr.Row():
-                input_image = gr.Image(
-                    label="Input Image",
-                    image_mode="RGBA",
-                    sources="upload",
-                    width=256,
-                    height=256,
-                    type="pil",
-                    elem_id="content_image",
-                )
-                processed_image = gr.Image(
-                    label="Processed Image",
-                    image_mode="RGBA",
-                    width=256,
-                    height=256,
-                    type="pil",
-                    interactive=False
-                )
-            with gr.Row():
-                with gr.Group():
-                    save_only_last = gr.Checkbox(
-                        label="save only last output", value=False
-                    )
-                    custom_path = gr.Textbox(
-                        label="save path"
-                    )
-                    do_remove_background = gr.Checkbox(
-                        label="Remove Background", value=True
-                    )
-                    sample_seed = gr.Number(value=42, label="Seed Value", precision=0)
+        gr.Examples(
+            examples=[
+                os.path.join("examples", img_name) for img_name in sorted(os.listdir("examples"))
+            ],
+            inputs=[input_image],
+            label="Examples",
+            examples_per_page=20
+        )
+    print([os.path.join("examples", img_name) for img_name in sorted(os.listdir("examples"))])
+    with gr.Row():
+        input_image = gr.Image(
+            label="Input Image",
+            image_mode="RGBA",
+            sources="upload",
+            width=256,
+            height=256,
+            type="pil",
+            elem_id="content_image",
+        )
 
-                    sample_steps = gr.Slider(
-                        label="Sample Steps",
-                        minimum=30,
-                        maximum=75,
-                        value=75,
-                        step=5
-                    )
+        processed_image = gr.Image(
+            label="Processed Image",
+            image_mode="RGBA",
+            width=256,
+            height=256,
+            type="pil",
+            interactive=False
+        )
 
-            with gr.Row():
-                submit = gr.Button("Generate", elem_id="generate", variant="primary")
+        mv_show_images = gr.Image(
+            label="Generated Multi-views",
+            type="pil",
+            # width=379,
+            interactive=False
+        )
 
-            with gr.Row(variant="panel"):
-                gr.Examples(
-                    examples=[
-                        os.path.join("examples", img_name) for img_name in sorted(os.listdir("examples"))
-                    ],
-                    inputs=[input_image],
-                    label="Examples",
-                    examples_per_page=20
-                )
+    with gr.Row():
+        output_gradio_obj = gr.Model3D(
+            label="InstantMesh output",
+            # width=768,
+            interactive=False
+        )
 
-        with gr.Column():
-            with gr.Row():
-                with gr.Column():
-                    mv_show_images = gr.Image(
-                        label="Generated Multi-views",
-                        type="pil",
-                        # width=379,
-                        interactive=False
-                    )
+        output_cad = gr.Model3D(
+            label="DeepCAD output",
+            interactive=False
+        )
 
-                # with gr.Column():
-                #     output_video = gr.Video(
-                #         label="video", format="mp4",
-                #         width=379,
-                #         autoplay=True,
-                #         interactive=False
-                #     )
-
-            with gr.Row():
-                output_gradio_obj = gr.Model3D(
-                    label="InstantMesh output",
-                    # width=768,
-                    interactive=False
-                )
-
-            with gr.Row():
-                output_cad = gr.Model3D(
-                    label="DeepCAD output",
-                    interactive=False
-                )
-
-            with gr.Row():
-                output_files = gr.Files(
-                    label="Generated Files",
-                    interactive=False
-                )
-
+        output_files = gr.Files(
+            label="Generated Files",
+            interactive=False
+        )
 
     gr.Markdown(_CITE_)
     mv_images = gr.State()
