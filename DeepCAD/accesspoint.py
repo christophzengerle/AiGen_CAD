@@ -82,24 +82,7 @@ def obj2pc():
     m = trimesh.load_mesh(obj_path)
     path = os.path.join(out_path, "deepCAD.ply")
     pc = trimesh.PointCloud(m.sample(POINTCLOUD_N_POINTS))
-    pc.vertices[:, [2, 1]] = pc.vertices[:, [1, 2]]
-    
-    # rotation = 45
-    # elevation = -45
-
-    # rotation_matrix = transformations.rotation_matrix(
-    #     -1 * rotation * math.pi / 180, [0, 0, 1], [0, 0, 0]
-    # )
-
-    # pc.apply_transform(rotation_matrix)
-
-    # elevation_matrix = transformations.rotation_matrix(
-    #     -1 * elevation * math.pi / 180, [1, 0, 0], [0, 0, 0]
-    # )
-
-    # pc.apply_transform(elevation_matrix)
-    
-    
+    pc.vertices[:, [2, 1]] = pc.vertices[:, [1, 2]]    
     pc = pc.vertices
     # swap y and z axis
     write_ply(pc, path)

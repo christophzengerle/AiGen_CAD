@@ -57,8 +57,11 @@ class ShapeCodesDataset(Dataset):
             # read point cloud and apply random rotation and elevation
             m = trimesh.load_mesh(pc_path)
 
-            rotation = random.choice(np.arange(-90, 101.25, 11.25))
-            elevation = random.choice(np.arange(-90, 101.25, 11.25))
+            # rotation = random.choice(np.arange(-90, 101.25, 11.25))
+            # elevation = random.choice(np.arange(-90, 101.25, 11.25))
+            
+            rotation = -45
+            elevation = 45
 
             rotation_matrix = transformations.rotation_matrix(
                 -1 * rotation * math.pi / 180, [0, 0, 1], [0, 0, 0]

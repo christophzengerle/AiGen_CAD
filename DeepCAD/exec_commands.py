@@ -5,10 +5,9 @@ import os
 # less nohup.out  -> view output
 
 
-# cmd = "nohup python pc2cad.py --exec train --exp_name pc2cad_EndTransform_8096_1000epochs --batch_size 590 \
-#     --nr_epochs 1000 --noise --n_points 8096 -g 1 &"
-#   --continue --load_modular_ckpt --pce_exp_name pcEncoder --pce_ckpt latest \
-#  --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000 &"
+# cmd = "nohup python pc2cad.py --exec train --exp_name pc2cad_FinalTransform_8096_1000epochs --ckpt ckpt_epoch800_num8096 --batch_size 590 \
+#     --nr_epochs 1000 --noise --n_points 8096 -g 1 \
+#   --continue &"
 
 
 # cmd = "python ./evaluation/eval_testimages/sample_random_ply.py"

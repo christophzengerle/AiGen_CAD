@@ -159,11 +159,11 @@ class TrainerPC2CAD(BaseTrainer):
             if clock.epoch % self.cfg.save_frequency == 0:
                 self.test(test_loader)
                 self.save_ckpt()
-
-
+            
             self.record_and_update_learning_rate(
-                    np.mean(train_losses["losses_args"])
+                    np.mean(eval_losses["losses_args"])
                 )
+            
             clock.tock()
 
         # if clock.epoch % 10 == 0:
