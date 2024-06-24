@@ -80,8 +80,13 @@ def transform(
 
 
     if exp_obj:
+        if file_path.endswith(".ply"):
+            points = mesh.vertices @ np.array([[1, 0, 0], [0, 1, 0], [0, 0, -1]])
+            mesh = trimesh.Trimesh(
+                vertices = points,
+            )
         obj_path = export_obj(mesh, outfile)
-        transform(obj_path, outfile, rotation, elevation, quality, exp_png, make_gif, exp_obj = False)
+        transform(obj_path, outfile + "_mesh", rotation, elevation, quality, exp_png, make_gif, exp_obj = False)
         
     return mesh
 

@@ -60,13 +60,13 @@ class ConfigPC2CAD(object):
     def set_configuration(self):
         # Train Settings
         self.lr = 1e-3  # initial LR
-        self.warmup_step = 100  # Nr warmup Epochs, LR will increase from 0 to self.lr
+        self.warmup_step = 200  # Nr warmup Epochs, LR will increase from 0 to self.lr
         # self.lr_step_size = 100  # Nr Epochs after wich LR will be decresed
         # self.beta1 = 0.5
         # self.grad_clip = None
         self.noiseAmount = 0.02
 
-        self.val_frequency = 1
+        self.val_frequency = 5
         self.save_frequency = 50
 
         self.loss_weights = {"loss_cmd_weight": 1.0, "loss_args_weight": 2.0}

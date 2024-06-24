@@ -5,8 +5,8 @@ import os
 # less nohup.out  -> view output
 
 
-# cmd = "nohup python pc2cad.py --exec train --exp_name pc2cad_FinalTransform_8096_1000epochs --batch_size 590 \
-#     --nr_epochs 1000 --noise --n_points 8096 -g 0 &"
+# cmd = "nohup python pc2cad.py --exec train --exp_name pc2cad_EndTransform_8096_1000epochs --batch_size 590 \
+#     --nr_epochs 1000 --noise --n_points 8096 -g 1 &"
 #   --continue --load_modular_ckpt --pce_exp_name pcEncoder --pce_ckpt latest \
 #  --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000 &"
 
@@ -25,12 +25,14 @@ import os
 #         --exp_name pc2cad_contDiffNums --ckpt latest --n_points 8096 -g 0 --batch_size 32"
 
 
-cmd = "python pc2cad.py --exec eval --mode acc --num_worker 8  \
-        --exp_name pc2cad_FinalTransform_8096_1000epochs --ckpt ckpt_epoch400_num8096 --n_points 8096 -g 1"
+# cmd = "python pc2cad.py --exec eval --mode acc --num_worker 8  \
+#         --exp_name pc2cad_FinalTransform_8096_1000epochs --ckpt ckpt_epoch450_num8096 --n_points 8096 -g 1"
 #         --load_modular_ckpt --pce_exp_name pcEncRandNoise100New --pce_ckpt latest \
 #         --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000"
 
 
 # cmd = "tensorboard --logdir proj_log/pc2cad/pc2cad_FinalTransform_8096_1000epochs/log --host 0.0.0.0"
+# cmd = "tensorboard --logdir proj_log/pc2cad/pc2cad_MoreTransform_8096_1000epochs/log --host 0.0.0.0"
+# cmd = "tensorboard --logdir proj_log/pc2cad/pc2cad_EndTransform_8096_1000epochs/log --host 0.0.0.0"
 
 os.system(cmd)

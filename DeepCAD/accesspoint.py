@@ -24,7 +24,7 @@ np.random.seed(0)
 # DEEPCAD_EXPERIMENT_NAME = "pc2cad_contDiffNums"
 # DEEPCAD_MODEL_CKPT = "latest"
 
-DEEPCAD_EXPERIMENT_NAME = "pc2cad_FinalTransform_8096_1000epochs"
+DEEPCAD_EXPERIMENT_NAME = "pc2cad_MoreTransform_8096_1000epochs"
 DEEPCAD_MODEL_CKPT = "ckpt_epoch350_num8096"
 
 LOAD_MODULAR_CKPT = False
@@ -35,7 +35,7 @@ EXPORT_SOURCE_PNG = True
 EXPORT_STEP = True
 EXPORT_PNG = True
 
-GPU_IDS = "1"
+GPU_IDS = "0"
 
 
 cfg = ConfigPC2CAD()
@@ -77,7 +77,7 @@ def obj2pc():
     pc = trimesh.PointCloud(m.sample(POINTCLOUD_N_POINTS))
     pc = pc.vertices
     # swap y and z axis
-    # pc[:, [2, 1]] = pc[:, [1, 2]]
+    pc[:, [2, 1]] = pc[:, [1, 2]]
     write_ply(pc, path)
     # pc.export(path, file_type="ply")
     response = {"path": path}
