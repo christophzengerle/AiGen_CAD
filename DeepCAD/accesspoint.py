@@ -5,11 +5,13 @@ sys.path.append("./utils")
 
 import numpy as np
 import trimesh
+from trimesh import transformations
 from config.configPC2CAD import ConfigPC2CAD
 from flask import Flask, jsonify, make_response, request
 from trainer.trainerPC2CAD import TrainerPC2CAD
 from utils.obj_utils import create_mesh_from_step
 from utils.pc_utils import write_ply
+import math
 
 app = Flask(__name__)
 
@@ -26,6 +28,11 @@ np.random.seed(0)
 
 DEEPCAD_EXPERIMENT_NAME = "pc2cad_FinalTransform_8096_1000epochs"
 DEEPCAD_MODEL_CKPT = "ckpt_epoch800_num8096"
+
+# DEEPCAD_EXPERIMENT_NAME = "pc2cad_ReduceLRscheduler_8096_1000epochs"
+# DEEPCAD_MODEL_CKPT = "ckpt_epoch300_num8096"
+
+
 
 LOAD_MODULAR_CKPT = False
 
@@ -75,9 +82,26 @@ def obj2pc():
     m = trimesh.load_mesh(obj_path)
     path = os.path.join(out_path, "deepCAD.ply")
     pc = trimesh.PointCloud(m.sample(POINTCLOUD_N_POINTS))
+    pc.vertices[:, [2, 1]] = pc.vertices[:, [1, 2]]
+    
+    # rotation = 45
+    # elevation = -45
+
+    # rotation_matrix = transformations.rotation_matrix(
+    #     -1 * rotation * math.pi / 180, [0, 0, 1], [0, 0, 0]
+    # )
+
+    # pc.apply_transform(rotation_matrix)
+
+    # elevation_matrix = transformations.rotation_matrix(
+    #     -1 * elevation * math.pi / 180, [1, 0, 0], [0, 0, 0]
+    # )
+
+    # pc.apply_transform(elevation_matrix)
+    
+    
     pc = pc.vertices
     # swap y and z axis
-    pc[:, [2, 1]] = pc[:, [1, 2]]
     write_ply(pc, path)
     # pc.export(path, file_type="ply")
     response = {"path": path}

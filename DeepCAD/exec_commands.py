@@ -31,7 +31,7 @@ import os
 #         --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000"
 
 
-# cmd = "tensorboard --logdir proj_log/pc2cad/pc2cad_FinalTransform_8096_1000epochs/log --host 0.0.0.0"
+cmd = "tensorboard --logdir proj_log/pc2cad/pc2cad_FinalTransform_8096_1000epochs/log --host 0.0.0.0"
 # cmd = "tensorboard --logdir proj_log/pc2cad/pc2cad_MoreTransform_8096_1000epochs/log --host 0.0.0.0"
 # cmd = "tensorboard --logdir proj_log/pc2cad/pc2cad_EndTransform_8096_1000epochs/log --host 0.0.0.0"
 
