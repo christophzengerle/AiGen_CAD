@@ -27,7 +27,10 @@ np.random.seed(0)
 # DEEPCAD_MODEL_CKPT = "latest"
 
 DEEPCAD_EXPERIMENT_NAME = "pc2cad_FinalTransform_8096_1000epochs"
-DEEPCAD_MODEL_CKPT = "ckpt_epoch850_num8096"
+DEEPCAD_MODEL_CKPT = "ckpt_epoch750_num8096"
+
+# DEEPCAD_EXPERIMENT_NAME = "pc2cad_MoreTransform_8096_1000epochs"
+# DEEPCAD_MODEL_CKPT = "ckpt_epoch350_num8096"
 
 # DEEPCAD_EXPERIMENT_NAME = "pc2cad_ReduceLRscheduler_8096_1000epochs"
 # DEEPCAD_MODEL_CKPT = "ckpt_epoch300_num8096"
