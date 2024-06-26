@@ -1,6 +1,5 @@
 import datetime
 import os
-import sys
 from collections import OrderedDict
 
 import h5py
@@ -15,7 +14,6 @@ from .base import BaseTrainer
 from .loss import CADLoss
 from .scheduler import GradualWarmupScheduler
 
-sys.path.append("..")
 from cadlib.macro import *
 from cadlib.macro import trim_vec_EOS
 from cadlib.visualize import vec2CADsolid

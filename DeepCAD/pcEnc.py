@@ -1,9 +1,12 @@
+import random
+import numpy as np
+import sys
+sys.path.append("./utils")
 from config.configPCEncoder import ConfigPCEncoder
 from dataset.pcEnc_dataset import get_dataloader
 from trainer.trainerPCEncoder import TrainerPCEncoder
 
 from cad2cad import decode_pc_zs
-from utils import cycle
 
 
 def encode(trainer, cfg):
@@ -28,19 +31,18 @@ def main():
         # create dataloader
         train_loader = get_dataloader("train", cfg, noise=cfg.noise)
         val_loader = get_dataloader("validation", cfg)
-        # val_loader = cycle(val_loader)
+        test_loader = get_dataloader("test", cfg)
 
         # train
-        agent.train(train_loader, val_loader)
+        agent.train(train_loader, val_loader, test_loader)
 
-    elif cfg.exec == "test":
+    elif cfg.exec == "eval":
         agent.load_ckpt(cfg.ckpt)
-        agent.net.eval()
         
         # create dataloader
         test_loader = get_dataloader("test", cfg)
         
-        agent.test(test_loader)
+        agent.eval_model_acc(test_loader)
             
     elif cfg.exec == "inf":
         cfg.zs = encode(agent, cfg)
@@ -60,4 +62,6 @@ def main():
 
 
 if __name__ == "__main__":
+    random.seed(0)
+    np.random.seed(0)
     main()

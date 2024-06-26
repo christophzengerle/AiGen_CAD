@@ -47,8 +47,7 @@ class ConfigPC2CAD(object):
             and args.cont is not True
             and os.path.exists(self.exp_dir)
         ):
-            response = "y"
-            # response = input("Experiment log/model already exists, overwrite? (y/n) ")
+            response = input("Experiment log/model already exists, overwrite? (y/n) ")
             if response != "y":
                 exit()
             shutil.rmtree(self.exp_dir)
@@ -107,7 +106,7 @@ class ConfigPC2CAD(object):
             type=str,
             choices=["train", "eval", "inf"],
             default="test",
-            help="different execution modes for Pc-Encoder: train - Trains on Train and Eval dataset, eval - Evaluate on Test dataset, Inf - Inference on own data",
+            help="different execution modes for PC2CAD: train - Trains on Train and Eval dataset, eval - Evaluate on Test dataset, Inf - Inference on own data",
         )
         parser.add_argument(
             "--mode",

@@ -2,7 +2,6 @@ import datetime
 import json
 import os
 import random
-import sys
 
 import h5py
 import numpy as np
@@ -11,11 +10,11 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 
-sys.path.append("..")
 from model.pointcloudEncoder import PointNet2
 from utils import read_ply
 from utils.file_utils import walk_dir
 from utils.step2render import transform
+from trainer.scheduler import GradualWarmupScheduler
 
 from .base import BaseTrainer
 
@@ -33,13 +32,24 @@ class TrainerPCEncoder(BaseTrainer):
     def set_loss_function(self):
         self.criterion = nn.MSELoss().cuda()
 
-    def set_optimizer(self, config):
+    def set_optimizer(self, cfg):
         """set optimizer and lr scheduler used in training"""
         self.optimizer = torch.optim.Adam(
-            self.net.parameters(), config.lr
-        )  # , betas=(config.beta1, 0.9))
-        self.scheduler = torch.optim.lr_scheduler.StepLR(
-            self.optimizer, config.lr_step_size
+            self.net.parameters(),
+            cfg.lr,
+            # , betas=(config.beta1, 0.9))
+        )
+        # self.scheduler = torch.optim.lr_scheduler.StepLR(
+        #     self.optimizer, cfg.lr_step_size
+        # )
+
+        # reduce LR by factor of 0.1 if the validation loss does not improve for 10 epochs
+        self.after_warmup_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            self.optimizer, mode="min", factor=0.5, patience=10
+        )
+
+        self.scheduler = GradualWarmupScheduler(
+            self.optimizer, 1.0, cfg.warmup_step, self.after_warmup_scheduler
         )
 
     def forward(self, data):
@@ -47,7 +57,7 @@ class TrainerPCEncoder(BaseTrainer):
         pred = self.net(data)
         return pred
 
-    def train(self, train_loader, val_loader):
+    def train(self, train_loader, val_loader, test_loader):
         self.set_loss_function()
         self.set_optimizer(self.cfg)
 
@@ -88,44 +98,74 @@ class TrainerPCEncoder(BaseTrainer):
 
             # validation step
             if clock.epoch % self.cfg.val_frequency == 0:
-                eval_losses = []
-                pbar = tqdm(val_loader)
-                for i, data in enumerate(pbar):
-                    _, loss = self.evaluate(data)
+                eval_losses = self.evaluate(val_loader)
 
-                    eval_losses.append(loss.item())
-
-                    pbar.set_description(
-                        "EVAL - EPOCH[{}]-[{}] BATCH[{}]-[{}]".format(
-                            e, nr_epochs, i, len(val_loader)
-                        )
-                    )
-                    pbar.set_postfix(loss=loss.item())
-
-                self.record_losses(eval_losses, mode="eval")
 
             if clock.epoch % self.cfg.save_frequency == 0:
+                self.test(test_loader)
                 self.save_ckpt()
 
-            self.record_and_update_learning_rate()
+            self.record_and_update_learning_rate(
+                np.mean(eval_losses) if len(eval_losses) > 0 else 0             
+            )
 
             clock.tock()
 
         # if clock.epoch % 10 == 0:
+        self.test(test_loader)
         self.save_ckpt("latest")
 
-    def evaluate(self, data):
+    def pred_eval(self, data):
+        self.net.eval()
         with torch.no_grad():
-            self.net.eval()
             points = data["points"].cuda()
             codes = data["codes"].cuda()
             pred = self.forward(points)
             loss = self.criterion(pred, codes)
         return pred, loss
+    
+
+    def evaluate(self, val_loader):
+        eval_losses = []
+        pbar = tqdm(val_loader)
+        for i, data in enumerate(pbar):
+            _, loss = self.pred_eval(data)
+
+            eval_losses.append(loss.item())
+
+            pbar.set_description(
+                "EVAL - EPOCH[{}]-[{}] BATCH[{}]-[{}]".format(
+                    self.clock.epoch, self.nr_epochs, i, len(val_loader)
+                )
+            )
+            pbar.set_postfix(loss=loss.item())
+
+        self.record_losses(eval_losses, mode="eval")
+        return eval_losses
+        
 
     def test(self, test_loader):
+        """evaluatinon during training"""
+        test_losses = []
+        pbar = tqdm(test_loader)
+        for i, data in enumerate(pbar):
+            _, loss = self.pred_eval(data)
+
+            test_losses.append(loss.item())
+
+            pbar.set_description(
+                "TEST - EPOCH[{}]-[{}] BATCH[{}]-[{}]".format(
+                    self.clock.epoch, self.nr_epochs, i, len(test_loader)
+                )
+            )
+            pbar.set_postfix(loss=loss.item())
+
+        self.record_losses(test_losses, mode="test")
+        
+        
+    def eval_model_acc(self, test_loader):
         raise NotImplementedError
-        # """evaluatinon during training"""
+        
 
     def encode_pointcloud(self, path):
         self.net.eval()
@@ -143,8 +183,7 @@ class TrainerPCEncoder(BaseTrainer):
 
         out_dir = os.path.join(
             self.cfg.exp_dir,
-            "results/pc2cad/",
-            self.cfg.ckpt,
+            "results",
             save_name
             + "_"
             + str(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")),
@@ -281,14 +320,23 @@ class TrainerPCEncoder(BaseTrainer):
             self.scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
             self.clock.restore_checkpoint(checkpoint["clock"])
 
-    def record_and_update_learning_rate(self):
+        
+    def record_and_update_learning_rate(self, metric):
         """record and update learning rate"""
         self.train_tb.add_scalar(
             "learning_rate", self.optimizer.param_groups[-1]["lr"], self.clock.epoch
         )
-        self.scheduler.step()
+        self.scheduler.step(metrics=metric)
 
     def record_losses(self, losses, mode="train"):
         """record loss to tensorboard"""
-        tb = self.train_tb if mode == "train" else self.val_tb
+        if mode == "train":
+            tb = self.train_tb
+        elif mode == "eval":
+            tb = self.val_tb
+        elif mode == "test":
+            tb = self.test_tb
+        else:
+            raise ValueError("tensorboard-mode should be train, eval or test")
+       
         tb.add_scalar("Loss", np.sum(losses) / len(losses), self.clock.epoch)

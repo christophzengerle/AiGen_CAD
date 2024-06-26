@@ -7,14 +7,7 @@ from utils import ensure_dirs
 
 class ConfigPCEncoder(object):
     def __init__(self):
-        self.set_configuration()
         _, args = self.parse()
-
-        # set as attributes
-        print("----Pc-Experiment Configuration-----")
-        for k, v in args.__dict__.items():
-            print("{0:20}".format(k), v)
-            self.__setattr__(k, v)
 
         self.z_path = args.z_path
         self.pc_root = args.pc_root
@@ -23,6 +16,16 @@ class ConfigPCEncoder(object):
         self.log_dir = os.path.join(self.exp_dir, "log")
         self.model_dir = os.path.join(self.exp_dir, "model")
         self.gpu_ids = args.gpu_ids
+
+        # set as attributes
+        for k, v in args.__dict__.items():
+            self.__setattr__(k, v)
+
+        self.set_configuration()
+
+        print("----Pc-Experiment Configuration-----")
+        for k, v in self.__dict__.items():
+            print("{0:20}".format(k), v)
 
         if args.gpu_ids is not None:
             os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_ids)
@@ -43,7 +46,8 @@ class ConfigPCEncoder(object):
             and args.cont is not True
             and os.path.exists(self.exp_dir)
         ):
-            response = input("Experiment log/model already exists, overwrite? (y/n) ")
+            # response = input("Experiment log/model already exists, overwrite? (y/n) ")
+            response = "y"
             if response != "y":
                 exit()
             shutil.rmtree(self.exp_dir)
@@ -55,13 +59,14 @@ class ConfigPCEncoder(object):
     def set_configuration(self):
 
         self.lr = 1e-3  # initial LR
-        self.lr_step_size = 15  # Nr Epochs after wich LR will be decresed
+        self.warmup_step = 100  # Nr warmup Epochs, LR will increase from 0 to self.lr
+        # self.lr_step_size = 100  # Nr Epochs after wich LR will be decresed
         # self.beta1 = 0.5
         self.grad_clip = None
-        self.noiseAmount = 0.025
+        self.noiseAmount = 0.02
 
-        self.save_frequency = 10
-        self.val_frequency = 5
+        self.val_frequency = 1
+        self.save_frequency = 1
 
         self.expSourcePNG = True
         
@@ -73,9 +78,9 @@ class ConfigPCEncoder(object):
             "--exec",
             "-e",
             type=str,
-            choices=["train", "test", "inf"],
+            choices=["train", "eval", "inf"],
             default="test",
-            help="different execution modes for Pc-Encoder: train - Trains on Train and Eval dataset, test - Test on Test dataset, Inf - Inference on own data",
+            help="different execution modes for Pc-Encoder: train - Trains on Train and Eval dataset, eval - Evaluate on Test dataset, Inf - Inference on own data",
         )
         parser.add_argument(
             "--mode",
@@ -120,7 +125,7 @@ class ConfigPCEncoder(object):
         parser.add_argument(
             "--exp_name",
             type=str,
-            required=True,
+            required=False,
             default="pcEncoder",
             help="name of this experiment",
         )
@@ -169,6 +174,12 @@ class ConfigPCEncoder(object):
             type=int,
             default=100,
             help="total number of epochs to train",
+        )
+        parser.add_argument(
+            "--warmup_step",
+            type=int,
+            default=10,
+            help="step size for learning rate warm up",
         )
         parser.add_argument("--batch_size", type=int, default=128, help="batch size")
         parser.add_argument(

@@ -9,6 +9,9 @@ import os
 #     --nr_epochs 1000 --noise --n_points 8096 -g 1 \
 #   --continue &"
 
+cmd = "python pcEnc.py --exec train --exp_name pcEncoder_Transformation --batch_size 620 \
+    --num_workers 8 --nr_epochs 500 --noise --n_points 8096 -g 1"
+
 
 # cmd = "python ./evaluation/eval_testimages/sample_random_ply.py"
 
@@ -30,7 +33,7 @@ import os
 #         --ae_exp_name pretrained --ae_ckpt ckpt_epoch1000"
 
 
-cmd = "tensorboard --logdir proj_log/pc2cad/pc2cad_FinalTransform_8096_1000epochs/log --host 0.0.0.0"
+# cmd = "tensorboard --logdir proj_log/pc2cad/pc2cad_FinalTransform_8096_1000epochs/log --host 0.0.0.0"
 # cmd = "tensorboard --logdir proj_log/pc2cad/pc2cad_MoreTransform_8096_1000epochs/log --host 0.0.0.0"
 
 os.system(cmd)

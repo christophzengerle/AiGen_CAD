@@ -1,8 +1,10 @@
+import sys
+sys.path.append("./utils")
 from config import ConfigAE
 from dataset.cad_dataset import get_dataloader
 from trainer import TrainerAE
 
-from utils import cycle
+from utils.file_utils import cycle
 
 
 def decode_pc_zs(pc_config):

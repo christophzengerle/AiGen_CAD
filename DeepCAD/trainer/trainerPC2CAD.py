@@ -2,7 +2,6 @@ import datetime
 import json
 import os
 import random
-import sys
 from collections import OrderedDict
 
 import h5py
@@ -17,7 +16,6 @@ from utils.step_utils import create_step_file, step_file_exists
 
 from .loss import CADLoss
 
-sys.path.append("..")
 from cadlib.macro import *
 from cadlib.macro import trim_vec_EOS
 from cadlib.visualize import CADsolid2pc, vec2CADsolid
@@ -137,24 +135,8 @@ class TrainerPC2CAD(BaseTrainer):
 
             # validation step
             if clock.epoch % self.cfg.val_frequency == 0:
-                eval_losses = {"losses_cmd": [], "losses_args": []}
-                pbar = tqdm(val_loader)
-                for i, data in enumerate(pbar):
-                    _, loss = self.evaluate(data)
+                eval_losses = self.evaluate(val_loader)
 
-                    eval_losses["losses_cmd"].append(loss["loss_cmd"].item())
-                    eval_losses["losses_args"].append(loss["loss_args"].item())
-
-                    pbar.set_description(
-                        "EVAL - EPOCH[{}]-[{}] BATCH[{}]-[{}]".format(
-                            e, nr_epochs, i, len(val_loader)
-                        )
-                    )
-                    pbar.set_postfix(
-                        OrderedDict({k: v.item() for k, v in loss.items()})
-                    )
-
-                self.record_losses(eval_losses, mode="eval")
 
             if clock.epoch % self.cfg.save_frequency == 0:
                 self.test(test_loader)
@@ -167,16 +149,41 @@ class TrainerPC2CAD(BaseTrainer):
             clock.tock()
 
         # if clock.epoch % 10 == 0:
+        self.test(test_loader)
         self.save_ckpt("latest")
-
-    def evaluate(self, data):
+        
+        
+    def pred_eval(self, data):
         self.net.eval()
         with torch.no_grad():
-            points = data["points"]
-            codes = data["codes"]
+            points = data["points"].cuda()
+            codes = data["codes"].cuda()
             pred = self.forward(points)
             loss = self.criterion(pred, codes)
         return pred, loss
+
+
+    def evaluate(self, val_loader):
+        eval_losses = {"losses_cmd": [], "losses_args": []}
+        pbar = tqdm(val_loader)
+        for i, data in enumerate(pbar):
+            _, loss = self.pred_eval(data)
+
+            eval_losses["losses_cmd"].append(loss["loss_cmd"].item())
+            eval_losses["losses_args"].append(loss["loss_args"].item())
+
+            pbar.set_description(
+                "EVAL - EPOCH[{}]-[{}] BATCH[{}]-[{}]".format(
+                    self.clock.epoch, self.nr_epochs, i, len(val_loader)
+                )
+            )
+            pbar.set_postfix(
+                OrderedDict({k: v.item() for k, v in loss.items()})
+            )
+
+        self.record_losses(eval_losses, mode="eval")
+        return eval_losses
+
 
     def test(self, test_loader):
         """evaluatinon during training"""
@@ -191,14 +198,8 @@ class TrainerPC2CAD(BaseTrainer):
         all_circle_args_comp = []
 
         for i, data in enumerate(pbar):
-            with torch.no_grad():
-                points = data["points"]
-                codes = data["codes"]
-
-                pred = self.forward(points)
-                batch_out_vec = self.logits2vec(pred)
-
-                loss = self.criterion(pred, codes)
+            pred, loss = self.pred_eval(data)
+            
             test_losses["losses_cmd"].append(loss["loss_cmd"].item())
             test_losses["losses_args"].append(loss["loss_args"].item())
 
@@ -213,6 +214,7 @@ class TrainerPC2CAD(BaseTrainer):
             gt_commands = commands.squeeze(1).long().detach().cpu().numpy()  # (N, S)
             gt_args = args.squeeze(1).long().detach().cpu().numpy()  # (N, S, n_args)
 
+            batch_out_vec = self.logits2vec(pred)
             out_cmd = batch_out_vec[:, :, 0]
             out_args = batch_out_vec[:, :, 1:]
 
