@@ -63,7 +63,7 @@ class TrainerPC2CAD(BaseTrainer):
 
         # reduce LR by factor of 0.1 if the validation loss does not improve for 10 epochs
         self.after_warmup_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, mode="min", factor=0.5, patience=10
+            self.optimizer, mode="min", factor=0.75, patience=10
         )
 
         self.scheduler = GradualWarmupScheduler(
@@ -156,8 +156,8 @@ class TrainerPC2CAD(BaseTrainer):
     def pred_eval(self, data):
         self.net.eval()
         with torch.no_grad():
-            points = data["points"].cuda()
-            codes = data["codes"].cuda()
+            points = data["points"]
+            codes = data["codes"]
             pred = self.forward(points)
             loss = self.criterion(pred, codes)
         return pred, loss
@@ -210,6 +210,7 @@ class TrainerPC2CAD(BaseTrainer):
             )
             pbar.set_postfix(OrderedDict({k: v.item() for k, v in loss.items()}))
 
+            codes = data["codes"]
             commands, args = codes["command"], codes["args"]
             gt_commands = commands.squeeze(1).long().detach().cpu().numpy()  # (N, S)
             gt_args = args.squeeze(1).long().detach().cpu().numpy()  # (N, S, n_args)

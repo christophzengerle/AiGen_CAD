@@ -66,7 +66,7 @@ class ConfigPCEncoder(object):
         self.noiseAmount = 0.02
 
         self.val_frequency = 1
-        self.save_frequency = 1
+        self.save_frequency = 50
 
         self.expSourcePNG = True
         
