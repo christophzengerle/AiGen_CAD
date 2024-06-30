@@ -861,6 +861,7 @@ class TrainerPC2CAD(BaseTrainer):
             else:
                 self.net.pc_enc.load_state_dict(pcEnc_checkpoint["model_state_dict"])
 
+
             print(
                 "Checkpoints for pretrained AutoEncoder & PointCloud-Encoder loaded successfully."
             )

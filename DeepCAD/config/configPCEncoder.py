@@ -46,8 +46,7 @@ class ConfigPCEncoder(object):
             and args.cont is not True
             and os.path.exists(self.exp_dir)
         ):
-            # response = input("Experiment log/model already exists, overwrite? (y/n) ")
-            response = "y"
+            response = input("Experiment log/model already exists, overwrite? (y/n) ")
             if response != "y":
                 exit()
             shutil.rmtree(self.exp_dir)
