@@ -9,13 +9,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from joblib import Parallel, delayed
-from OCC.Core.BRepCheck import BRepCheck_Analyzer
-from tqdm import tqdm
-from utils.step_utils import create_step_file, step_file_exists
-
-from .loss import CADLoss
-
 from cadlib.macro import *
 from cadlib.macro import trim_vec_EOS
 from cadlib.visualize import CADsolid2pc, vec2CADsolid
@@ -25,13 +18,18 @@ from evaluation.pc2cad.evaluate_pc2cad_gen import (
     compute_cov_mmd,
     jsd_between_point_cloud_sets,
 )
+from joblib import Parallel, delayed
 from model.pointcloud2cad import PointCloud2CAD
+from OCC.Core.BRepCheck import BRepCheck_Analyzer
+from tqdm import tqdm
 from trainer.scheduler import GradualWarmupScheduler
 from utils import read_ply
 from utils.file_utils import walk_dir
 from utils.step2render import transform
+from utils.step_utils import create_step_file, step_file_exists
 
 from .base import BaseTrainer
+from .loss import CADLoss
 from .trainerAE import TrainerAE
 from .trainerPCEncoder import TrainerPCEncoder
 
@@ -137,22 +135,18 @@ class TrainerPC2CAD(BaseTrainer):
             if clock.epoch % self.cfg.val_frequency == 0:
                 eval_losses = self.evaluate(val_loader)
 
-
             if clock.epoch % self.cfg.save_frequency == 0:
                 self.test(test_loader)
                 self.save_ckpt()
-            
-            self.record_and_update_learning_rate(
-                    np.mean(eval_losses["losses_args"])
-                )
-            
+
+            self.record_and_update_learning_rate(np.mean(eval_losses["losses_args"]))
+
             clock.tock()
 
         # if clock.epoch % 10 == 0:
         self.test(test_loader)
         self.save_ckpt("latest")
-        
-        
+
     def pred_eval(self, data):
         self.net.eval()
         with torch.no_grad():
@@ -161,7 +155,6 @@ class TrainerPC2CAD(BaseTrainer):
             pred = self.forward(points)
             loss = self.criterion(pred, codes)
         return pred, loss
-
 
     def evaluate(self, val_loader):
         eval_losses = {"losses_cmd": [], "losses_args": []}
@@ -177,13 +170,10 @@ class TrainerPC2CAD(BaseTrainer):
                     self.clock.epoch, self.nr_epochs, i, len(val_loader)
                 )
             )
-            pbar.set_postfix(
-                OrderedDict({k: v.item() for k, v in loss.items()})
-            )
+            pbar.set_postfix(OrderedDict({k: v.item() for k, v in loss.items()}))
 
         self.record_losses(eval_losses, mode="eval")
         return eval_losses
-
 
     def test(self, test_loader):
         """evaluatinon during training"""
@@ -199,7 +189,7 @@ class TrainerPC2CAD(BaseTrainer):
 
         for i, data in enumerate(pbar):
             pred, loss = self.pred_eval(data)
-            
+
             test_losses["losses_cmd"].append(loss["loss_cmd"].item())
             test_losses["losses_args"].append(loss["loss_args"].item())
 
@@ -861,7 +851,6 @@ class TrainerPC2CAD(BaseTrainer):
             else:
                 self.net.pc_enc.load_state_dict(pcEnc_checkpoint["model_state_dict"])
 
-
             print(
                 "Checkpoints for pretrained AutoEncoder & PointCloud-Encoder loaded successfully."
             )
@@ -882,6 +871,15 @@ class TrainerPC2CAD(BaseTrainer):
                 self.clock.restore_checkpoint(checkpoint["clock"])
 
             print("Checkpoint loaded successfully.")
+
+        # finetune Args-Classifier
+        for param in self.net.parameters():
+            param.requires_grad = False
+
+        for param in self.net.decoder.fcn.args_fcn.parameters():
+            param.requires_grad = True
+
+        print("Finetuning Args-Classifier.")
 
     def record_and_update_learning_rate(self, metric):
         """record and update learning rate"""
