@@ -2,7 +2,6 @@ import argparse
 import math
 import multiprocessing
 import os
-import sys
 from io import BytesIO
 
 import imageio
@@ -149,16 +148,22 @@ def export_obj(mesh, outfile):
         print(f"created OBJ: {output_path}")
         return output_path
 
+
 def main():
     args = parse()
     args.png = True
     setup_dir(args.src, args.dest)
 
-    if os.path.isfile(args.src):
+    if (os.path.isfile(args.src) and (
+            args.src.endswith(".step")
+            or args.src.endswith(".obj")
+            or args.src.endswith(".ply"))
+    ):
         objfiles = [args.src]
 
     elif os.path.isdir(args.src):
-        objfiles = [file for file in walk_dir(args.src)]
+        objfiles = [file for file in walk_dir(args.src)
+                    if (file.endswith(".step") or file.endswith(".obj") or file.endswith(".ply"))]
 
     else:
         raise ValueError("No valid source file type.")

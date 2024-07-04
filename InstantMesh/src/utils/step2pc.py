@@ -10,7 +10,7 @@ sys.path.append("../../../src")
 def parse():
     parser = argparse.ArgumentParser()
     parser.add_argument("--src", type=str, help="source folder", required=True)
-    parser.add_argument("--dest", type=str, default="png_files", help="destination folder")
+    parser.add_argument("--dest", type=str, default="ply_files", help="destination folder")
     args = parser.parse_args()
     return args
 
@@ -31,9 +31,9 @@ def walk_dir(dir):
     return file_list
 
 
-def transform(file_path, outfile):
+def transform(file_path, outfile, n_points):
     # print('filepath', file_path)
-    if file_path.endswith(".ply"):
+    if file_path.endswith(".obj"):
         m = trimesh.load_mesh(file_path)
     elif file_path.endswith(".step"):
         m = trimesh.Trimesh(
@@ -51,24 +51,26 @@ def transform(file_path, outfile):
             )
         )
 
-    outfile = outfile + ".obj"
-    m.export(outfile, file_type='obj')
-    
+    pc = trimesh.PointCloud(m.sample(n_points))
+    outfile = outfile + ".ply"
+    pc.export(outfile, file_type='ply')
+
     return outfile
+
 
 def main():
     args = parse()
     setup_dir(args.src, args.dest)
 
     if os.path.isfile(args.src):
-        if args.src.endswith(".step") or args.src.endswith(".ply"):
+        if args.src.endswith(".step") or args.src.endswith(".obj"):
             objfiles = [args.src]
 
     elif os.path.isdir(args.src):
         objfiles = [
             file
             for file in walk_dir(args.src)
-            if file.endswith(".step") or file.endswith(".ply")
+            if file.endswith(".step") or file.endswith(".obj")
         ]
 
     else:
