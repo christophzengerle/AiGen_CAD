@@ -58,12 +58,12 @@ class TrainerPC2CAD(BaseTrainer):
         # self.scheduler = torch.optim.lr_scheduler.StepLR(
         #     self.optimizer, cfg.lr_step_size
         # )
-        
+
         # self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         #     self.optimizer, mode="min", factor=0.75, patience=10
         # )
 
-        reduce LR by factor of 0.1 if the validation loss does not improve for 10 epochs
+        # reduce LR by factor of 0.1 if the validation loss does not improve for 10 epochs
         self.after_warmup_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             self.optimizer, mode="min", factor=0.75, patience=10
         )

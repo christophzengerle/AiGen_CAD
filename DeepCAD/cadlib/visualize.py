@@ -42,16 +42,6 @@ def create_CAD(cad_seq: CADSequence):
             "NewBodyFeatureOperation"
         ) or extrude_op.operation == EXTRUDE_OPERATIONS.index("JoinFeatureOperation"):
             body = BRepAlgoAPI_Fuse(body, new_body).Shape()
-            # f2 = BRepAlgoAPI_Fuse()
-            # L1 = TopTools_ListOfShape()
-            # L1.Append(body)
-            # L2 = TopTools_ListOfShape()
-            # L2.Append(new_body)
-            # f2.SetArguments(L1)
-            # f2.SetTools(L2)
-            # f2.SetFuzzyValue(0.01)
-            # f2.Build()
-            # body = f2.Shape()
         elif extrude_op.operation == EXTRUDE_OPERATIONS.index("CutFeatureOperation"):
             body = BRepAlgoAPI_Cut(body, new_body).Shape()
         elif extrude_op.operation == EXTRUDE_OPERATIONS.index(

@@ -3,7 +3,7 @@
 As second part of our AiGen - CAD Architecture we propose a Encoder - Decoder Architecture to reconstruct a CAD - Command Sequence from a 3D-Pointcloud.
 
 <p align="center">
-  <img src='./.assets/Architecture/architecture_pc2cad.jpg' width=600>
+  <img src='./.assets/architecture_pc2cad.jpg' width=600>
 </p>
 
 The main problem of our project is to reconstruct a CAD - Command Sequence.
