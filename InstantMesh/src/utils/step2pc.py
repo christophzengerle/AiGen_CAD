@@ -11,6 +11,7 @@ def parse():
     parser = argparse.ArgumentParser()
     parser.add_argument("--src", type=str, help="source folder", required=True)
     parser.add_argument("--dest", type=str, default="ply_files", help="destination folder")
+    parser.add_argument("--n_points", type=int, default="8096", help="number of sample points")
     args = parser.parse_args()
     return args
 
@@ -81,7 +82,7 @@ def main():
         outfile = os.path.join(args.dest, file).split('.')[0]
 
         p = multiprocessing.Process(
-            target=transform, args=(file_path, outfile)
+            target=transform, args=(file_path, outfile, args.n_points)
         )
         p.start()
         p.join(60)

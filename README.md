@@ -72,7 +72,7 @@ Parameters:
 * **src : str, default=None**  
 Source file or folder (takes every .json/.h5 file in the directory as input)
 * **dest: str, default="step_files"**  
-Destination folder. Is created if doesn't exist.  
+Destination folder. Is created if it doesn't exist.  
 * **type: str, default=h5, choices=[h5, json]**  
 Select file format of input (json or h5) 
 * **check: bool, default=None**  
@@ -88,7 +88,7 @@ Parameters:
 * **src : str, default=None**  
 Source file or folder (takes every .step file in the directory as input)
 * **dest: str, default="png_files"**  
-Destination folder. Is created if doesn't exist.
+Destination folder. Is created if it doesn't exist.
 
 
 ### CAD or Mesh (.step/.obj) to Pointcloud (.ply)
@@ -99,7 +99,9 @@ Parameters:
 * **src : str, default=None**  
 Source file or folder (takes every .step/.obj file in the directory as input)
 * **dest: str, default="ply_files"**  
-Destination folder. Is created if doesn't exist.
+Destination folder. Is created if it doesn't exist.
+* **n_points: int, default=8096**  
+Number of points to sample for Pointcloud.
 
 
 ### CAD, Mesh or Pointcloud (.step/.obj/.ply) to Image/Video (.png/.gif)
@@ -110,7 +112,7 @@ Parameters:
 * **src : str, default=None**  
 Source file or folder (takes every .step/.obj/.ply file in the directory as input)
 * **dest: str, default="png_files"**  
-Destination folder. Is created if doesn't exist.
+Destination folder. Is created if it doesn't exist.
 * **ele: int, default=45**  
 Camera elevation.
 * **rot: int, default=-45**  
@@ -135,7 +137,7 @@ Parameters:
 * **src : str, default=None**  
 Source file or folder (takes every .step/.obj file in the directory as input)
 * **dest: str, default="png_files"**  
-Destination folder. Is created if doesn't exist.
+Destination folder. Is created if it doesn't exist.
 * **res: str, default="low", choices=["low", "medium", "high"]**  
 Quality of render. Low is 300, medium 600 and high 1200 pixel. 
 * **split: str, is required**  
