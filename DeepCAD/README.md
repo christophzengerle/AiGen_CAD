@@ -75,7 +75,7 @@ We provide three different Model classes:
 
 ### Pre-trained models
 
-You can find available pretrained Checkpoints for all three models. Download [Models](https://drive.google.com/drive/folders/1e9s5W81YH7RgqIV2yr-h61pDEQ6N4Kix?usp=sharing) and extract them into their the `proj_log` folder. Please keep the following scheme.
+You can find available pretrained Checkpoints for all three models. Download the [Models](https://drive.google.com/drive/folders/1e9s5W81YH7RgqIV2yr-h61pDEQ6N4Kix?usp=sharing) and extract them into the `proj_log` folder. Please keep the following scheme.
 
 - `proj_log/ae` AutoEncoder
 - `proj_log/pce` pcEncoder
@@ -211,6 +211,12 @@ There are also a few more skripts which are used for internal filetype conversio
 - `dataset/json2pc.py` this file converts a CAD - Command Sequence from json format to a pointcloud
 - `dataset/vec2pc.py` this file converts a CAD - Command Sequence from vectors to a pointcloud
 
+## Examples
+
+<p align="center">
+  <img src='./.assets/results.jpg' width=800>
+</p>
+
 ## Acknowledgement
 
-We would like to thank and acknowledge referenced codes from [DeepCAD](https://github.com/ChrisWu1997/DeepCAD).
+We would like to thank and acknowledge referenced code and work from [DeepCAD](https://github.com/ChrisWu1997/DeepCAD).
