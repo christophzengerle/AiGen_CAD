@@ -150,7 +150,7 @@ class ConfigPC2CAD(object):
             "--exp_name",
             type=str,
             required=False,
-            default="pcEncoder",
+            default="pc2cad",
             help="name of this experiment",
         )
         parser.add_argument(
@@ -173,14 +173,13 @@ class ConfigPC2CAD(object):
             "--modular_ckpt",
             dest="load_modular_ckpt",
             action="store_true",
-            default=False,
             help="load pretrained PointCloud and Autoencoder checkpoint",
         )
         parser.add_argument(
             "--pce_exp_name",
             type=str,
             required=False,
-            default="pretrained",
+            default="pcEncoder",
             help="name of PointCloud experiment",
         )
         parser.add_argument(

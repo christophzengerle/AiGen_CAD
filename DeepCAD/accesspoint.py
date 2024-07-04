@@ -23,21 +23,9 @@ np.random.seed(0)
 #################### Configuration ############################################
 ###############################################################################
 
-# DEEPCAD_EXPERIMENT_NAME = "pc2cad_contDiffNums"
-# DEEPCAD_MODEL_CKPT = "latest"
+DEEPCAD_EXPERIMENT_NAME = "pc2cad"
+DEEPCAD_MODEL_CKPT = "latest"
 
-DEEPCAD_EXPERIMENT_NAME = "pc2cad_FinalTransform_8096_1000epochs"
-DEEPCAD_MODEL_CKPT = "ckpt_epoch750_num8096"
-
-# DEEPCAD_EXPERIMENT_NAME = "pc2cad_MoreTransform_8096_1000epochs"
-# DEEPCAD_MODEL_CKPT = "ckpt_epoch350_num8096"
-
-# DEEPCAD_EXPERIMENT_NAME = "pc2cad_ReduceLRscheduler_8096_1000epochs"
-# DEEPCAD_MODEL_CKPT = "ckpt_epoch300_num8096"
-
-
-
-LOAD_MODULAR_CKPT = False
 
 POINTCLOUD_N_POINTS = 8096
 
@@ -48,15 +36,11 @@ EXPORT_PNG = True
 GPU_IDS = "0"
 
 
+# set DeepCAD-Configuration
 cfg = ConfigPC2CAD()
 cfg.model_dir = os.path.join(cfg.proj_dir, f"pc2cad/{DEEPCAD_EXPERIMENT_NAME}/model")
 cfg.ckpt = DEEPCAD_MODEL_CKPT
 cfg.n_points = POINTCLOUD_N_POINTS
-cfg.load_modular_ckpt = LOAD_MODULAR_CKPT
-cfg.pce_exp_name = "pcEncoder"
-cfg.pce_ckpt = "latest"
-cfg.ae_exp_name = "pretrained"
-cfg.ae_ckpt = "ckpt_epoch1000"
 
 cfg.expSourcePNG = EXPORT_SOURCE_PNG
 cfg.expSTEP = EXPORT_STEP
@@ -65,6 +49,7 @@ cfg.expPNG = EXPORT_PNG
 cfg.gpu_ids = GPU_IDS
 os.environ["CUDA_VISIBLE_DEVICES"] = str(cfg.gpu_ids)
 
+# initialize DeepCAD-Model
 agent = TrainerPC2CAD(cfg)
 print("Loading DeepCAD-Model...")
 agent.load_ckpt()

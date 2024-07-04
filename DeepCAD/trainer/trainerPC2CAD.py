@@ -58,8 +58,12 @@ class TrainerPC2CAD(BaseTrainer):
         # self.scheduler = torch.optim.lr_scheduler.StepLR(
         #     self.optimizer, cfg.lr_step_size
         # )
+        
+        # self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        #     self.optimizer, mode="min", factor=0.75, patience=10
+        # )
 
-        # reduce LR by factor of 0.1 if the validation loss does not improve for 10 epochs
+        reduce LR by factor of 0.1 if the validation loss does not improve for 10 epochs
         self.after_warmup_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             self.optimizer, mode="min", factor=0.75, patience=10
         )
@@ -873,13 +877,13 @@ class TrainerPC2CAD(BaseTrainer):
             print("Checkpoint loaded successfully.")
 
         # finetune Args-Classifier
-        for param in self.net.parameters():
-            param.requires_grad = False
+        # for param in self.net.parameters():
+        #     param.requires_grad = False
 
-        for param in self.net.decoder.fcn.args_fcn.parameters():
-            param.requires_grad = True
+        # for param in self.net.decoder.fcn.args_fcn.parameters():
+        #     param.requires_grad = True
 
-        print("Finetuning Args-Classifier.")
+        # print("Finetuning Args-Classifier.")
 
     def record_and_update_learning_rate(self, metric):
         """record and update learning rate"""
