@@ -2,15 +2,11 @@
 
 As second part of our AiGen - CAD Architecture we propose a Encoder - Decoder Architecture to reconstruct a CAD - Command Sequence from a 3D-Pointcloud.
 
-<p align="center">
-  <img src='./.assets/architecture_pc2cad.jpg' width=600>
-</p>
+![DeepCAD](./.assets/architecture_pc2cad.jpg)
 
 The main problem of our project is to reconstruct a CAD - Command Sequence.
 
-<p align="center">
-  <img src='./.assets/teaser.png' width=600>
-</p>
+![Command Sequence](./.assets/teaser.png)
 
 We therefore used the original DeepCAD - Model proposed by [Rundi Wu](https://chriswu1997.github.io), [Chang Xiao](http://chang.engineer), [Changxi Zheng](http://www.cs.columbia.edu/~cxz/index.htm) in the paper [DeepCAD: A Deep Generative Network for Computer-Aided Design Models](https://arxiv.org/abs/2105.09492) as a starting point, built upon it and adjusted it for our special Use-Case.
 
@@ -211,7 +207,7 @@ There are also a few more skripts which are used for internal filetype conversio
 - `dataset/json2pc.py` this file converts a CAD - Command Sequence from json format to a pointcloud
 - `dataset/vec2pc.py` this file converts a CAD - Command Sequence from vectors to a pointcloud
 
-## Examples
+## Example Results
 
 <p align="center">
   <img src='./.assets/results.jpg' width=800>
