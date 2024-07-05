@@ -4,7 +4,7 @@ This project was developed as part of a Master's program in Artificial Intellige
 
 **Project members**: [Christoph Zengerle](https://github.com/christophzengerle), [Jorge Mandlmaier](https://github.com/huber-jr)
 
-## Introduction
+## Introduction:
 
 The main goal of the project was the development of a pipeline to reconstruct a CAD-Sequence from an Image-Input.
 
@@ -188,3 +188,7 @@ Parameters:
 - **split: str, is required**  
   Train-test-split file. Structure like dict: {"train": [{folder}/{file}, {folder}/{file},...], "val": [...], "test": [...]}  
   Filename without file ending! Folder path in relation to src folder!
+
+## Examples:
+
+![Complete Pipeline](./.assets/pipeline_results.png)
