@@ -16,23 +16,30 @@ Therefore first a 3D-Geometry is generated from the 2D-Image by InstantMesh. Aft
 
 ```
 AiGen_CAD
-│   docker-compose.yaml
-│
-│
-└───App (Gradio UI)
-│       │   Dockerfile
-│       │   requirements.txt
-│       │   ...
-│
-└───DeepCAD
-│       │   Dockerfile
-│       │   requirements.txt
-│       │   ...
-│
-└───InstantMesh
-│       │   Dockerfile
-│       │   requirements.txt
-│       │   ...
+    │   docker-compose.yaml
+    │
+    │
+    └─── App (Gradio UI)
+    │       │   Dockerfile
+    │       │   requirements.txt
+    │       │   ...
+    │
+    └─── DeepCAD
+    │       │   Dockerfile
+    │       │   requirements.txt
+    │       │   ...
+    │
+    └─── InstantMesh
+    │       │   Dockerfile
+    │       │   requirements.txt
+    │       │   ...
+utils
+    |
+    └─── data (raw dataset for training, etc.)
+    |
+    └─── models (Model Checkpoints for DeepCAD and InstantMesh)
+    |
+    └─── results (save directory for generated CAD-Models)
 ```
 
 Every subdirectory has its own Dockerfile and requirements.txt to initiate Docker Container.
@@ -49,7 +56,7 @@ $ docker compose up
 ```
 
 in the root directory starts all 3 container for InstantMesh, DeepCAD and the GradioUI.
-The access point scripts of InstantMesh and DeepCAD will be executed automatically.
+The accesspoint scripts of InstantMesh and DeepCAD will be executed automatically.
 To access the Container bash run "docker exec -it {container_name} bash".
 
 The Containernames are:
@@ -75,7 +82,7 @@ usr
         │
         └───ckpts/proj_log (mounted from ../utils/models/{InstantMesh/DeepCAD})
         │
-        └───results (mounted from ../utils/results
+        └───results (mounted from ../utils/results)
 ```
 
 The docker-compose.yaml manages the ports for every container. The App container has SSH and Gradio Ports.
@@ -84,8 +91,8 @@ The InstantMesh and DeepCAD container have SSH, Flask and Tensorboard ports each
 ## App
 
 To start the Pipeline you first need to wait until the access points of InstantMesh and DeepCAD are loaded.
-If no cached models are available downloading and initializing the models can take a few minutes.
-Cashed models will me saved in the _proj_log_ folder for DeepCAD and the _ckpts_ folder for InstantMesh.
+If no cached models for InstantMesh are available downloading and initializing the models can take a few minutes.
+Cashed models will be saved in the _ckpts_ folder for InstantMesh. To get a model checkpoint for DeepCAD please refer to the Readme in the DeepCAD-Folder. There you can find a url to download the model and extract it into the _proj_log_ folder.
 These folders are mounted so the cached models should be available even after container restart.
 To run the Gradio UI log into the App container via bash as descriped in **Docker** and run
 
