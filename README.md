@@ -1,4 +1,4 @@
-# AiGen-CAD: Generative AI for 3D Modeling
+# AiGen-CAD: Generative AI for 3D CAD Model Reconstruction from a single 2D Image
 
 This project was developed as part of a Master's program in Artificial Intelligence and Computer Vision at the [Kempten University of Applied Sciences](https://www.hs-kempten.de/en/) in cooperation with the [Institute for Data-optimised Manufacturing (IDF)](https://www.hs-kempten.de/en/research/research-institutes/idf-the-institute).
 
@@ -8,7 +8,8 @@ This project was developed as part of a Master's program in Artificial Intellige
 
 ## 🚀 Introduction
 
-The main goal of the project was the development of a pipeline to reconstruct a CAD command sequence from an image input.
+The main goal of the project was the development of an end-to-end Generative AI (GenAI) pipeline to reconstruct a 3D CAD model from a single 2D image.
+
 
 ![Complete Pipeline](./.assets/pipeline.png)
 
