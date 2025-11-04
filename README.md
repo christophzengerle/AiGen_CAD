@@ -1,201 +1,226 @@
-# AiGen-CAD - Generative AI for 3d modeling
+# AiGen-CAD: Generative AI for 3D Modeling
 
-This project was developed as part of a Master's program in Artificial Intelligence and Computer Vision at the [Kempten University of Applied Sciences](https://www.hs-kempten.de/en/) in cooperation with the [Institute for Data-optimised Manufacturing (IDF)](https://www.hs-kempten.de/en/research/research-institutes/institute-for-data-optimized-manufacturing-idf).
+This project was developed as part of a Master's program in Artificial Intelligence and Computer Vision at the [Kempten University of Applied Sciences](https://www.hs-kempten.de/en/) in cooperation with the [Institute for Data-optimised Manufacturing (IDF)](https://www.hs-kempten.de/en/research/research-institutes/idf-the-institute).
 
 **Project members**: [Christoph Zengerle](https://github.com/christophzengerle), [Jorge Mandlmaier](https://github.com/huber-jr)
 
-## Introduction:
+---
 
-The main goal of the project was the development of a pipeline to reconstruct a CAD-Sequence from an Image-Input.
+## 🚀 Introduction
+
+The main goal of the project was the development of a pipeline to reconstruct a CAD command sequence from an image input.
 
 ![Complete Pipeline](./.assets/pipeline.png)
 
-Therefore first a 3D-Geometry is generated from the 2D-Image by InstantMesh. Afterwards the 3D-Object in form of a Pointcloud is fed into DeepCAD. DeepCAD reconstructs a CAD-Command-Sequence from the Pointcloud. The final CAD-Model can be constructed from this Sequence.
+To achieve this, a 3D geometry is first generated from the 2D image using **InstantMesh**. Afterwards, the 3D object, in the form of a point cloud, is fed into **DeepCAD**. DeepCAD reconstructs a CAD command sequence from the point cloud. The final CAD model can be constructed from this sequence.
 
-## Project structure:
+---
+
+## ⚡ Quick Start (Docker Compose)
+
+The easiest way to start the entire pipeline is via Docker Compose.
+
+### Prerequisites
+
+1.  **Docker & Docker Compose:** Must be installed on your system.
+2.  **DeepCAD Model (Manual):** You must download the DeepCAD model checkpoint manually.
+    - Follow the instructions in the `DeepCAD/README.md`.
+    - Extract the model into the `utils/models/DeepCAD/proj_log/` folder.
+3.  **InstantMesh Models (Automatic):** These models will be downloaded automatically on the first run and cached in `utils/models/InstantMesh/ckpts/`.
+
+### Running the App
+
+1.  Clone this repository (if you haven't already).
+2.  Ensure you have downloaded the DeepCAD models as described above.
+3.  Start all services from the project's root directory:
+
+    ```bash
+    $ docker compose up
+    ```
+
+4.  **Wait a few minutes.** The `instantmesh` and `deepcad` containers need to load their models and start their API endpoints. The InstantMesh model download may also take time on the first run.
+5.  Open the Gradio web interface in your browser:
+    **[http://localhost:7860](http://localhost:7860)**
+
+---
+
+## 📂 Project Structure
+
+All subdirectories (`App`, `DeepCAD`, `InstantMesh`) contain their own `Dockerfile` and `requirements.txt` files to initialize the Docker containers. The `utils` folders are mounted into the respective containers via volumes.
+
+The following is the directory layout of the **AiGen-CAD** project:
 
 ```
-AiGen_CAD
-    │   docker-compose.yaml
-    │
-    │
-    └─── App (Gradio UI)
-    │       │   Dockerfile
-    │       │   requirements.txt
-    │       │   ...
-    │
-    └─── DeepCAD
-    │       │   Dockerfile
-    │       │   requirements.txt
-    │       │   ...
-    │
-    └─── InstantMesh
-    │       │   Dockerfile
-    │       │   requirements.txt
-    │       │   ...
-utils
-    |
-    └─── data (raw dataset for training, etc.)
-    |
-    └─── models (Model Checkpoints for DeepCAD and InstantMesh)
-    |
-    └─── results (save directory for generated CAD-Models)
+AiGen_CAD/
+├── docker-compose.yaml
+│
+├── App/                      # Gradio UI Frontend
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── app.py
+│
+├── DeepCAD/                  # DeepCAD service (CAD reconstruction)
+│   ├── Dockerfile
+│   ├── ...
+│   └── utils/
+│       ├── seq2step.py       # Convert command sequences → STEP
+│       └── step2render.py    # Render CAD/Mesh/Point Cloud → image or video
+│
+├── InstantMesh/              # InstantMesh service (Mesh generation)
+│   ├── Dockerfile
+│   ├── ...
+│   └── src/utils/
+│       ├── mesh2instant.py   # Mesh → edge/depth/normal image
+│       ├── step2obj.py       # STEP → OBJ mesh
+│       └── step2pc.py        # STEP/OBJ → PLY point cloud
+│
+└── utils/
+    ├── data/                 # Raw data for training and testing
+    ├── models/               # Mounted model checkpoints
+    │   ├── DeepCAD/
+    │   │   └── proj_log/     # Place DeepCAD model here manually
+    │   └── InstantMesh/
+    │       └── ckpts/        # Automatically downloaded models
+    └── results/              # Mounted save directory for outputs
 ```
 
-Every subdirectory has its own Dockerfile and requirements.txt to initiate Docker Container.
-Every subdirectory is mounted to their respective container when building the container with Docker Compose.
+> **For further information** about the models and on how to train or run InstantMesh or DeepCAD, please have a look at the **README files in the specific model folders**.
 
-## Docker
+---
 
-The easiest way to startup the Pipeline is with the provided Dockerfiles.
+## 🐳 Docker Details
 
-Running
+### Container Names
+
+- `app` (Gradio UI)
+- `instantmesh`
+- `deepcad`
+
+### Accessing the Container Shell
+
+To access the bash shell of a running container (e.g., for debugging):
 
 ```bash
-$ docker compose up
+$ docker exec -it [container_name] bash
+
+# Example:
+$ docker exec -it app bash
 ```
 
-in the root directory starts all 3 container for InstantMesh, DeepCAD and the GradioUI.
-The accesspoint scripts of InstantMesh and DeepCAD will be executed automatically.
-To access the Container bash run "docker exec -it {container_name} bash".
+### Internal Container Structure
 
-The Containernames are:
-
-- app
-- instantmesh
-- deepcad
-
-The structure inside of the containers is like:
+The directory structure inside the containers is as follows:
 
 ```
-usr
+/
+├── usr/local/cuda/  (Only for DeepCAD. CUDA_HOME directory)
 │
-└───/local/cuda (only for DeepCAD. CudaHome directory)
-│
-└───/app/src
+└── app/src/
+    ├── miniconda3/
     │
-    └───miniconda3
-    │
-    └───InstantMesh/App/DeepCAD (mounte from respective subdirectory)
+    └── ├── [InstantMesh | App | DeepCAD]/  (Mounted from host subdirectory)
         │
-        └───data (mounted from ../utils/data)
-        │
-        └───ckpts/proj_log (mounted from ../utils/models/{InstantMesh/DeepCAD})
-        │
-        └───results (mounted from ../utils/results)
+        ├── data/        (Mounted from ../utils/data)
+        ├── ckpts/       (For InstantMesh, mounted from ../utils/models/InstantMesh/ckpts)
+        ├── proj_log/    (For DeepCAD, mounted from ../utils/models/DeepCAD/proj_log)
+        └── results/     (Mounted from ../utils/results)
 ```
 
-The docker-compose.yaml manages the ports for every container. The App container has SSH and Gradio Ports.
-The InstantMesh and DeepCAD container have SSH, Flask and Tensorboard ports each.
+## 🔌 Ports
 
-## App
+The `docker-compose.yaml` manages the ports for each container:
 
-To start the Pipeline you first need to wait until the access points of InstantMesh and DeepCAD are loaded.
-If no cached models for InstantMesh are available downloading and initializing the models can take a few minutes.
-Cashed models will be saved in the _ckpts_ folder for InstantMesh. To get a model checkpoint for DeepCAD please refer to the Readme in the DeepCAD-Folder. There you can find a url to download the model and extract it into the _proj_log_ folder.
-These folders are mounted so the cached models should be available even after container restart.
-To run the Gradio UI log into the App container via bash as descriped in **Docker** and run
+| Container       | Ports & Services                                 |
+| --------------- | ------------------------------------------------ |
+| **App**         | SSH and Gradio ports _(Gradio on port **7860**)_ |
+| **InstantMesh** | SSH, Flask (API), and TensorBoard ports          |
+| **DeepCAD**     | SSH, Flask (API), and TensorBoard ports          |
 
-```bash
-$ python app.py
-```
+---
 
-The App can be accessed on localhost via Port 7860 (localhost:7860) or with the public Gradio-URL provided on startup and displayed in the Terminal.
+## 🛠️ Data Conversion Scripts
 
-<br>
+These scripts are used to convert data between different CAD and mesh formats.
 
-### **Further Informations about the Models and on how to train or run InstantMesh or DeepCAD please have a look at the Readme in the specific Model-Folder**
+### Command Sequence (.json / .h5) → CAD (.step)
 
-<br>
+**File:** `DeepCAD/utils/seq2step.py`  
+**Description:** Takes command sequences as input and transforms them into a CAD mesh in **OBJ format**.
 
-## Data Transformation
+**Parameters:**
+| Parameter | Type | Default | Description |
+|------------|------|----------|--------------|
+| `--src` | str | `None` | Source file or folder (processes every `.json` or `.h5` file in the directory). |
+| `--dest` | str | `"step_files"` | Destination folder (is created if it doesn't exist). |
+| `--type` | str | `h5` | Input file format. Choices: `[h5, json]`. |
+| `--check` | bool | `None` | Uses the OpenCASCADE analyzer to filter invalid models. |
 
-### Command Sequence (.json/.h5) to CAD (.step)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-file: DeepCAD/utils/seq2step.py  
-Takes Commands Sequences as input and transforms them to Mesh in OBJ-format.
+### CAD (.step) → Mesh (.obj)
 
-Parameters:
+**File:** `InstantMesh/src/utils/step2obj.py`  
+**Description:** Takes CAD STEP files as input and transforms them into meshes in **OBJ format**.
 
-- **src : str, default=None**  
-  Source file or folder (takes every .json/.h5 file in the directory as input)
-- **dest: str, default="step_files"**  
-  Destination folder. Is created if it doesn't exist.
-- **type: str, default=h5, choices=[h5, json]**  
-  Select file format of input (json or h5)
-- **check: bool, default=None**  
-  Use opencascade analyzer to filter invalid model
-  select file format of input (json or h5)
+**Parameters:**
+| Parameter | Type | Default | Description |
+|------------|------|----------|--------------|
+| `--src` | str | `None` | Source file or folder (processes every `.step` file in the directory). |
+| `--dest` | str | `"png_files"` | Destination folder (is created if it doesn't exist). |
 
-### CAD (.step) to Mesh (.obj)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-file: InstantMesh/src/utils/step2obj.py  
-Takes CAD Step-Files as input and transforms it to Mesh in OBJ-format.
+### CAD or Mesh (.step / .obj) → Point Cloud (.ply)
 
-Parameters:
+**File:** `InstantMesh/src/utils/step2pc.py`  
+**Description:** Converts CAD STEP or Mesh OBJ files into **point clouds** in PLY format.
 
-- **src : str, default=None**  
-  Source file or folder (takes every .step file in the directory as input)
-- **dest: str, default="png_files"**  
-  Destination folder. Is created if it doesn't exist.
+**Parameters:**
+| Parameter | Type | Default | Description |
+|------------|------|----------|--------------|
+| `--src` | str | `None` | Source file or folder (processes every `.step` or `.obj` file in the directory). |
+| `--dest` | str | `"ply_files"` | Destination folder (is created if it doesn't exist). |
+| `--n_points` | int | `8096` | Number of points to sample for the point cloud. |
 
-### CAD or Mesh (.step/.obj) to Pointcloud (.ply)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-file: InstantMesh/src/utils/step2pc.py  
-Takes CAD Step-Files or Mesh OBJ-Files and transforms them to Pointclouds in PLY-format.
+### CAD, Mesh, or Point Cloud (.step / .obj / .ply) → Image / Video (.png / .gif)
 
-Parameters:
+**File:** `DeepCAD/utils/step2render.py`  
+**Description:** Renders CAD, Mesh, or Point Cloud files into **images or videos**. Can also export the mesh as an OBJ file.
 
-- **src : str, default=None**  
-  Source file or folder (takes every .step/.obj file in the directory as input)
-- **dest: str, default="ply_files"**  
-  Destination folder. Is created if it doesn't exist.
-- **n_points: int, default=8096**  
-  Number of points to sample for Pointcloud.
+**Parameters:**
+| Parameter | Type | Default | Description |
+|------------|------|----------|--------------|
+| `--src` | str | `None` | Source file or folder. |
+| `--dest` | str | `"png_files"` | Destination folder. |
+| `--ele` | int | `45` | Camera elevation. |
+| `--rot` | int | `-45` | Camera rotation. |
+| `--png` | bool | `False` | If `True`, renders and saves a PNG image. |
+| `--gif` | bool | `False` | If `True`, renders and saves a GIF animation. |
+| `--obj` | bool | `False` | If `True`, saves the mesh as an OBJ file. |
+| `--qual` | str | `"low"` | Render quality. Choices: `["low", "medium", "high"]`. _(low=300px, medium=600px, high=1200px)_ |
 
-### CAD, Mesh or Pointcloud (.step/.obj/.ply) to Image/Video (.png/.gif)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-file: DeepCAD/utils/step2render.py  
-Takes CAD Step-Files, Mesh OBJ-Files or Pointcloud PLY-Files and transforms them to rendered Image or Video. Can also save input as OBJ-File.
+### Mesh (.obj) → Edge, Depth, and Normal Images (.png)
 
-Parameters:
+**File:** `InstantMesh/src/utils/mesh2instant.py`  
+**Description:** Takes Mesh OBJ files and renders **edge**, **depth**, and **normal** images.  
+Also supports train-test-split JSON files for dataset preparation.
 
-- **src : str, default=None**  
-  Source file or folder (takes every .step/.obj/.ply file in the directory as input)
-- **dest: str, default="png_files"**  
-  Destination folder. Is created if it doesn't exist.
-- **ele: int, default=45**  
-  Camera elevation.
-- **rot: int, default=-45**  
-  Camera rotation.
-- **png: bool, default=False**  
-  If True renders and saves PNG-File.
-- **gif: bool, default=False**  
-  If True renders and saves GIF-File.
-- **obj: bool, default=False**  
-  If True saves Mesh as OBJ-File.
-- **qual: str, default="low", choices=["low", "medium", "high"]**  
-  Quality of render. Low is 300, medium 600 and high 1200 pixel.
+**Parameters:**
+| Parameter | Type | Default | Description |
+|------------|------|----------|--------------|
+| `--src` | str | `None` | Source file or folder. |
+| `--dest` | str | `"png_files"` | Destination folder. |
+| `--res` | str | `"low"` | Render quality. Choices: `["low", "medium", "high"]`. |
+| `--split` | str | _(required)_ | Train-test-split JSON file. Structure like:<br>`{"train": ["{folder}/{file}", ...], "val": [...], "test": [...]}`.<br>Filenames are used **without extensions**. |
 
-### Mesh (.obj) to Edge-Image, Depth-Image and Normal-Image (.png)
+---
 
-file: InstantMesh/src/utils/mesh2instant.py  
-Takes Mesh OBJ-File and renders Edge-, Depth- and Normal-Image.
-Takes train-test-split Json-File as input and saves filenames of split in
-_val_objs.json_ under keywords _good_objs_, _val_objs_, _test_objs_ and _failed_objs_ for files where render failes.
-
-Parameters:
-
-- **src : str, default=None**  
-  Source file or folder (takes every .step/.obj file in the directory as input)
-- **dest: str, default="png_files"**  
-  Destination folder. Is created if it doesn't exist.
-- **res: str, default="low", choices=["low", "medium", "high"]**  
-  Quality of render. Low is 300, medium 600 and high 1200 pixel.
-- **split: str, is required**  
-  Train-test-split file. Structure like dict: {"train": [{folder}/{file}, {folder}/{file},...], "val": [...], "test": [...]}  
-  Filename without file ending! Folder path in relation to src folder!
-
-## Examples:
+## 🖼️ Example Results
 
 ![Complete Pipeline](./.assets/pipeline_results.png)
+
+---
