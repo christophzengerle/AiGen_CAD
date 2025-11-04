@@ -1,4 +1,4 @@
-# AiGen-CAD: Gradio UI
+# Gradio UI
 
 This is the official **Gradio web interface** for the main **AiGen-CAD Project**.  
 The app serves as a user-friendly frontend for the entire pipeline, allowing you to upload a 2D image and initiate the full reconstruction process into a 3D CAD model.
