@@ -155,7 +155,7 @@ These scripts are used to convert data between different CAD and mesh formats.
 | `--type` | str | `h5` | Input file format. Choices: `[h5, json]`. |
 | `--check` | bool | `None` | Uses the OpenCASCADE analyzer to filter invalid models. |
 
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+─────────────────────────────────────────────────
 
 ### CAD (.step) → Mesh (.obj)
 
@@ -168,7 +168,7 @@ These scripts are used to convert data between different CAD and mesh formats.
 | `--src` | str | `None` | Source file or folder (processes every `.step` file in the directory). |
 | `--dest` | str | `"png_files"` | Destination folder (is created if it doesn't exist). |
 
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+─────────────────────────────────────────────────
 
 ### CAD or Mesh (.step / .obj) → Point Cloud (.ply)
 
@@ -182,7 +182,7 @@ These scripts are used to convert data between different CAD and mesh formats.
 | `--dest` | str | `"ply_files"` | Destination folder (is created if it doesn't exist). |
 | `--n_points` | int | `8096` | Number of points to sample for the point cloud. |
 
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+─────────────────────────────────────────────────
 
 ### CAD, Mesh, or Point Cloud (.step / .obj / .ply) → Image / Video (.png / .gif)
 
@@ -201,7 +201,7 @@ These scripts are used to convert data between different CAD and mesh formats.
 | `--obj` | bool | `False` | If `True`, saves the mesh as an OBJ file. |
 | `--qual` | str | `"low"` | Render quality. Choices: `["low", "medium", "high"]`. _(low=300px, medium=600px, high=1200px)_ |
 
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+─────────────────────────────────────────────────
 
 ### Mesh (.obj) → Edge, Depth, and Normal Images (.png)
 
